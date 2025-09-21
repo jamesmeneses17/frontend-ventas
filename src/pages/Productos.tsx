@@ -69,7 +69,7 @@ export default function Productos() {
               {prod.fichaTecnica && (
                 <>
                   <span>Ficha técnica: {prod.fichaTecnica.descripcion}</span> <br />
-                  {prod.fichaTecnica.archivo_url && <a href={prod.fichaTecnica.archivo_url} target="_blank">Ver archivo</a>} <br />
+                  {prod.fichaTecnica.archivo_url && <a href={prod.fichaTecnica.archivo_url} target="_blank">Descargar Ficha Tecnica</a>} <br />
                 </>
               )}
               {prod.imagenUrl && <img src={prod.imagenUrl} alt={prod.nombre} style={{ width: "150px", marginTop: "5px", display: "block" }} />}
