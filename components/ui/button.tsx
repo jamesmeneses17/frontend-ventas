@@ -3,17 +3,30 @@ import { ReactNode } from "react";
 interface ButtonProps {
   children: ReactNode;
   type?: "button" | "submit";
+  className?: string;
+  disabled?: boolean;
+  onClick?: () => void;
 }
 
-export default function Button({ children, type = "button" }: ButtonProps) {
+export default function Button({ 
+  children, 
+  type = "button", 
+  className = "",
+  disabled = false,
+  onClick
+}: ButtonProps) {
   return (
-    <div className="w-3/4 mx-auto mt-6">
-      <button
-        type="submit"
-        className="flex w-full justify-center rounded-full bg-indigo-500 px-full py-1.5 text-sm font-semibold text-white hover:bg-indigo-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500"
-      >
-        {children}
-      </button>
-    </div>
+    <button
+      type={type}
+      disabled={disabled}
+      onClick={onClick}
+      className={`flex w-full justify-center rounded-md px-3 py-1.5 text-sm font-semibold leading-6 shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 ${
+        disabled 
+          ? 'bg-gray-400 cursor-not-allowed' 
+          : 'bg-indigo-600 hover:bg-indigo-500 focus-visible:outline-indigo-600'
+      } text-white ${className}`}
+    >
+      {children}
+    </button>
   );
 }
