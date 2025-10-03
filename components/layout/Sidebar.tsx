@@ -9,7 +9,7 @@ import Link from "next/link";
 
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { name: "Productos", href: "/productos", icon: Package },
+  { name: "Catalogos", href: "/productos", icon: Package },
   
 ];
 
