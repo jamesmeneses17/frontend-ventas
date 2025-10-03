@@ -4,8 +4,9 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 
 interface User {
   id: string;
-  email: string;
-  name?: string;
+  correo: string;
+  nombre?: string;
+  rol:string;
 }
 
 interface AuthContextType {
@@ -17,6 +18,9 @@ interface AuthContextType {
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+// Variable de entorno para la URL base del API
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://backend-ventas-7qx8.onrender.com';
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -39,8 +43,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      const response = await fetch('https://backend-ventas-7qx8.onrender.com/auth/profile', {
-        
+      const response = await fetch(`${API_BASE_URL}/auth/profile`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,  // ← HEADER CON TOKEN
@@ -68,7 +71,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       console.log('🔄 Intentando login...', { email });
 
-      const response = await fetch('https://backend-ventas-7qx8.onrender.com/auth/login', {
+      const response = await fetch(`${API_BASE_URL}/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -115,7 +118,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const token = localStorage.getItem('auth_token');
       
       if (token) {
-        await fetch('https://backend-ventas-7qx8.onrender.com/auth/logout', {
+        await fetch(`${API_BASE_URL}/auth/logout`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,

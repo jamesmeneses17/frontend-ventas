@@ -49,9 +49,9 @@ export default function Header({ toggleSidebar, isSidebarOpen }: HeaderProps) {
             />
             <div className="flex flex-col">
               <span className="text-sm font-medium text-gray-700">
-                {user?.name || user?.email || "Usuario"}
+                {user?.nombre || user?.rol || "Usuario"}
               </span>
-              <span className="text-xs text-gray-500">{user?.email}</span>
+              <span className="text-xs text-gray-500">{user?.rol}</span>
             </div>
           </div>
 

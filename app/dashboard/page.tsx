@@ -27,7 +27,7 @@ export default function Dashboard() {
               />
             </svg>
             <p className="ml-3 text-sm text-green-700">
-              Autenticación exitosa. Usuario: <strong>{user?.email}</strong>
+              Autenticación exitosa.  
             </p>
           </div>
         </div>
