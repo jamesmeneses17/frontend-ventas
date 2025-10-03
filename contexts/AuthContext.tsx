@@ -39,7 +39,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      const response = await fetch('http://localhost:5000/auth/profile', {
+      const response = await fetch('https://backend-ventas-7qx8.onrender.com/auth/profile', {
+        
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,  // ← HEADER CON TOKEN
@@ -67,7 +68,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       console.log('🔄 Intentando login...', { email });
 
-      const response = await fetch('http://localhost:5000/auth/login', {
+      const response = await fetch('https://backend-ventas-7qx8.onrender.com/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -114,7 +115,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const token = localStorage.getItem('auth_token');
       
       if (token) {
-        await fetch('http://localhost:5000/auth/logout', {
+        await fetch('https://backend-ventas-7qx8.onrender.com/auth/logout', {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,
