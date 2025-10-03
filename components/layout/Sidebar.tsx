@@ -9,14 +9,8 @@ import Link from "next/link";
 
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { name: "Catalogos", href: "/", icon: FileText },
   { name: "Productos", href: "/productos", icon: Package },
-  { name: "Inventario", href: "/", icon: FileText },
-  { name: "Precios & Promociones", href: "/", icon: FileText },
-  { name: "Clientes", href: "/", icon: FileText },
-  { name: "Ventas", href: "/ventas", icon: ShoppingCart },
-  { name: "Reportes", href: "/reportes", icon: FileText },
-  { name: "Usuarios", href: "/clientes", icon: Users },
+  
 ];
 
 export default function Sidebar() {
