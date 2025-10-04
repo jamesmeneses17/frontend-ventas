@@ -14,9 +14,19 @@ interface CrudTableProps {
   onEdit?: (row: any) => void;
   onDelete?: (row: any) => void;
   renderRowActions?: (row: any) => React.ReactNode;
+  loading?: boolean;
 }
 
-const CrudTable: React.FC<CrudTableProps> = ({ columns, data, onEdit, onDelete, renderRowActions }) => {
+const CrudTable: React.FC<CrudTableProps> = ({ columns, data, onEdit, onDelete, renderRowActions, loading = false }) => {
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center py-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+        <span className="ml-2 text-gray-600">Cargando...</span>
+      </div>
+    );
+  }
+
   return (
     <div className="overflow-x-auto">
       <table className="min-w-full divide-y divide-gray-200">
