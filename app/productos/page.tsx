@@ -1,18 +1,12 @@
-// /app/catalogos/CategoriasPage.tsx
-
 "use client";
 
 import React, { useState, useEffect } from "react";
 import AuthenticatedLayout from "../../components/layout/AuthenticatedLayout";
 
-// 🔥 USANDO COMPONENTES REUTILIZABLES
-import CrudTable from "../../components/common/CrudTable";
 import ActionButton from "../../components/common/ActionButton";
-import FormInput from "../../components/common/form/FormInput";
-import FormTextArea from "../../components/common/form/FormTextArea";
-import FormSelect from "../../components/common/form/FormSelect";
+import CategoriasTable from "../../components/catalogos/CategoriasTable";
+import CategoriasForm from "../../components/catalogos/CategoriasForm";
 
-// 📌 Importa el servicio
 import {
   getCategorias,
   createCategoria,
@@ -25,16 +19,12 @@ import {
 export default function CategoriasPage() {
   const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showModal, setShowModal] = useState(false); // Cambié el nombre para ser más claro (modal)
+  const [editingCategoria, setEditingCategoria] = useState<Categoria | null>(
+    null
+  );
 
-  const [showForm, setShowForm] = useState(false);
-  const [editingCategoria, setEditingCategoria] = useState<Categoria | null>(null);
-  const [formData, setFormData] = useState<Omit<Categoria, "id">>({
-    nombre: "",
-    descripcion: "",
-    estado: "Activo",
-  });
-
-  // 🚀 Cargar datos del backend al montar
+  //  Cargar datos del backend al montar
   useEffect(() => {
     loadCategorias();
   }, []);
@@ -51,43 +41,30 @@ export default function CategoriasPage() {
     }
   };
 
-  // Función genérica para manejar los cambios del formulario
-  const handleFormChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
-  ) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
-  };
-
-  // Handlers
+  // Handlers para la tabla (pasan el objeto o ID)
   const handleEdit = (categoria: Categoria) => {
     setEditingCategoria(categoria);
-    setFormData({
-      nombre: categoria.nombre,
-      descripcion: categoria.descripcion,
-      estado: categoria.estado,
-    });
-    setShowForm(true);
+    setShowModal(true);
   };
 
-  const handleDelete = async (categoria: Categoria) => {
-    if (confirm(`¿Estás seguro de eliminar la categoría "${categoria.nombre}"?`)) {
+  const handleDelete = async (id: number) => {
+    const categoria = categorias.find((c) => c.id === id);
+    if (
+      categoria &&
+      confirm(`¿Estás seguro de eliminar la categoría "${categoria.nombre}"?`)
+    ) {
       await deleteCategoria(categoria.id);
       loadCategorias();
     }
   };
 
   const handleAdd = () => {
-    setEditingCategoria(null);
-    setFormData({ nombre: "", descripcion: "", estado: "Activo" });
-    setShowForm(true);
+    setEditingCategoria(null); // Para crear una nueva
+    setShowModal(true);
   };
 
-  const handleFormSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
+  // Handler del Formulario (recibe los datos ya manejados por CategoriasForm)
+  const handleFormSubmit = async (formData: Categoria) => {
     if (editingCategoria) {
       // 🔥 Editar en backend
       await updateCategoria(editingCategoria.id, formData);
@@ -96,22 +73,14 @@ export default function CategoriasPage() {
       await createCategoria(formData);
     }
 
-    setShowForm(false);
+    setShowModal(false);
     loadCategorias();
   };
-
-  // 2. COLUMNAS
-  const columns = [
-    { key: "id", label: "ID" },
-    { key: "nombre", label: "Nombre" },
-    { key: "descripcion", label: "Descripción" },
-    { key: "estado", label: "Estado" },
-  ];
 
   return (
     <AuthenticatedLayout>
       <div className="space-y-6">
-        {/* Header */}
+        {/* Header (Mantenido) */}
         <div className="bg-white shadow rounded-lg p-6">
           <div className="flex justify-between items-center">
             <div>
@@ -125,7 +94,7 @@ export default function CategoriasPage() {
 
         {/* Contenido principal */}
         <div className="bg-white shadow rounded-lg p-6">
-          {/* Tabs simuladas */}
+          {/* Tabs simuladas (Mantenido) */}
           <div className="border-b border-gray-200 mb-6">
             <nav className="-mb-px flex space-x-8" aria-label="Tabs">
               <button className="border-indigo-500 text-indigo-600 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
@@ -163,106 +132,35 @@ export default function CategoriasPage() {
             />
           </div>
 
-          {/* Tabla */}
-          <CrudTable
-            columns={columns}
+          {/* 🔥 TABLA MODULARIZADA */}
+          <CategoriasTable
             data={categorias}
             loading={loading}
-            renderRowActions={(categoria: Categoria) => (
-              <div className="flex space-x-2">
-                <ActionButton
-                  icon={
-                    <svg
-                      className="w-4 h-4"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth={2}
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
-                      />
-                    </svg>
-                  }
-                  onClick={() => handleEdit(categoria)}
-                />
-                <ActionButton
-                  icon={
-                    <svg
-                      className="w-4 h-4"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth={2}
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                      />
-                    </svg>
-                  }
-                  onClick={() => handleDelete(categoria)}
-                  color="danger"
-                />
-              </div>
-            )}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
           />
         </div>
 
-        {/* Modal */}
-        {showForm && (
+        {/* 🔥 MODAL MODULARIZADO */}
+        {showModal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
               <h2 className="text-xl font-bold mb-4">
                 {editingCategoria ? "Editar Categoría" : "Nueva Categoría"}
               </h2>
 
-              <form className="space-y-4" onSubmit={handleFormSubmit}>
-                <FormInput
-                  label="Nombre"
-                  name="nombre"
-                  value={formData.nombre}
-                  onChange={handleFormChange}
-                  required
-                />
-                <FormTextArea
-                  label="Descripción"
-                  name="descripcion"
-                  value={formData.descripcion || ""}
-                  onChange={handleFormChange}
-                  rows={3}
-                />
-                <FormSelect
-                  label="Estado"
-                  name="estado"
-                  value={formData.estado}
-                  onChange={handleFormChange}
-                  options={[
-                    { value: "Activo", label: "Activo" },
-                    { value: "Inactivo", label: "Inactivo" },
-                  ]}
-                  required
-                />
-
-                <div className="flex justify-end space-x-2 pt-4">
-                  <button
-                    type="button"
-                    onClick={() => setShowForm(false)}
-                    className="px-4 py-2 border rounded-md text-gray-600 hover:bg-gray-100"
-                  >
-                    Cancelar
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
-                  >
-                    Guardar
-                  </button>
-                </div>
-              </form>
+              <CategoriasForm
+                // Si estamos editando, pasamos los datos. Si no, pasamos datos vacíos.
+                initialData={
+                  editingCategoria || {
+                    nombre: "",
+                    descripcion: "",
+                    estado: "Activo",
+                  }
+                }
+                onSubmit={handleFormSubmit}
+                onCancel={() => setShowModal(false)}
+              />
             </div>
           </div>
         )}

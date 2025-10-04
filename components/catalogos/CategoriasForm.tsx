@@ -9,7 +9,7 @@ import FormSwitch from "../../components/common/form/FormSwitch";
 interface Props {
   initialData?: {
     nombre: string;
-    descripcion: string;
+    descripcion?: string;
     estado: "Activo" | "Inactivo";
   };
   onSubmit: (values: any) => void;
@@ -40,13 +40,17 @@ export default function CategoriasForm({
         label="Nombre"
         name="nombre"
         value={values.nombre}
-        onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleChange("nombre", e.target.value)}
+        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+          handleChange("nombre", e.target.value)
+        }
       />
       <FormTextArea
         label="Descripción"
         name="descripcion"
-        value={values.descripcion}
-        onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => handleChange("descripcion", e.target.value)}
+        value={values.descripcion || ""}
+        onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+          handleChange("descripcion", e.target.value)
+        }
       />
       <FormSelect
         label="Estado"
@@ -56,7 +60,9 @@ export default function CategoriasForm({
           { label: "Activo", value: "Activo" },
           { label: "Inactivo", value: "Inactivo" },
         ]}
-        onChange={(e: React.ChangeEvent<HTMLSelectElement>) => handleChange("estado", e.target.value)}
+        onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
+          handleChange("estado", e.target.value)
+        }
       />
       <div className="flex items-center justify-end gap-4">
         <button
