@@ -1,15 +1,13 @@
-// /components/layout/HeaderPublic.tsx
+// /components/layout/HeaderPublic.tsx (Ajuste para coincidir con la imagen)
 
 import React from 'react';
-// import ActionButton from '../common/ActionButton'; // Reutiliza si necesitas botones de estilo uniforme
-// import Link from 'next/link';
 
 const HeaderPublic: React.FC = () => {
   // Simulación de navegación (ajusta las rutas según tu app)
   const navigation = [
     { name: 'Inicio', href: '/' },
     { name: 'Productos', href: '/productos' },
-    { name: 'Servicios', href: '/servicios' },
+    { name: 'Nosotros', href: '/nosotros' }, // Ajuste de la URL
     { name: 'Contacto', href: '/contacto' },
   ];
 
@@ -20,7 +18,8 @@ const HeaderPublic: React.FC = () => {
           <div className="flex">
             {/* Logo de DISEM SAS */}
             <div className="flex-shrink-0 flex items-center">
-              <span className="text-xl font-bold text-indigo-600">DISEM SAS</span>
+              {/* Reemplazar con el logo real si tienes un componente de Logo */}
+              <span className="text-xl font-bold text-amber-600">DISEM SAS</span>
             </div>
             
             {/* Navegación principal */}
@@ -29,7 +28,7 @@ const HeaderPublic: React.FC = () => {
                 <a
                   key={item.name}
                   href={item.href}
-                  className="inline-flex items-center px-1 pt-1 border-b-2 border-transparent text-sm font-medium text-gray-500 hover:border-gray-300 hover:text-gray-700"
+                  className="inline-flex items-center px-1 pt-1 border-b-2 border-transparent text-sm font-medium text-gray-500 hover:border-amber-300 hover:text-amber-700"
                 >
                   {item.name}
                 </a>
@@ -37,15 +36,14 @@ const HeaderPublic: React.FC = () => {
             </div>
           </div>
           
-          {/* Botones de acción (ej. Cotizar Ahora, Iniciar Sesión) */}
+          {/* Botón de Admin/Login */}
           <div className="hidden sm:ml-6 sm:flex sm:items-center">
-            {/* Puedes usar el ActionButton de /components/common si el estilo coincide */}
-            <button
-              type="button"
-              className="ml-3 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            <a
+              href="/login" // O /auth/login, dependiendo de tu ruta
+              className="ml-3 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700"
             >
-              Cotizar Ahora
-            </button>
+              Admin
+            </a>
           </div>
         </div>
       </div>
