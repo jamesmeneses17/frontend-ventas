@@ -1,105 +1,126 @@
-// /components/ui/CategorySection.tsx (MODIFICADO para "Ver Más")
+// /components/ui/CategorySection.tsx
 
-import React from 'react';
+"use client"; 
 
-// Define la estructura de datos para una tarjeta de categoría (Mantenido)
-interface CategoryCardProps {
-  title: string;
-  description: string;
+import React, { useState, useEffect } from 'react';
+// Asegúrate de que la ruta de importación sea correcta si el archivo está en ui/
+import { getCategorias, Categoria } from '../services/categoriasService'; 
+
+interface CategoryCardDisplayProps extends Categoria {
   imageSrc: string; 
   href: string;     
 }
 
-// Componente individual de la tarjeta de categoría (Mantenido)
-const CategoryCard: React.FC<CategoryCardProps> = ({ title, description, imageSrc, href }) => (
-  // ... (El código de la tarjeta CategoryCard se mantiene igual) ...
+const mapCategoryToImage = (nombre: string): string => {
+  const slug = nombre.toLowerCase()
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "") 
+    .replace(/\s+/g, '-'); 
+
+  switch (slug) {
+    case 'paneles-solares':
+    case 'energia-solar':
+    case 'energia-solar-sostenible': // Puedes agregar variaciones de energía solar si es necesario
+      return '/images/panel.webp';
+    case 'baterias-solares':
+    case 'baterias':
+      return '/images/bateria.webp';
+    case 'controladores':
+    case 'controlador':
+      return '/images/controladores.webp';
+    case 'iluminacion-solar':
+    case 'iluminacion-ac':
+    case 'alumbrado-solar': // Agregado para coincidir con la categoría del API
+      return '/images/iluminacion-solar.webp';
+    case 'sistemas-de-bombeo': // Agregado para coincidir con la categoría del API
+      return '/images/imagen.webp'; // Usa una imagen genérica para este caso
+    default:
+      return '/images/imagen.webp'; 
+  }
+};
+
+
+const CategoryCard: React.FC<CategoryCardDisplayProps> = ({ nombre, descripcion, imageSrc, href }) => (
   <a href={href} className="group relative block rounded-xl overflow-hidden shadow-lg hover:shadow-2xl transition duration-300 transform hover:-translate-y-1">
     <img 
       className="absolute inset-0 h-full w-full object-cover opacity-80 group-hover:opacity-100 transition duration-300" 
       src={imageSrc} 
-      alt={title}
+      alt={nombre}
     />
     <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent"></div>
     <div className="relative p-6 pt-40 flex flex-col justify-end h-full">
       <div className="flex items-center space-x-2 text-white mb-2">
-        {/* Usando un ícono simple. Si tienes un componente Icon/SVG, úsalo aquí */}
         <svg className="w-5 h-5 text-amber-400" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a8 8 0 100 16A8 8 0 0010 2zM5.5 10a.5.5 0 01.5-.5h8a.5.5 0 010 1h-8a.5.5 0 01-.5-.5z"/></svg>
-        <h3 className="text-xl font-bold">{title}</h3>
+        <h3 className="text-xl font-bold">{nombre}</h3> 
       </div>
-      <p className="text-sm text-gray-300">{description}</p>
+      {/* La descripción puede ser undefined si el API no la incluye */}
+      <p className="text-sm text-gray-300">{descripcion || "Soluciones y productos de energía solar."}</p>
     </div>
   </a>
 );
 
-// Datos de ejemplo para las categorías (¡Ahora incluyendo las 8 para el ejemplo!)
-// Fragmento de datos para /components/ui/CategorySection.tsx
-
-const allCategories: CategoryCardProps[] = [
-  { 
-    title: 'Paneles Solares', 
-    description: 'Policristalinos y monocristalinos de alta eficiencia', 
-    // Usando 'panel.webp' de tu estructura de carpetas
-    imageSrc: '/images/panel.webp', 
-    href: '/productos?categoria=paneles' 
-  },
-  { 
-    title: 'Baterías Solares', 
-    description: 'Almacenamiento de energía para uso nocturno o backup', 
-    // Usando 'bateria.webp' de tu estructura de carpetas
-    imageSrc: '/images/bateria.webp', 
-    href: '/productos?categoria=baterias' 
-  },
-  { 
-    title: 'Controladores', 
-    description: 'Regulación y protección de tu sistema solar', 
-    // Usando 'controladores.webp' de tu estructura de carpetas
-    imageSrc: '/images/controladores.webp', 
-    href: '/productos?categoria=controladores' 
-  },
-  { 
-    title: 'Iluminación Solar', 
-    description: 'Soluciones de alumbrado público y residencial', 
-    // Usando 'iluminacion-solar.webp' de tu estructura de carpetas
-    imageSrc: '/images/iluminacion-solar.webp', 
-    href: '/productos?categoria=iluminacion' 
-  },
-  // Añadiendo las 4 categorías restantes con una imagen genérica (imagen.webp)
-  { 
-    title: 'Inversores', 
-    description: 'Convierte la energía solar en electricidad utilizable.', 
-    imageSrc: '/images/imagen.webp', 
-    href: '/productos?categoria=inversores' 
-  },
-  { 
-    title: 'Sistemas de Bombeo', 
-    description: 'Soluciones de bombeo de agua eficientes con energía solar.', 
-    imageSrc: '/images/imagen.webp', 
-    href: '/productos?categoria=bombeo' 
-  },
-  { 
-    title: 'Estructuras y Soportes', 
-    description: 'Sistemas de montaje para techos y suelos.', 
-    imageSrc: '/images/imagen.webp', 
-    href: '/productos?categoria=estructuras' 
-  },
-  { 
-    title: 'Accesorios y Cables', 
-    description: 'Componentes para completar tu instalación solar.', 
-    imageSrc: '/images/imagen.webp', 
-    href: '/productos?categoria=accesorios' 
-  },
-];
-
 
 const CategorySection: React.FC = () => {
-  // Solo mostramos las primeras 4 categorías en la landing page
-  const displayedCategories = allCategories.slice(0, 4);
+  const [categories, setCategories] = useState<Categoria[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+  
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        setLoading(true);
+        const data = await getCategorias();
+        
+        // 🚨 CAMBIO CLAVE: Lógica de filtrado ajustada 🚨
+        // Filtra solo si el campo 'estado' existe Y es 'Inactivo'.
+        // Si el campo 'estado' NO existe (es undefined), la categoría se incluye.
+        const activeCategories = data.filter(c => 
+          !c.estado || c.estado.toString().toLowerCase() === 'activo'
+        );
+        
+        // Si tienes categorías que vienen de la BD con el estado "Activo" (con mayúscula), usa esta línea:
+        // const activeCategories = data.filter(c => !c.estado || c.estado === 'Activo');
+
+        setCategories(activeCategories);
+        setLoading(false);
+      } catch (err) {
+        console.error("Error al cargar categorías:", err); // Muestra el error de red en consola
+        setError(true);
+        setLoading(false);
+      }
+    };
+    fetchCategories();
+  }, []); 
+
+  const displayedCategories: CategoryCardDisplayProps[] = categories
+    .slice(0, 4) 
+    .map(cat => ({
+      ...cat,
+      // Asegúrate de que tu interfaz Categoria tenga 'descripcion' para que el spread '...cat' funcione, 
+      // si no la tiene, agrega 'descripcion: cat.descripcion || ""' explícitamente si TypeScript da error.
+      imageSrc: mapCategoryToImage(cat.nombre), 
+      href: `/productos?categoria=${cat.nombre.toLowerCase().replace(/\s+/g, '-')}`,
+    }));
+
+  if (loading) {
+    return (
+      <section className="py-16 text-center">
+        <p className="text-lg text-amber-600">Cargando categorías...</p>
+      </section>
+    );
+  }
+
+  if (error) {
+    return (
+      <section className="py-16 text-center">
+        <p className="text-lg text-red-600">Error al cargar las categorías. Intente de nuevo más tarde.</p>
+      </section>
+    );
+  }
 
   return (
     <section className="py-16 bg-white"> 
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         
-        {/* Encabezado de la Sección (Mantenido) */}
         <div className="text-center mb-12">
           <h2 className="text-4xl font-extrabold text-gray-900">
             Nuestras Categorías
@@ -110,22 +131,28 @@ const CategorySection: React.FC = () => {
           </p>
         </div>
 
-        {/* Grid de Categorías (Limitado a 4) */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {displayedCategories.map((category, index) => (
-            <CategoryCard key={index} {...category} />
-          ))}
-        </div>
+        {displayedCategories.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {displayedCategories.map((category) => (
+              <CategoryCard key={category.id} {...category} />
+            ))}
+          </div>
+        ) : (
+          <p className="text-center text-gray-500 text-lg">
+            No hay categorías activas para mostrar. Revisa la conexión al API o el estado de los datos.
+          </p>
+        )}
 
-        {/* Botón de "Ver Más" / "Explorar Todo" */}
-        <div className="mt-12 text-center">
-          <a
-            href="/productos" // Enlaza directamente a la página donde se ven TODOS los productos/categorías
-            className="inline-flex items-center px-8 py-3 border border-transparent text-base font-medium rounded-lg shadow-md text-white bg-amber-600 hover:bg-amber-700 transition duration-150"
-          >
-            Explorar todas las {allCategories.length} categorías →
-          </a>
-        </div>
+        {categories.length > 4 && (
+          <div className="mt-12 text-center">
+            <a
+              href="/productos"
+              className="inline-flex items-center px-8 py-3 border border-transparent text-base font-medium rounded-lg shadow-md text-white bg-amber-600 hover:bg-amber-700 transition duration-150"
+            >
+              Explorar todas las {categories.length} categorías →
+            </a>
+          </div>
+        )}
         
       </div>
     </section>
