@@ -1,50 +1,112 @@
-// /components/layout/HeaderPublic.tsx (Ajuste para coincidir con la imagen)
+// /components/layout/HeaderPublic.tsx (MODIFICADO para menú móvil)
 
-import React from 'react';
+"use client";
+
+import React, { useState } from 'react';
+// Importa Link de next/link si lo necesitas para un mejor rendimiento
+// import Link from 'next/link';
 
 const HeaderPublic: React.FC = () => {
-  // Simulación de navegación (ajusta las rutas según tu app)
+  // Estado para controlar si el menú móvil está abierto o cerrado
+  const [isOpen, setIsOpen] = useState(false);
+  
+  // Función para alternar el estado del menú
+  const toggleMenu = () => setIsOpen(!isOpen);
+
   const navigation = [
     { name: 'Inicio', href: '/' },
     { name: 'Productos', href: '/productos' },
-    { name: 'Nosotros', href: '/nosotros' }, // Ajuste de la URL
+    { name: 'Nosotros', href: '/nosotros' },
     { name: 'Contacto', href: '/contacto' },
   ];
 
   return (
-    <nav className="bg-white shadow-sm sticky top-0 z-50">
+    <nav className="bg-white shadow-md sticky top-0 z-50">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
-          <div className="flex">
-            {/* Logo de DISEM SAS */}
-            <div className="flex-shrink-0 flex items-center">
-              {/* Reemplazar con el logo real si tienes un componente de Logo */}
-              <span className="text-xl font-bold text-amber-600">DISEM SAS</span>
-            </div>
-            
-            {/* Navegación principal */}
-            <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
-              {navigation.map((item) => (
-                <a
-                  key={item.name}
-                  href={item.href}
-                  className="inline-flex items-center px-1 pt-1 border-b-2 border-transparent text-sm font-medium text-gray-500 hover:border-amber-300 hover:text-amber-700"
-                >
-                  {item.name}
-                </a>
-              ))}
-            </div>
+          
+          {/* Lado Izquierdo: Logo */}
+          <div className="flex-shrink-0 flex items-center">
+            {/* Logo de DISEM SAS - Usando el estilo de la Hero Section */}
+            <a href="/" className="text-xl font-bold text-amber-600 flex items-center space-x-2">
+                <span className="text-2xl">☀️</span>
+                <span>DISEM SAS</span>
+            </a>
           </div>
           
-          {/* Botón de Admin/Login */}
+          {/* Lado Central: Navegación de Escritorio (hidden en móvil) */}
+          <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
+            {navigation.map((item) => (
+              <a
+                key={item.name}
+                href={item.href}
+                className="inline-flex items-center px-1 pt-1 border-b-2 border-transparent text-sm font-medium text-gray-500 hover:border-amber-300 hover:text-amber-700 transition duration-150"
+              >
+                {item.name}
+              </a>
+            ))}
+          </div>
+          
+          {/* Lado Derecho: Botones de Acción (Admin) - Escritorio */}
           <div className="hidden sm:ml-6 sm:flex sm:items-center">
             <a
-              href="/login" // O /auth/login, dependiendo de tu ruta
-              className="ml-3 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700"
+              href="/login" // O /auth/login
+              className="px-4 py-2 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-black hover:bg-gray-800 transition duration-150"
             >
               Admin
             </a>
           </div>
+
+          {/* Botón de Menú Móvil (visible solo en móvil) */}
+          <div className="-mr-2 flex items-center sm:hidden">
+            <button
+              onClick={toggleMenu}
+              type="button"
+              className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-amber-500"
+              aria-expanded={isOpen}
+            >
+              <span className="sr-only">Abrir menú principal</span>
+              {/* Icono de hamburguesa o cerrar */}
+              {isOpen ? (
+                // Icono de Cerrar (X)
+                <svg className="block h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              ) : (
+                // Icono de Hamburguesa (☰)
+                <svg className="block h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Menú Móvil Desplegable (se muestra/oculta según el estado 'isOpen') */}
+      {/* Las clases 'sm:hidden' asegura que solo sea visible en móvil */}
+      <div className={`${isOpen ? 'block' : 'hidden'} sm:hidden absolute w-full bg-white shadow-xl border-t border-gray-100`}>
+        <div className="pt-2 pb-3 space-y-1 px-4">
+          {navigation.map((item) => (
+            <a
+              key={item.name}
+              href={item.href}
+              onClick={toggleMenu} // Cierra el menú al hacer clic
+              className="block px-3 py-2 text-base font-medium text-gray-700 hover:bg-gray-50 rounded-md"
+            >
+              {item.name}
+            </a>
+          ))}
+        </div>
+        
+        {/* Botón de Admin/Login en el menú móvil */}
+        <div className="border-t border-gray-100 pt-4 pb-2 px-4">
+          <a
+            href="/login"
+            className="block w-full text-center px-4 py-3 border border-transparent text-base font-medium rounded-lg shadow-sm text-white bg-black hover:bg-gray-800"
+          >
+            Admin
+          </a>
         </div>
       </div>
     </nav>

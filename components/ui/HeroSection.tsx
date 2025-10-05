@@ -1,4 +1,4 @@
-// /components/ui/HeroSection.tsx
+// /components/ui/HeroSection.tsx (AJUSTE MÍNIMO)
 
 "use client";
 
@@ -6,11 +6,17 @@ import React from "react";
 
 const HeroSection: React.FC = () => {
   return (
-    // Contenedor principal para toda la sección Hero y estadísticas
+    // Contenedor principal para toda la sección Hero. 
+    // El fondo (bg-white) y el padding vertical se aplican aquí. Ocupa el 100% del ancho.
     <section className="pt-10 pb-16 bg-white sm:pt-16 lg:pt-24">
+      
+      {/* ESTE DIV CONTENEDOR CONTROLA EL ANCHO DEL CONTENIDO. 
+          Asegura que el texto y las estadísticas no se peguen a los bordes. */}
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        
         {/* Contenedor de la parte superior: Texto y Imagen */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+          
           {/* Columna Izquierda: Texto y Botones */}
           <div className="lg:pr-10">
             {/* Etiqueta de Resaltado */}
@@ -50,9 +56,7 @@ const HeroSection: React.FC = () => {
 
           {/* Columna Derecha: Imagen */}
           <div className="relative flex justify-center lg:justify-end">
-            {/* Usar una etiqueta <img> real y estilos de Tailwind para la imagen */}
             <div className="relative rounded-xl overflow-hidden shadow-2xl">
-              {/* Reemplaza 'tu-imagen-paneles.jpg' con la ruta real de tu imagen */}
               <img
                 className="object-cover w-full h-auto max-h-[500px]"
                 src="/images/solar.webp"
