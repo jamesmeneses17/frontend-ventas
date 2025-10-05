@@ -1,11 +1,14 @@
+// /app/catalogos/CategoriasPage.tsx (MODIFICADO para soportar pageSize dinámico)
+
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import AuthenticatedLayout from "../../components/layout/AuthenticatedLayout";
 
 import ActionButton from "../../components/common/ActionButton";
 import CategoriasTable from "../../components/catalogos/CategoriasTable";
 import CategoriasForm from "../../components/catalogos/CategoriasForm";
+import Paginator from "../../components/common/Paginator"; 
 
 import {
   getCategorias,
@@ -15,16 +18,23 @@ import {
   Categoria,
 } from "../../components/services/categoriasService";
 
+// 🔥 Eliminamos PAGE_SIZE constante y la convertimos en estado
+
 // 1. COMPONENTE PRINCIPAL
 export default function CategoriasPage() {
-  const [categorias, setCategorias] = useState<Categoria[]>([]);
+  const [allCategorias, setAllCategorias] = useState<Categoria[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showModal, setShowModal] = useState(false); // Cambié el nombre para ser más claro (modal)
+  
+  // 🔥 ESTADO DE PAGINACIÓN: Tamaño de página y página actual
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(5); // Inicia en 5 (o 3 si lo prefieres)
+  
+  const [showModal, setShowModal] = useState(false);
   const [editingCategoria, setEditingCategoria] = useState<Categoria | null>(
     null
   );
 
-  //  Cargar datos del backend al montar
+  // 🚀 Cargar datos del backend al montar
   useEffect(() => {
     loadCategorias();
   }, []);
@@ -33,13 +43,24 @@ export default function CategoriasPage() {
     setLoading(true);
     try {
       const data = await getCategorias();
-      setCategorias(data);
+      setAllCategorias(data);
+      setCurrentPage(1); 
     } catch (error) {
       console.error("Error cargando categorías:", error);
     } finally {
       setLoading(false);
     }
   };
+
+  // Lógica para obtener los datos de la página actual (Paginación local)
+  const currentCategorias = useMemo(() => {
+    // Usamos el estado 'pageSize'
+    const startIndex = (currentPage - 1) * pageSize;
+    const endIndex = startIndex + pageSize;
+    return allCategorias.slice(startIndex, endIndex);
+  }, [allCategorias, currentPage, pageSize]); // Depende de pageSize
+  
+  const totalItems = allCategorias.length;
 
   // Handlers para la tabla (pasan el objeto o ID)
   const handleEdit = (categoria: Categoria) => {
@@ -48,7 +69,7 @@ export default function CategoriasPage() {
   };
 
   const handleDelete = async (id: number) => {
-    const categoria = categorias.find((c) => c.id === id);
+    const categoria = allCategorias.find((c) => c.id === id);
     if (
       categoria &&
       confirm(`¿Estás seguro de eliminar la categoría "${categoria.nombre}"?`)
@@ -59,23 +80,34 @@ export default function CategoriasPage() {
   };
 
   const handleAdd = () => {
-    setEditingCategoria(null); // Para crear una nueva
+    setEditingCategoria(null);
     setShowModal(true);
   };
 
   // Handler del Formulario (recibe los datos ya manejados por CategoriasForm)
   const handleFormSubmit = async (formData: Categoria) => {
     if (editingCategoria) {
-      // 🔥 Editar en backend
       await updateCategoria(editingCategoria.id, formData);
     } else {
-      // 🔥 Crear en backend
       await createCategoria(formData);
     }
 
     setShowModal(false);
     loadCategorias();
   };
+  
+  // Handler para el cambio de página
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  // 🔥 NUEVO HANDLER: para cambiar el tamaño de página
+  const handlePageSizeChange = (newSize: number) => {
+    setPageSize(newSize);
+    // Reiniciamos a la primera página para evitar problemas de visualización
+    setCurrentPage(1); 
+  };
+
 
   return (
     <AuthenticatedLayout>
@@ -132,16 +164,35 @@ export default function CategoriasPage() {
             />
           </div>
 
-          {/* 🔥 TABLA MODULARIZADA */}
+          {/* TABLA MODULARIZADA: Usamos los datos filtrados */}
           <CategoriasTable
-            data={categorias}
+            data={currentCategorias}
             loading={loading}
             onEdit={handleEdit}
             onDelete={handleDelete}
           />
+
+          {/* SECCIÓN DE INFORMACIÓN Y PAGINADOR */}
+          <div className="flex justify-between items-center mt-4">
+              {/* Etiqueta de resultados a la izquierda (Usa 'pageSize' del estado) */}
+              <p className="text-sm text-gray-600">
+              </p>
+              
+              {/* Paginator a la derecha */}
+              {!loading && totalItems > 0 && ( // Siempre mostrar si hay ítems para cambiar el tamaño
+                  <Paginator
+                      total={totalItems}
+                      currentPage={currentPage}
+                      pageSize={pageSize} // Le pasamos el estado
+                      onPageChange={handlePageChange}
+                      onPageSizeChange={handlePageSizeChange} // Le pasamos el nuevo handler
+                  />
+              )}
+          </div>
+          
         </div>
 
-        {/* 🔥 MODAL MODULARIZADO */}
+        {/* Modal (Mantenido) */}
         {showModal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
@@ -150,7 +201,6 @@ export default function CategoriasPage() {
               </h2>
 
               <CategoriasForm
-                // Si estamos editando, pasamos los datos. Si no, pasamos datos vacíos.
                 initialData={
                   editingCategoria || {
                     nombre: "",
