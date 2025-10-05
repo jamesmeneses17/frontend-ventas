@@ -1,4 +1,4 @@
-// /components/ui/HeroSection.tsx (AJUSTE MÍNIMO)
+// /components/ui/HeroSection.tsx (MODIFICADO para integrar estadísticas)
 
 "use client";
 
@@ -6,12 +6,10 @@ import React from "react";
 
 const HeroSection: React.FC = () => {
   return (
-    // Contenedor principal para toda la sección Hero. 
-    // El fondo (bg-white) y el padding vertical se aplican aquí. Ocupa el 100% del ancho.
+    // Contenedor principal que da el fondo blanco/crema y el padding vertical
     <section className="pt-10 pb-16 bg-white sm:pt-16 lg:pt-24">
       
-      {/* ESTE DIV CONTENEDOR CONTROLA EL ANCHO DEL CONTENIDO. 
-          Asegura que el texto y las estadísticas no se peguen a los bordes. */}
+      {/* Contenedor de Centrado: max-w-7xl y px-4 */}
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         
         {/* Contenedor de la parte superior: Texto y Imagen */}
@@ -19,18 +17,16 @@ const HeroSection: React.FC = () => {
           
           {/* Columna Izquierda: Texto y Botones */}
           <div className="lg:pr-10">
-            {/* Etiqueta de Resaltado */}
+            {/* ... (Todo el contenido de etiqueta, título y descripción) ... */}
             <span className="inline-flex items-center rounded-full bg-amber-100 px-3 py-1 text-sm font-medium text-amber-800">
               ⚡ Energía Solar Sostenible
             </span>
 
-            {/* Título Principal */}
             <h1 className="mt-4 text-5xl font-extrabold tracking-tight text-gray-900 sm:text-6xl">
               Ilumina tu futuro con{" "}
               <span className="text-amber-600">energía solar</span>
             </h1>
 
-            {/* Descripción */}
             <p className="mt-6 text-xl text-gray-600">
               En DISEM SAS ofrecemos soluciones completas de energía solar para
               hogares y empresas. Paneles solares, baterías, controladores y
@@ -52,10 +48,38 @@ const HeroSection: React.FC = () => {
                 Cotizar Ahora
               </a>
             </div>
-          </div>
+
+            {/* SECCIÓN DE ESTADÍSTICAS (AJUSTADA) 
+               Eliminamos 'border-t' y reducimos el padding superior y margen superior.
+            */}
+            <div className="mt-12 pt-6 grid grid-cols-3 gap-8 text-center sm:text-left">
+              
+              {/* Estadística 1 */}
+              <div>
+                <p className="text-4xl font-extrabold text-gray-900">500+</p>
+                <p className="mt-1 text-lg font-medium text-gray-600">Clientes</p>
+              </div>
+              
+              {/* Estadística 2 */}
+              <div>
+                <p className="text-4xl font-extrabold text-gray-900">10+</p>
+                <p className="mt-1 text-lg font-medium text-gray-600">Años</p>
+              </div>
+              
+              {/* Estadística 3 */}
+              <div>
+                <p className="text-4xl font-extrabold text-gray-900">98%</p>
+                <p className="mt-1 text-lg font-medium text-gray-600">
+                  Satisfacción
+                </p>
+              </div>
+            </div>
+          </div> 
+          {/* Fin Columna Izquierda */}
 
           {/* Columna Derecha: Imagen */}
           <div className="relative flex justify-center lg:justify-end">
+            {/* ... (El código de la imagen con la etiqueta de garantía) ... */}
             <div className="relative rounded-xl overflow-hidden shadow-2xl">
               <img
                 className="object-cover w-full h-auto max-h-[500px]"
@@ -63,7 +87,6 @@ const HeroSection: React.FC = () => {
                 alt="Paneles Solares de DISEM SAS"
               />
 
-              {/* Etiqueta de Garantía Superpuesta */}
               <div className="absolute bottom-4 right-4 bg-white p-3 rounded-xl shadow-lg flex items-center space-x-2">
                 <span className="text-amber-500 text-2xl">⚡</span>
                 <div>
@@ -75,26 +98,9 @@ const HeroSection: React.FC = () => {
           </div>
         </div>
 
-        {/* Sección de Estadísticas (debajo de las dos columnas) */}
-        <div className="mt-16 border-t border-gray-200 pt-10 grid grid-cols-3 gap-8 text-center sm:mt-20 sm:pt-12">
-          {/* Estadística 1 */}
-          <div>
-            <p className="text-4xl font-extrabold text-gray-900">500+</p>
-            <p className="mt-2 text-lg font-medium text-gray-600">Clientes</p>
-          </div>
-          {/* Estadística 2 */}
-          <div>
-            <p className="text-4xl font-extrabold text-gray-900">10+</p>
-            <p className="mt-2 text-lg font-medium text-gray-600">Años</p>
-          </div>
-          {/* Estadística 3 */}
-          <div>
-            <p className="text-4xl font-extrabold text-gray-900">98%</p>
-            <p className="mt-2 text-lg font-medium text-gray-600">
-              Satisfacción
-            </p>
-          </div>
-        </div>
+        {/* NOTA: Eliminamos la sección de estadísticas que estaba aquí, 
+           porque la movemos a la columna izquierda para un mejor diseño en móvil y escritorio. 
+        */}
       </div>
     </section>
   );
