@@ -3,12 +3,12 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
-import AuthenticatedLayout from "../../components/layout/AuthenticatedLayout";
+import AuthenticatedLayout from "../../../components/layout/AuthenticatedLayout";
 
-import ActionButton from "../../components/common/ActionButton";
-import CategoriasTable from "../../components/catalogos/CategoriasTable";
-import CategoriasForm from "../../components/catalogos/CategoriasForm";
-import Paginator from "../../components/common/Paginator"; 
+import ActionButton from "../../../components/common/ActionButton";
+import CategoriasTable from "../../../components/catalogos/CategoriasTable";
+import CategoriasForm from "../../../components/catalogos/CategoriasForm";
+import Paginator from "../../../components/common/Paginator"; 
 
 import {
   getCategorias,
@@ -16,7 +16,7 @@ import {
   updateCategoria,
   deleteCategoria,
   Categoria,
-} from "../../components/services/categoriasService";
+} from "../../../components/services/categoriasService";
 
 // 🔥 Eliminamos PAGE_SIZE constante y la convertimos en estado
 
