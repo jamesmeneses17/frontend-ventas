@@ -9,8 +9,8 @@ import Link from "next/link";
 
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { name: "Catalogos", href: "/productos", icon: Package },
-  
+  // Apunta a la sección de administración de productos (Catálogos)
+  { name: "Catalogos", href: "/admin/productos", icon: Package },
 ];
 
 export default function Sidebar() {
@@ -25,6 +25,12 @@ export default function Sidebar() {
             key={item.name}
             href={item.href}
             className="flex items-center gap-2 p-2 rounded hover:bg-gray-700 transition"
+            aria-current={
+              // Marcar como actual si la ruta coincide (mejor accesibilidad)
+              typeof window !== "undefined" && window.location.pathname === item.href
+                ? "page"
+                : undefined
+            }
           >
             <item.icon className="w-5 h-5" />
             {item.name}
