@@ -12,17 +12,6 @@ export interface Categoria {
 }
 
 export const getCategorias = async (): Promise<Categoria[]> => {
-  // Debug: indicate whether this function is running on server or client
-  try {
-    if (typeof window === 'undefined') {
-      console.log('[getCategorias] llamada desde: SERVER', new Date().toISOString());
-    } else {
-      console.log('[getCategorias] llamada desde: CLIENT', new Date().toISOString());
-    }
-  } catch (e) {
-    // ignore logging errors
-  }
-
   const res = await axios.get(`${API_URL}/categorias`);
   return res.data;
 };
