@@ -20,7 +20,9 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 // Variable de entorno para la URL base del API
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://various-kym-alexo-96f7feff.koyeb.app/';
+const rawApiBase = process.env.NEXT_PUBLIC_API_URL || 'https://various-kym-alexo-96f7feff.koyeb.app/';
+// Normalizar: quitar barras finales para evitar '//' al concatenar rutas
+const API_BASE_URL = rawApiBase.replace(/\/+$/g, '');
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);

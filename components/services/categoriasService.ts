@@ -1,6 +1,8 @@
 import axios from "axios";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"; 
+const rawApiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+// Normalize: remove trailing slashes to avoid `//` when concatenating paths
+const API_URL = rawApiUrl.replace(/\/+$|^\s+|\s+$/g, "").replace(/:\/\/([^/]+)\/(.*)/, (m) => m) || rawApiUrl.replace(/\/+$/g, "");
 
 export interface Categoria {
   id: number;
