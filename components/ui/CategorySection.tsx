@@ -2,9 +2,9 @@
 
 "use client"; 
 
-import React from 'react';
-import { useCategories } from '../../contexts/CategoriesContext';
-import type { Categoria } from '../services/categoriasService';
+import React, { useState, useEffect } from 'react';
+// Asegúrate de que la ruta de importación sea correcta si el archivo está en ui/
+import { getCategorias, Categoria } from '../services/categoriasService'; 
 
 interface CategoryCardDisplayProps extends Categoria {
   imageSrc: string; 
@@ -60,25 +60,62 @@ const CategoryCard: React.FC<CategoryCardDisplayProps> = ({ nombre, descripcion,
 
 
 const CategorySection: React.FC = () => {
-  // Use categories provided by the server via CategoriesProvider
-  const { categorias: categories, isLoading, } = useCategories();
+  const [categories, setCategories] = useState<Categoria[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+  
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        setLoading(true);
+        const data = await getCategorias();
+        
+        // 🚨 CAMBIO CLAVE: Lógica de filtrado ajustada 🚨
+        // Filtra solo si el campo 'estado' existe Y es 'Inactivo'.
+        // Si el campo 'estado' NO existe (es undefined), la categoría se incluye.
+        const activeCategories = data.filter(c => 
+          !c.estado || c.estado.toString().toLowerCase() === 'activo'
+        );
+        
+        // Si tienes categorías que vienen de la BD con el estado "Activo" (con mayúscula), usa esta línea:
+        // const activeCategories = data.filter(c => !c.estado || c.estado === 'Activo');
+
+        setCategories(activeCategories);
+        setLoading(false);
+      } catch (err) {
+        console.error("Error al cargar categorías:", err); // Muestra el error de red en consola
+        setError(true);
+        setLoading(false);
+      }
+    };
+    fetchCategories();
+  }, []); 
 
   const displayedCategories: CategoryCardDisplayProps[] = categories
-    .slice(0, 4)
-    .map((cat: Categoria) => ({
+    .slice(0, 4) 
+    .map(cat => ({
       ...cat,
-      imageSrc: mapCategoryToImage(cat.nombre),
+      // Asegúrate de que tu interfaz Categoria tenga 'descripcion' para que el spread '...cat' funcione, 
+      // si no la tiene, agrega 'descripcion: cat.descripcion || ""' explícitamente si TypeScript da error.
+      imageSrc: mapCategoryToImage(cat.nombre), 
       href: `/productos?categoria=${cat.nombre.toLowerCase().replace(/\s+/g, '-')}`,
     }));
 
-  if (isLoading) {
+  if (loading) {
     return (
       <section className="py-16 text-center">
         <p className="text-lg text-amber-600">Cargando categorías...</p>
       </section>
     );
   }
-  
+
+  if (error) {
+    return (
+      <section className="py-16 text-center">
+        <p className="text-lg text-red-600">Error al cargar las categorías. Intente de nuevo más tarde.</p>
+      </section>
+    );
+  }
 
   return (
     <section className="py-16 bg-white"> 
