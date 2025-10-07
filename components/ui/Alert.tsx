@@ -4,6 +4,7 @@ import { ReactNode } from "react";
 import { CheckCircle, AlertTriangle, Info, XCircle } from "lucide-react";
 
 type AlertType = "success" | "error" | "warning" | "info";
+// aver cambio de ra
 
 interface AlertProps {
   type: AlertType;
