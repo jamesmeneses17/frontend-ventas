@@ -121,10 +121,9 @@ export default function CategoriasPage() {
       } else {
         const newCategoryData = {
           nombre: formData.nombre,
-          descripcion: "",
-          estado: "Activo" as const,
         };
-        await createCategoria(newCategoryData);
+
+        await createCategoria(newCategoryData as any);
       }
 
       // ÉXITO (Solo si la actualización/creación fue exitosa o si se creó algo)
