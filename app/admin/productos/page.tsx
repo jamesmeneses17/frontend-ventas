@@ -8,7 +8,7 @@ import AuthenticatedLayout from "../../../components/layout/AuthenticatedLayout"
 import ActionButton from "../../../components/common/ActionButton";
 import CategoriasTable from "../../../components/catalogos/CategoriasTable";
 import CategoriasForm from "../../../components/catalogos/CategoriasForm";
-import Paginator from "../../../components/common/Paginator"; 
+import Paginator from "../../../components/common/Paginator";
 import Modal from "../../../components/ui/ModalVentana";
 
 import {
@@ -26,11 +26,11 @@ import ModalVentana from "../../../components/ui/ModalVentana";
 export default function CategoriasPage() {
   const [allCategorias, setAllCategorias] = useState<Categoria[]>([]);
   const [loading, setLoading] = useState(true);
-  
+
   // 🔥 ESTADO DE PAGINACIÓN: Tamaño de página y página actual
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(5); // Inicia en 5 (o 3 si lo prefieres)
-  
+
   const [showModal, setShowModal] = useState(false);
   const [editingCategoria, setEditingCategoria] = useState<Categoria | null>(
     null
@@ -46,7 +46,7 @@ export default function CategoriasPage() {
     try {
       const data = await getCategorias();
       setAllCategorias(data);
-      setCurrentPage(1); 
+      setCurrentPage(1);
     } catch (error) {
       console.error("Error cargando categorías:", error);
     } finally {
@@ -61,7 +61,7 @@ export default function CategoriasPage() {
     const endIndex = startIndex + pageSize;
     return allCategorias.slice(startIndex, endIndex);
   }, [allCategorias, currentPage, pageSize]); // Depende de pageSize
-  
+
   const totalItems = allCategorias.length;
 
   // Handlers para la tabla (pasan el objeto o ID)
@@ -97,7 +97,7 @@ export default function CategoriasPage() {
     setShowModal(false);
     loadCategorias();
   };
-  
+
   // Handler para el cambio de página
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -107,14 +107,13 @@ export default function CategoriasPage() {
   const handlePageSizeChange = (newSize: number) => {
     setPageSize(newSize);
     // Reiniciamos a la primera página para evitar problemas de visualización
-    setCurrentPage(1); 
+    setCurrentPage(1);
   };
 
   const handleCloseModal = () => {
-    setEditingCategoria(null); // Limpia la categoría seleccionada (para asegurar que 'Nuevo' funcione)
-    setShowModal(false);
-  };
-
+    setEditingCategoria(null); // Limpia la categoría seleccionada (para asegurar que 'Nuevo' funcione)
+    setShowModal(false);
+  };
 
   return (
     <AuthenticatedLayout>
@@ -181,22 +180,21 @@ export default function CategoriasPage() {
 
           {/* SECCIÓN DE INFORMACIÓN Y PAGINADOR */}
           <div className="flex justify-between items-center mt-4">
-              {/* Etiqueta de resultados a la izquierda (Usa 'pageSize' del estado) */}
-              <p className="text-sm text-gray-600">
-              </p>
-              
-              {/* Paginator a la derecha */}
-              {!loading && totalItems > 0 && ( // Siempre mostrar si hay ítems para cambiar el tamaño
-                  <Paginator
-                      total={totalItems}
-                      currentPage={currentPage}
-                      pageSize={pageSize} // Le pasamos el estado
-                      onPageChange={handlePageChange}
-                      onPageSizeChange={handlePageSizeChange} // Le pasamos el nuevo handler
-                  />
+            {/* Etiqueta de resultados a la izquierda (Usa 'pageSize' del estado) */}
+            <p className="text-sm text-gray-600"></p>
+
+            {/* Paginator a la derecha */}
+            {!loading &&
+              totalItems > 0 && ( // Siempre mostrar si hay ítems para cambiar el tamaño
+                <Paginator
+                  total={totalItems}
+                  currentPage={currentPage}
+                  pageSize={pageSize} // Le pasamos el estado
+                  onPageChange={handlePageChange}
+                  onPageSizeChange={handlePageSizeChange} // Le pasamos el nuevo handler
+                />
               )}
           </div>
-          
         </div>
 
         {/* Modal reutilizable: usa el handler de cierre centralizado */}
@@ -210,8 +208,9 @@ export default function CategoriasPage() {
               initialData={
                 editingCategoria || {
                   nombre: "",
-                  descripcion: "",
-                  estado: "Activo",
+
+                  //descripcion: "",
+                  // estado: "Activo",
                 }
               }
               onSubmit={handleFormSubmit}
