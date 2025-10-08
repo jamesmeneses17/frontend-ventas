@@ -7,6 +7,7 @@ import React, { useState, useEffect } from 'react';
 import { getCategorias, Categoria } from '../services/categoriasService'; 
 
 interface CategoryCardDisplayProps extends Categoria {
+  descripcion?:string;
   imageSrc: string; 
   href: string;     
 }
@@ -39,7 +40,7 @@ const mapCategoryToImage = (nombre: string): string => {
 };
 
 
-const CategoryCard: React.FC<CategoryCardDisplayProps> = ({ nombre,  imageSrc, href }) => (
+const CategoryCard: React.FC<CategoryCardDisplayProps> = ({ nombre, descripcion, imageSrc, href }) => (
   <a href={href} className="group relative block rounded-xl overflow-hidden shadow-lg hover:shadow-2xl transition duration-300 transform hover:-translate-y-1">
     <img 
       className="absolute inset-0 h-full w-full object-cover opacity-80 group-hover:opacity-100 transition duration-300" 
@@ -49,11 +50,11 @@ const CategoryCard: React.FC<CategoryCardDisplayProps> = ({ nombre,  imageSrc, h
     <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent"></div>
     <div className="relative p-6 pt-40 flex flex-col justify-end h-full">
       <div className="flex items-center space-x-2 text-white mb-2">
-        <svg className="w-5 h-5 text-amber-400" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a8 8 0 100 16A8 8 0 0010 2zM5.5 10a.5.5 0 01.5-.5h8a.5.5 0 010 1h-8a.5.5 0 01-.5-.5z"/></svg>
+        <svg className="w-5 h-5 text-amber-400" fill="currentCoalor" viewBox="0 0 20 20"><path d="M10 2a8 8 0 100 16A8 8 0 0010 2zM5.5 10a.5.5 0 01.5-.5h8a.5.5 0 010 1h-8a.5.5 0 01-.5-.5z"/></svg>
         <h3 className="text-xl font-bold">{nombre}</h3> 
       </div>
       {/* La descripción puede ser undefined si el API no la incluye */}
-      <p className="text-sm text-gray-300">{ "Soluciones y productos de energía solar."}</p>
+      <p className="text-sm text-gray-300">{descripcion || "Soluciones y productos de energía solar."}</p>
     </div>
   </a>
 );
@@ -73,10 +74,12 @@ const CategorySection: React.FC = () => {
         // 🚨 CAMBIO CLAVE: Lógica de filtrado ajustada 🚨
         // Filtra solo si el campo 'estado' existe Y es 'Inactivo'.
         // Si el campo 'estado' NO existe (es undefined), la categoría se incluye.
+      
         
         // Si tienes categorías que vienen de la BD con el estado "Activo" (con mayúscula), usa esta línea:
         // const activeCategories = data.filter(c => !c.estado || c.estado === 'Activo');
 
+        setCategories(data);
         setLoading(false);
       } catch (err) {
         console.error("Error al cargar categorías:", err); // Muestra el error de red en consola
