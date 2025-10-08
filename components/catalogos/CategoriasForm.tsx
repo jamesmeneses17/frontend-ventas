@@ -22,8 +22,9 @@ export default function CategoriasForm({
   );
 
   const handleChange = (field: string, value: any) => {
-    if (field === 'estadoId') {
-      setValues({ ...values, [field]: parseInt(value) });
+    if (field === "estadoId") {
+
+      setValues({ ...values, [field]: Number(value) });
     } else {
       setValues({ ...values, [field]: value });
     }
@@ -46,7 +47,10 @@ export default function CategoriasForm({
       />
 
       <div>
-        <label htmlFor="estadoId" className="block text-sm font-medium text-gray-700">
+        <label
+          htmlFor="estadoId"
+          className="block text-sm font-medium text-gray-700"
+        >
           Estado
         </label>
         <select

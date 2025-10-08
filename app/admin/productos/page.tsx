@@ -58,10 +58,10 @@ export default function CategoriasPage() {
   const loadCategorias = async () => {
     setLoading(true);
     try {
-      const data = await getCategorias();
-      const dataCopy = [...data];
-      const sortedData = data.sort((a, b) => b.id - a.id); // orden ascendente que se imprima en pagina
-      setAllCategorias(data);
+      // Pedimos todas las categorías (activas e inactivas) en el admin
+      const data = await getCategorias(true);
+      const sortedData = data.sort((a, b) => b.id - a.id); 
+      setAllCategorias(sortedData);
       setCurrentPage(1);
     } catch (error) {
       console.error("Error cargando categorías:", error);
@@ -102,21 +102,30 @@ export default function CategoriasPage() {
     setShowModal(true);
   };
 
-  const handleFormSubmit = async (formData: { nombre: string }) => {
+  const handleFormSubmit = async (formData: {
+    nombre: string;
+    estadoId: number;
+  }) => {
     const isEditing = !!editingCategoria;
+
+    const dataToSend = {
+      nombre: formData.nombre,
+      estadoId: formData.estadoId,
+    };
 
     try {
       if (isEditing) {
         // Lógica de EDICIÓN (Se mantiene la verificación de cambios)
-        if (formData.nombre === editingCategoria!.nombre) {
-          handleCloseModal();
-          return;
+        const updated = await updateCategoria(editingCategoria!.id, dataToSend);
+        console.debug("[handleFormSubmit] update response:", updated);
+        // Verificar que el estado se aplicó: comprobamos estadoId o estado.id en la respuesta
+        const newEstadoId = (updated as any).estadoId ?? (updated as any).estado?.id;
+        if (newEstadoId !== undefined && newEstadoId !== dataToSend.estadoId) {
+          setNotification({ message: `Advertencia: el servidor devolvió estado ${newEstadoId} distinto a ${dataToSend.estadoId}.`, type: "error" });
         }
-        await updateCategoria(editingCategoria!.id, {
-          nombre: formData.nombre,
-        });
       } else {
-        await createCategoria(formData);
+        const created = await createCategoria(dataToSend);
+        console.debug("[handleFormSubmit] create response:", created);
       }
 
       setNotification({
@@ -129,6 +138,7 @@ export default function CategoriasPage() {
       handleCloseModal();
       loadCategorias();
     } catch (error) {
+      console.error("[handleFormSubmit] error:", error);
       // ... (Lógica de FALLO)
     }
   };
@@ -241,12 +251,15 @@ export default function CategoriasPage() {
           >
             <CategoriasForm
               initialData={
-                editingCategoria || {
-                  nombre: "",
-
-                  //descripcion: "",
-                  // estado: "Activo",
-                }
+                editingCategoria
+                  ? {
+                      nombre: editingCategoria.nombre,
+                      estadoId: editingCategoria.estadoId,
+                    }
+                  : {
+                      nombre: "",
+                      estadoId: 1,
+                    }
               }
               onSubmit={handleFormSubmit}
               onCancel={handleCloseModal}
