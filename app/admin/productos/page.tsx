@@ -10,7 +10,6 @@ import CategoriasTable from "../../../components/catalogos/CategoriasTable";
 import CategoriasForm from "../../../components/catalogos/CategoriasForm";
 import Paginator from "../../../components/common/Paginator";
 
-
 import {
   getCategorias,
   createCategoria,
@@ -19,8 +18,7 @@ import {
   Categoria,
 } from "../../../components/services/categoriasService";
 import ModalVentana from "../../../components/ui/ModalVentana";
-import Alert from "../../../components/ui/Alert"; 
-
+import Alert from "../../../components/ui/Alert";
 
 // 🔥 Eliminamos PAGE_SIZE constante y la convertimos en estado
 
@@ -40,18 +38,17 @@ export default function CategoriasPage() {
 
   const [notification, setNotification] = useState<{
     message: string;
-    type: 'success' | 'error';
-} | null>(null);
+    type: "success" | "error";
+  } | null>(null);
 
-useEffect(() => {
+  useEffect(() => {
     if (notification) {
-        const timer = setTimeout(() => {
-            setNotification(null);
-        }, 5000); // Se oculta después de 5 segundos
-        return () => clearTimeout(timer); // Limpieza
+      const timer = setTimeout(() => {
+        setNotification(null);
+      }, 5000); // Se oculta después de 5 segundos
+      return () => clearTimeout(timer); // Limpieza
     }
-}, [notification]);
-
+  }, [notification]);
 
   // 🚀 Cargar datos del backend al montar
   useEffect(() => {
@@ -104,37 +101,54 @@ useEffect(() => {
   };
 
   // Handler del Formulario (recibe los datos ya manejados por CategoriasForm)
- const handleFormSubmit = async (formData: { nombre: string; }) => {
-    try {
-      if (editingCategoria) {
-      
-        await updateCategoria(editingCategoria.id, {
-            nombre: formData.nombre
-        });
-      } else {
-       
-        const newCategoryData = {
-            nombre: formData.nombre,
-            descripcion: "", // Valor por defecto para la API
-            estado: "Activo" as const, // Valor por defecto para la API
-        };
-        await createCategoria(newCategoryData);
-      } 
-  setNotification({
-            message: `Categoría "${formData.nombre}" ${editingCategoria ? 'actualizada' : 'creada'} correctamente.`,
-            type: 'success',
-        });
-      handleCloseModal();
-      loadCategorias(); 
+  // /app/catalogos/CategoriasPage.tsx
 
-    } catch (error) {
-      console.error("Error al guardar categoría:", error);
-  setNotification({
-    message: `Error al ${editingCategoria ? 'actualizar' : 'crear'} la categoría. Revise la consola.`,
-    type: 'error',
-    });
-    } 
-  };
+  // ... (otros handlers)
+
+  const handleFormSubmit = async (formData: { nombre: string }) => {
+    const isEditing = !!editingCategoria;
+
+    try {
+      if (isEditing) {
+        if (formData.nombre === editingCategoria!.nombre) {
+          handleCloseModal();
+          return;
+        }
+
+        await updateCategoria(editingCategoria!.id, {
+          nombre: formData.nombre,
+        });
+      } else {
+        const newCategoryData = {
+          nombre: formData.nombre,
+          descripcion: "",
+          estado: "Activo" as const,
+        };
+        await createCategoria(newCategoryData);
+      }
+
+      // ÉXITO (Solo si la actualización/creación fue exitosa o si se creó algo)
+      setNotification({
+        message: `Categoría "${formData.nombre}" ${
+          isEditing ? "actualizada" : "creada"
+        } correctamente.`,
+        type: "success",
+      });
+
+      handleCloseModal();
+      loadCategorias();
+    } catch (error) {
+      console.error("Error al guardar categoría:", error);
+
+      // FALLO
+      setNotification({
+        message: `Error al ${
+          isEditing ? "actualizar" : "crear"
+        } la categoría. Revise la consola.`,
+        type: "error",
+      });
+    }
+  };
 
   // Handler para el cambio de página
   const handlePageChange = (page: number) => {
