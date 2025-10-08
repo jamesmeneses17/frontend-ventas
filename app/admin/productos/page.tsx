@@ -9,6 +9,7 @@ import ActionButton from "../../../components/common/ActionButton";
 import CategoriasTable from "../../../components/catalogos/CategoriasTable";
 import CategoriasForm from "../../../components/catalogos/CategoriasForm";
 import Paginator from "../../../components/common/Paginator"; 
+import Modal from "../../../components/ui/ModalVentana";
 
 import {
   getCategorias,
@@ -17,6 +18,7 @@ import {
   deleteCategoria,
   Categoria,
 } from "../../../components/services/categoriasService";
+import ModalVentana from "../../../components/ui/ModalVentana";
 
 // 🔥 Eliminamos PAGE_SIZE constante y la convertimos en estado
 
@@ -108,6 +110,11 @@ export default function CategoriasPage() {
     setCurrentPage(1); 
   };
 
+  const handleCloseModal = () => {
+    setEditingCategoria(null); // Limpia la categoría seleccionada (para asegurar que 'Nuevo' funcione)
+    setShowModal(false);
+  };
+
 
   return (
     <AuthenticatedLayout>
@@ -192,27 +199,25 @@ export default function CategoriasPage() {
           
         </div>
 
-        {/* Modal (Mantenido) */}
+        {/* Modal reutilizable: usa el handler de cierre centralizado */}
         {showModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
-              <h2 className="text-xl font-bold mb-4">
-                {editingCategoria ? "Editar Categoría" : "Nueva Categoría"}
-              </h2>
-
-              <CategoriasForm
-                initialData={
-                  editingCategoria || {
-                    nombre: "",
-                    descripcion: "",
-                    estado: "Activo",
-                  }
+          <ModalVentana
+            isOpen={showModal}
+            onClose={handleCloseModal}
+            title={editingCategoria ? "Editar Categoría" : "Nueva Categoría"}
+          >
+            <CategoriasForm
+              initialData={
+                editingCategoria || {
+                  nombre: "",
+                  descripcion: "",
+                  estado: "Activo",
                 }
-                onSubmit={handleFormSubmit}
-                onCancel={() => setShowModal(false)}
-              />
-            </div>
-          </div>
+              }
+              onSubmit={handleFormSubmit}
+              onCancel={handleCloseModal}
+            />
+          </ModalVentana>
         )}
       </div>
     </AuthenticatedLayout>
