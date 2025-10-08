@@ -87,16 +87,35 @@ export default function CategoriasPage() {
   };
 
   // Handler del Formulario (recibe los datos ya manejados por CategoriasForm)
-  const handleFormSubmit = async (formData: Categoria) => {
-    if (editingCategoria) {
-      await updateCategoria(editingCategoria.id, formData);
-    } else {
-      await createCategoria(formData);
-    }
-
-    setShowModal(false);
-    loadCategorias();
-  };
+ const handleFormSubmit = async (formData: { nombre: string; }) => {
+    try {
+      if (editingCategoria) {
+        // ✅ LÓGICA DE ACTUALIZACIÓN:
+        // El servicio espera el ID y los datos parciales (solo el nombre)
+        // Como formData solo contiene { nombre: string }, esto funciona perfecto con Partial<Categoria>.
+        await updateCategoria(editingCategoria.id, {
+            nombre: formData.nombre
+        });
+      } else {
+        // LÓGICA DE CREACIÓN:
+        // La API puede requerir descripción y estado (aunque no los pidamos en el form)
+        // Enviamos el nombre y rellenamos los campos obligatorios con valores por defecto.
+        const newCategoryData = {
+            nombre: formData.nombre,
+            descripcion: "", // Valor por defecto para la API
+            estado: "Activo" as const, // Valor por defecto para la API
+        };
+        await createCategoria(newCategoryData);
+      }
+      
+      // ✅ ÉXITO: Cierra el modal y recarga los datos
+      handleCloseModal();
+      loadCategorias(); 
+    } catch (error) {
+      console.error("Error al guardar categoría:", error);
+      // Opcional: Mostrar una notificación de error al usuario
+    } 
+  };
 
   // Handler para el cambio de página
   const handlePageChange = (page: number) => {
