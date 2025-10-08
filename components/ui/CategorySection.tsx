@@ -71,7 +71,6 @@ const CategorySection: React.FC = () => {
         setLoading(true);
         const data = await getCategorias();
         
-        // 🚨 CAMBIO CLAVE: Lógica de filtrado ajustada 🚨
         // Filtra solo si el campo 'estado' existe Y es 'Inactivo'.
         // Si el campo 'estado' NO existe (es undefined), la categoría se incluye.
       

@@ -4,7 +4,6 @@ import React from "react";
 import CrudTable from "../common/CrudTable";
 import ActionButton from "../common/ActionButton";
 import { Categoria } from "../services/categoriasService";
-
 interface Props {
   data: Categoria[];
   loading?: boolean;
@@ -17,7 +16,16 @@ export default function CategoriasTable({ data, loading, onEdit, onDelete }: Pro
     //{ key: "id", label: "ID" },
     { key: "nombre", label: "Nombre" },
     //{ key: "descripcion", label: "Descripción" },
-    //{ key: "estado", label: "Estado" },
+    
+    { 
+      key: "estado", 
+      label: "Estado",
+      render: (row: Categoria) => (
+        <span className={row.estado.id === 1 ? "text-green-600 font-medium" : "text-red-600 font-medium"}>
+          {row.estado.nombre}
+        </span>
+      ),
+    },
   ];
 
   return (
@@ -26,7 +34,7 @@ export default function CategoriasTable({ data, loading, onEdit, onDelete }: Pro
       data={data}
       loading={loading}
       renderRowActions={(row: Categoria) => (
-  <div className="flex items-center justify-end gap-2">
+        <div className="flex items-center justify-end gap-2">
           <ActionButton
             icon={
               <svg

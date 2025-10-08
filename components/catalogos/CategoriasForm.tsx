@@ -6,8 +6,7 @@ import FormInput from "../common/form/FormInput";
 interface Props {
   initialData?: {
     nombre: string;
-    //descripcion?: string;
-    //estado: "Activo" | "Inactivo";
+    estadoId?: number;
   };
   onSubmit: (values: any) => void;
   onCancel: () => void;
@@ -19,11 +18,15 @@ export default function CategoriasForm({
   onCancel,
 }: Props) {
   const [values, setValues] = useState(
-    initialData || { nombre: "", descripcion: "", estado: "Activo" }
+    initialData || { nombre: "", estadoId: 1 }
   );
 
   const handleChange = (field: string, value: any) => {
-    setValues({ ...values, [field]: value });
+    if (field === 'estadoId') {
+      setValues({ ...values, [field]: parseInt(value) });
+    } else {
+      setValues({ ...values, [field]: value });
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -41,6 +44,24 @@ export default function CategoriasForm({
           handleChange("nombre", e.target.value)
         }
       />
+
+      <div>
+        <label htmlFor="estadoId" className="block text-sm font-medium text-gray-700">
+          Estado
+        </label>
+        <select
+          id="estadoId"
+          name="estadoId"
+          value={values.estadoId}
+          onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
+            handleChange("estadoId", e.target.value)
+          }
+          className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+        >
+          <option value={1}>Activo</option>
+          <option value={2}>Inactivo</option>
+        </select>
+      </div>
 
       <div className="flex items-center justify-end gap-4">
         <button
