@@ -39,7 +39,7 @@ const mapCategoryToImage = (nombre: string): string => {
 };
 
 
-const CategoryCard: React.FC<CategoryCardDisplayProps> = ({ nombre, descripcion, imageSrc, href }) => (
+const CategoryCard: React.FC<CategoryCardDisplayProps> = ({ nombre,  imageSrc, href }) => (
   <a href={href} className="group relative block rounded-xl overflow-hidden shadow-lg hover:shadow-2xl transition duration-300 transform hover:-translate-y-1">
     <img 
       className="absolute inset-0 h-full w-full object-cover opacity-80 group-hover:opacity-100 transition duration-300" 
@@ -53,7 +53,7 @@ const CategoryCard: React.FC<CategoryCardDisplayProps> = ({ nombre, descripcion,
         <h3 className="text-xl font-bold">{nombre}</h3> 
       </div>
       {/* La descripción puede ser undefined si el API no la incluye */}
-      <p className="text-sm text-gray-300">{descripcion || "Soluciones y productos de energía solar."}</p>
+      <p className="text-sm text-gray-300">{ "Soluciones y productos de energía solar."}</p>
     </div>
   </a>
 );
@@ -73,14 +73,10 @@ const CategorySection: React.FC = () => {
         // 🚨 CAMBIO CLAVE: Lógica de filtrado ajustada 🚨
         // Filtra solo si el campo 'estado' existe Y es 'Inactivo'.
         // Si el campo 'estado' NO existe (es undefined), la categoría se incluye.
-        const activeCategories = data.filter(c => 
-          !c.estado || c.estado.toString().toLowerCase() === 'activo'
-        );
         
         // Si tienes categorías que vienen de la BD con el estado "Activo" (con mayúscula), usa esta línea:
         // const activeCategories = data.filter(c => !c.estado || c.estado === 'Activo');
 
-        setCategories(activeCategories);
         setLoading(false);
       } catch (err) {
         console.error("Error al cargar categorías:", err); // Muestra el error de red en consola
