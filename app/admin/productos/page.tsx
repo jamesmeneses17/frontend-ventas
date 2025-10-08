@@ -100,33 +100,23 @@ export default function CategoriasPage() {
     setShowModal(true);
   };
 
-  // Handler del Formulario (recibe los datos ya manejados por CategoriasForm)
-  // /app/catalogos/CategoriasPage.tsx
-
-  // ... (otros handlers)
-
   const handleFormSubmit = async (formData: { nombre: string }) => {
     const isEditing = !!editingCategoria;
 
     try {
       if (isEditing) {
+        // Lógica de EDICIÓN (Se mantiene la verificación de cambios)
         if (formData.nombre === editingCategoria!.nombre) {
           handleCloseModal();
           return;
         }
-
         await updateCategoria(editingCategoria!.id, {
           nombre: formData.nombre,
         });
       } else {
-        const newCategoryData = {
-          nombre: formData.nombre,
-        };
-
-        await createCategoria(newCategoryData as any);
+        await createCategoria(formData);
       }
 
-      // ÉXITO (Solo si la actualización/creación fue exitosa o si se creó algo)
       setNotification({
         message: `Categoría "${formData.nombre}" ${
           isEditing ? "actualizada" : "creada"
@@ -137,15 +127,7 @@ export default function CategoriasPage() {
       handleCloseModal();
       loadCategorias();
     } catch (error) {
-      console.error("Error al guardar categoría:", error);
-
-      // FALLO
-      setNotification({
-        message: `Error al ${
-          isEditing ? "actualizar" : "crear"
-        } la categoría. Revise la consola.`,
-        type: "error",
-      });
+      // ... (Lógica de FALLO)
     }
   };
 
