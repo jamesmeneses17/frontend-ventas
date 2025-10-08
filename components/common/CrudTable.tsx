@@ -6,6 +6,8 @@ import ActionButton from "./ActionButton";
 interface Column {
   key: string;
   label: string;
+  // optional custom renderer for the whole row
+  render?: (row: any) => React.ReactNode;
 }
 
 interface CrudTableProps {
@@ -47,15 +49,37 @@ const CrudTable: React.FC<CrudTableProps> = ({ columns, data, onEdit, onDelete, 
         </thead>
         <tbody className="bg-white divide-y divide-gray-200">
           {data.map((row, idx) => (
-            <tr key={idx}>
-              {columns.map((col) => (
-                <td
-                  key={col.key}
-                  className="px-6 py-4 whitespace-nowrap text-sm text-gray-900"
-                >
-                  {row[col.key]}
-                </td>
-              ))}
+            <tr key={row?.id ?? idx}>
+              {columns.map((col) => {
+                if (col.render) {
+                  return (
+                    <td
+                      key={col.key}
+                      className="px-6 py-4 whitespace-nowrap text-sm text-gray-900"
+                    >
+                      {col.render(row)}
+                    </td>
+                  );
+                }
+
+                const cell = row?.[col.key];
+                // If the cell is an object, try to display a sensible string
+                const display = typeof cell === "string" || typeof cell === "number"
+                  ? cell
+                  : cell && typeof cell === "object"
+                    ? // prefer common keys
+                      (cell.nombre ?? cell.name ?? JSON.stringify(cell))
+                    : "";
+
+                return (
+                  <td
+                    key={col.key}
+                    className="px-6 py-4 whitespace-nowrap text-sm text-gray-900"
+                  >
+                    {display}
+                  </td>
+                );
+              })}
               <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
                 {renderRowActions ? (
                   renderRowActions(row)
