@@ -9,7 +9,7 @@ import ActionButton from "../../../components/common/ActionButton";
 import CategoriasTable from "../../../components/catalogos/CategoriasTable";
 import CategoriasForm from "../../../components/catalogos/CategoriasForm";
 import Paginator from "../../../components/common/Paginator";
-import Modal from "../../../components/ui/ModalVentana";
+
 
 import {
   getCategorias,
@@ -19,6 +19,8 @@ import {
   Categoria,
 } from "../../../components/services/categoriasService";
 import ModalVentana from "../../../components/ui/ModalVentana";
+import Alert from "../../../components/ui/Alert"; 
+
 
 // 🔥 Eliminamos PAGE_SIZE constante y la convertimos en estado
 
@@ -35,6 +37,21 @@ export default function CategoriasPage() {
   const [editingCategoria, setEditingCategoria] = useState<Categoria | null>(
     null
   );
+
+  const [notification, setNotification] = useState<{
+    message: string;
+    type: 'success' | 'error';
+} | null>(null);
+
+useEffect(() => {
+    if (notification) {
+        const timer = setTimeout(() => {
+            setNotification(null);
+        }, 5000); // Se oculta después de 5 segundos
+        return () => clearTimeout(timer); // Limpieza
+    }
+}, [notification]);
+
 
   // 🚀 Cargar datos del backend al montar
   useEffect(() => {
@@ -90,30 +107,32 @@ export default function CategoriasPage() {
  const handleFormSubmit = async (formData: { nombre: string; }) => {
     try {
       if (editingCategoria) {
-        // ✅ LÓGICA DE ACTUALIZACIÓN:
-        // El servicio espera el ID y los datos parciales (solo el nombre)
-        // Como formData solo contiene { nombre: string }, esto funciona perfecto con Partial<Categoria>.
+      
         await updateCategoria(editingCategoria.id, {
             nombre: formData.nombre
         });
       } else {
-        // LÓGICA DE CREACIÓN:
-        // La API puede requerir descripción y estado (aunque no los pidamos en el form)
-        // Enviamos el nombre y rellenamos los campos obligatorios con valores por defecto.
+       
         const newCategoryData = {
             nombre: formData.nombre,
             descripcion: "", // Valor por defecto para la API
             estado: "Activo" as const, // Valor por defecto para la API
         };
         await createCategoria(newCategoryData);
-      }
-      
-      // ✅ ÉXITO: Cierra el modal y recarga los datos
+      } 
+  setNotification({
+            message: `Categoría "${formData.nombre}" ${editingCategoria ? 'actualizada' : 'creada'} correctamente.`,
+            type: 'success',
+        });
       handleCloseModal();
       loadCategorias(); 
+
     } catch (error) {
       console.error("Error al guardar categoría:", error);
-      // Opcional: Mostrar una notificación de error al usuario
+  setNotification({
+    message: `Error al ${editingCategoria ? 'actualizar' : 'crear'} la categoría. Revise la consola.`,
+    type: 'error',
+    });
     } 
   };
 
@@ -236,6 +255,17 @@ export default function CategoriasPage() {
               onCancel={handleCloseModal}
             />
           </ModalVentana>
+        )}
+
+        {/* Notificación flotante */}
+        {notification && (
+          <div className="fixed top-10 right-4 z-[9999]">
+            <Alert
+              message={notification.message}
+              type={notification.type}
+              onClose={() => setNotification(null)}
+            />
+          </div>
         )}
       </div>
     </AuthenticatedLayout>

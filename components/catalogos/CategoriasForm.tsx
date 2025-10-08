@@ -1,10 +1,10 @@
 "use client";
 
 import React, { useState } from "react";
-import FormInput from "../../components/common/form/FormInput";
-import FormTextArea from "../../components/common/form/FormTextArea";
-import FormSelect from "../../components/common/form/FormSelect";
-import FormSwitch from "../../components/common/form/FormSwitch";
+import FormInput from "../common/form/FormInput";
+import FormTextArea from "../common/form/FormTextArea";
+import FormSelect from "../common/form/FormSelect";
+import FormSwitch from "../common/form/FormSwitch";
 
 interface Props {
   initialData?: {
