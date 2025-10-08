@@ -59,6 +59,7 @@ export default function CategoriasPage() {
     setLoading(true);
     try {
       const data = await getCategorias();
+      const sortedData = data.sort((a, b) => b.id - a.id);  // orden ascendente que se imprima en pagina
       setAllCategorias(data);
       setCurrentPage(1);
     } catch (error) {
