@@ -4,16 +4,7 @@
 
 import React from "react";
 // Importamos el Hook y los componentes
-import { useCrudCatalog } from "../../../components/hooks/useCrudCatalog";
-import AuthenticatedLayout from "../../../components/layout/AuthenticatedLayout";
-import ActionButton from "../../../components/common/ActionButton";
-// Usamos los componentes específicos que ya creamos/revisamos
-import SubcategoriasTable from "../../../components/catalogos/SubcategoriasTable";
-import SubcategoriasForm from "../../../components/catalogos/SubcategoriasForm"; 
-import Paginator from "../../../components/common/Paginator";
-import ModalVentana from "../../../components/ui/ModalVentana";
-import Alert from "../../../components/ui/Alert";
-import SearchInput from "../../../components/common/form/SearchInput";
+
 import {
   getSubcategorias,
   createSubcategoria,
@@ -23,7 +14,16 @@ import {
   CreateSubcategoriaData,
   UpdateSubcategoriaData,
 }
- from "../../../components/services/subcategoriasService";
+import SearchInput from "../../../components/common/form/SearchInput";
+//hola
+import ActionButton from "../../components/common/ActionButton";
+import SubcategoriasTable from "../../components/catalogos/SubcategoriasTable";
+import Paginator from "../../components/common/Paginator";
+import ModalVentana from "../../components/ui/ModalVentana";
+import Alert from "../../components/ui/Alert";
+import AuthenticatedLayout from "../../components/layout/AuthenticatedLayout";
+import SubcategoriasForm from "../../components/catalogos/SubcategoriasForm";
+
 
 // 1. COMPONENTE PRINCIPAL
 export default function SubcategoriasPage() {
