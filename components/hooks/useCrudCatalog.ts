@@ -165,6 +165,9 @@ export const useCrudCatalog = <T extends CrudItem, C extends ItemForm, U extends
     editingItem,
     notification,
 
+    // Exponer setNotification para que las páginas puedan cerrar/ajustar la notificación
+    setNotification,
+
     // Handlers
     setSearchTerm,
     handlePageChange: setCurrentPage,

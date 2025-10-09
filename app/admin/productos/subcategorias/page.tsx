@@ -1,30 +1,31 @@
-// /app/admin/productos/page.tsx (CategoriasPage.tsx)
-
+// /app/admin/productos/subcategorias/page.tsx
 "use client";
 
 import React from "react";
-// Importamos el Hook y los componentes
-import { useCrudCatalog } from "../../../components/hooks/useCrudCatalog";
-import AuthenticatedLayout from "../../../components/layout/AuthenticatedLayout";
-import ActionButton from "../../../components/common/ActionButton";
-import CategoriasTable from "../../../components/catalogos/CategoriasTable";
-import CategoriasForm from "../../../components/catalogos/CategoriasForm";
-import Paginator from "../../../components/common/Paginator";
-import ModalVentana from "../../../components/ui/ModalVentana";
-import Alert from "../../../components/ui/Alert";
-import SearchInput from "../../../components/common/form/SearchInput";
+// Importamos el Hook y los componentes del Crud genérico
+import { useCrudCatalog } from "../../../../components/hooks/useCrudCatalog";
+import AuthenticatedLayout from "../../../../components/layout/AuthenticatedLayout";
+import ActionButton from "../../../../components/common/ActionButton";
+// Importamos los componentes específicos de Subcategorías
+import SubcategoriasTable from "../../../../components/catalogos/SubcategoriasTable";
+import SubcategoriasForm from "../../../../components/catalogos/SubcategoriasForm";
+import Paginator from "../../../../components/common/Paginator";
+import ModalVentana from "../../../../components/ui/ModalVentana";
+import Alert from "../../../../components/ui/Alert";
+import SearchInput from "../../../../components/common/form/SearchInput";
+// Importamos las funciones del servicio de Subcategorías
 import {
-  getCategorias,
-  createCategoria,
-  updateCategoria,
-  deleteCategoria,
-  Categoria,
-  CreateCategoriaData,
-  UpdateCategoriaData,
-} from "../../../components/services/categoriasService";
+  getSubcategorias,
+  createSubcategoria,
+  updateSubcategoria,
+  deleteSubcategoria,
+  Subcategoria, // Asume que esta interfaz está definida en el servicio
+  CreateSubcategoriaData, // Asume que esta interfaz está definida en el servicio
+  UpdateSubcategoriaData, // Asume que esta interfaz está definida en el servicio
+} from "../../../../components/services/subcategoriasService"; // 🛑 Asegúrate de que este archivo exista
 
-// 1. COMPONENTE PRINCIPAL (Simplificado)
-export default function CategoriasPage() {
+// 1. COMPONENTE PRINCIPAL (SubcategoriasPage)
+export default function SubcategoriasPage() {
   // 🚀 Usamos el hook genérico, inyectando el servicio y el nombre del ítem
   const {
     currentItems,
@@ -45,32 +46,31 @@ export default function CategoriasPage() {
     handleFormSubmit,
     handleCloseModal,
     setNotification,
-  } = useCrudCatalog<Categoria, CreateCategoriaData, UpdateCategoriaData>(
+  } = useCrudCatalog<Subcategoria, CreateSubcategoriaData, UpdateSubcategoriaData>(
     {
-      loadItems: getCategorias,
-      createItem: createCategoria,
-      updateItem: updateCategoria,
-      deleteItem: deleteCategoria,
+      loadItems: getSubcategorias,
+      createItem: createSubcategoria,
+      updateItem: updateSubcategoria,
+      deleteItem: deleteSubcategoria,
     },
-    "Categoría"
+    "Subcategoría" // Nombre que se usará en notificaciones (ej: "Subcategoría creada")
   );
 
   // Tipado explícito para la edición
-  const editingCategoria = editingItem as Categoria | null;
+  const editingSubcategoria = editingItem as Subcategoria | null;
 
-  // Corregimos la ruta base para que apunte a la ruta real de Next.js: /admin/productos
+  // Obtenemos la ruta actual para manejar el estado activo de las pestañas
   const currentPath =
     typeof window !== "undefined"
       ? window.location.pathname
-      : "/admin/productos"; // Usar la ruta base correcta del proyecto
+      : "/admin/productos/subcategorias";
 
   return (
     <AuthenticatedLayout>
       <div className="space-y-6">
-        {/* ... (Header - Se mantiene) ... */}
+        {/* Encabezado fijo de la sección */}
         <div className="bg-white shadow rounded-lg p-6">
           <div className="flex justify-between items-center">
-            {/* ... (Título y descripción) ... */}
             <div>
               <h1 className="text-2xl font-bold text-gray-900">Catálogos</h1>
               <p className="text-gray-600 mt-2">
@@ -80,17 +80,16 @@ export default function CategoriasPage() {
           </div>
         </div>
 
-        {/* Contenido principal */}
+        {/* Contenido principal: Tabs, Tabla y Paginación */}
         <div className="bg-white shadow rounded-lg p-6">
-          {/* Tabs dinámicas */}
+          {/* Tabs de Navegación */}
           <div className="border-b border-gray-200 mb-6">
             <nav className="-mb-px flex space-x-8" aria-label="Tabs">
               {/* Enlace Categorías */}
               <a
-                // 🛑 CORRECCIÓN: Usar la ruta base /admin/productos
+                // 🛑 Usar la ruta base de Categorías
                 href="/admin/productos"
                 className={
-                  // La página principal de categorías debe coincidir con /admin/productos
                   (currentPath === "/admin/productos" || 
                    (currentPath.includes("/admin/productos") && !currentPath.includes("/subcategorias") && !currentPath.includes("/marcas")))
                     ? "border-indigo-500 text-indigo-600 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm"
@@ -100,9 +99,9 @@ export default function CategoriasPage() {
                 Categorías
               </a>
 
-              {/* Enlace Subcategorías */}
+              {/* Enlace Subcategorías (Activo aquí) */}
               <a
-                // 🛑 CORRECCIÓN: Usar la ruta real de subcategorías /admin/productos/subcategorias
+                // 🛑 Usar la ruta real de subcategorías
                 href="/admin/productos/subcategorias"
                 className={
                   currentPath.includes("/subcategorias")
@@ -115,7 +114,7 @@ export default function CategoriasPage() {
 
               {/* Enlace Marcas */}
               <a
-                // 🛑 CORRECCIÓN: Usar la ruta real de marcas /admin/productos/marcas
+                // 🛑 Usar la ruta real de marcas
                 href="/admin/productos/marcas"
                 className={
                   currentPath.includes("/marcas")
@@ -128,17 +127,16 @@ export default function CategoriasPage() {
             </nav>
           </div>
 
-          {/* Header tabla */}
+          {/* Header tabla: Título, Buscador y Botón */}
           <div className="w-full space-y-3">
             <h3 className="text-xl font-semibold text-gray-900 mb-0 text-left">
-              Categorías
+              Subcategorías
             </h3>
-            {/* ... (Buscador y botón se mantienen) ... */}
             <div className="flex justify-between items-center w-full">
               <div className="w-full max-w-sm">
                 <SearchInput
                   searchTerm={searchTerm}
-                  placeholder="Buscar categorías..."
+                  placeholder="Buscar subcategorías..."
                   onSearchChange={setSearchTerm} // Usamos el handler del hook
                 />
               </div>
@@ -156,23 +154,23 @@ export default function CategoriasPage() {
                     />
                   </svg>
                 }
-                label="Nueva Categoría"
+                label="Nueva Subcategoría"
                 onClick={handleAdd} // Usamos el handler del hook
               />
             </div>
           </div>
 
-          {/* TABLA MODULARIZADA */}
+          {/* TABLA DE SUBCATEGORÍAS */}
           <div className="mt-6">
-            <CategoriasTable
-              data={currentItems as Categoria[]} // Casteo al tipo específico
+            <SubcategoriasTable
+              data={currentItems as Subcategoria[]} // Casteo al tipo específico
               loading={loading}
               onEdit={handleEdit} // Usamos el handler del hook
               onDelete={handleDelete} // Usamos el handler del hook
             />
           </div>
 
-          {/* SECCIÓN DE INFORMACIÓN Y PAGINADOR */}
+          {/* SECCIÓN DE PAGINADOR */}
           <div className="flex justify-between items-center mt-4">
             <p className="text-sm text-gray-600"></p>
             {!loading && totalItems > 0 && (
@@ -187,24 +185,25 @@ export default function CategoriasPage() {
           </div>
         </div>
 
-        {/* Modal reutilizable */}
+        {/* Modal reutilizable para el formulario */}
         {showModal && (
           <ModalVentana
             isOpen={showModal}
             onClose={handleCloseModal}
-            title={editingCategoria ? "Editar Categoría" : "Nueva Categoría"}
+            title={editingSubcategoria ? "Editar Subcategoría" : "Nueva Subcategoría"}
           >
-            <CategoriasForm
+            <SubcategoriasForm
               initialData={
-                editingCategoria
+                editingSubcategoria
                   ? {
-                      // Asegúrate de que Categoria tenga una propiedad nombre y estadoId.
-                      nombre: editingCategoria.nombre,
-                      estadoId: editingCategoria.estadoId, // Asumiendo que existe en Categoria
+                      nombre: editingSubcategoria.nombre,
+                      estadoId: editingSubcategoria.estadoId, // Asume que existe
+                      categoriaId: editingSubcategoria.categoriaId, // Asume que existe
                     }
                   : {
                       nombre: "",
                       estadoId: 1,
+                      categoriaId: 0, // O un valor por defecto adecuado
                     }
               }
               onSubmit={handleFormSubmit} // Usamos el handler del hook
