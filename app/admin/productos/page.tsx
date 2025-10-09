@@ -19,15 +19,13 @@ import {
 } from "../../../components/services/categoriasService";
 import ModalVentana from "../../../components/ui/ModalVentana";
 import Alert from "../../../components/ui/Alert";
-
-// 🔥 Eliminamos PAGE_SIZE constante y la convertimos en estado
+import SearchInput from "../../../components/common/form/SearchInput";
 
 // 1. COMPONENTE PRINCIPAL
 export default function CategoriasPage() {
   const [allCategorias, setAllCategorias] = useState<Categoria[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // 🔥 ESTADO DE PAGINACIÓN: Tamaño de página y página actual
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(5); // Inicia en 5 (o 3 si lo prefieres)
 
@@ -40,6 +38,8 @@ export default function CategoriasPage() {
     message: string;
     type: "success" | "error";
   } | null>(null);
+
+  const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
     if (notification) {
@@ -60,7 +60,7 @@ export default function CategoriasPage() {
     try {
       // Pedimos todas las categorías (activas e inactivas) en el admin
       const data = await getCategorias(true);
-      const sortedData = data.sort((a, b) => b.id - a.id); 
+      const sortedData = data.sort((a, b) => b.id - a.id);
       setAllCategorias(sortedData);
       setCurrentPage(1);
     } catch (error) {
@@ -70,13 +70,20 @@ export default function CategoriasPage() {
     }
   };
 
-  // Lógica para obtener los datos de la página actual (Paginación local)
   const currentCategorias = useMemo(() => {
+    let filteredData = allCategorias;
+
+    if (searchTerm) {
+      filteredData = filteredData.filter((categoria) =>
+        categoria.nombre.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
     // Usamos el estado 'pageSize'
     const startIndex = (currentPage - 1) * pageSize;
     const endIndex = startIndex + pageSize;
-    return allCategorias.slice(startIndex, endIndex);
-  }, [allCategorias, currentPage, pageSize]); // Depende de pageSize
+    return filteredData.slice(startIndex, endIndex);
+  }, [allCategorias, currentPage, pageSize, searchTerm]); // Depende de pageSize
 
   const totalItems = allCategorias.length;
 
@@ -119,9 +126,13 @@ export default function CategoriasPage() {
         const updated = await updateCategoria(editingCategoria!.id, dataToSend);
         console.debug("[handleFormSubmit] update response:", updated);
         // Verificar que el estado se aplicó: comprobamos estadoId o estado.id en la respuesta
-        const newEstadoId = (updated as any).estadoId ?? (updated as any).estado?.id;
+        const newEstadoId =
+          (updated as any).estadoId ?? (updated as any).estado?.id;
         if (newEstadoId !== undefined && newEstadoId !== dataToSend.estadoId) {
-          setNotification({ message: `Advertencia: el servidor devolvió estado ${newEstadoId} distinto a ${dataToSend.estadoId}.`, type: "error" });
+          setNotification({
+            message: `Advertencia: el servidor devolvió estado ${newEstadoId} distinto a ${dataToSend.estadoId}.`,
+            type: "error",
+          });
         }
       } else {
         const created = await createCategoria(dataToSend);
@@ -148,7 +159,6 @@ export default function CategoriasPage() {
     setCurrentPage(page);
   };
 
-  // 🔥 NUEVO HANDLER: para cambiar el tamaño de página
   const handlePageSizeChange = (newSize: number) => {
     setPageSize(newSize);
     // Reiniciamos a la primera página para evitar problemas de visualización
@@ -191,38 +201,54 @@ export default function CategoriasPage() {
               </button>
             </nav>
           </div>
+                   {/* Header tabla */}
+          <div className="w-full space-y-3">
+            {/* Fila 1: Título */}
+            <h3 className="text-xl font-semibold text-gray-900 mb-0 text-left">
+              Categorías
+            </h3>
 
-          {/* Header tabla */}
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">Categorías</h3>
-            <ActionButton
-              icon={
-                <svg
-                  className="-ml-1 mr-2 h-5 w-5"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-              }
-              label="Nueva Categoría"
-              onClick={handleAdd}
-              color="primary"
+            {/* Fila 2: Buscador + Botón */}
+            <div className="flex justify-between items-center w-full">
+              <div className="w-full max-w-sm">
+                <SearchInput
+                  searchTerm={searchTerm}
+                  placeholder="Buscar categorías..."
+                  onSearchChange={(value) => {
+                    setSearchTerm(value);
+                    setCurrentPage(1);
+                  }}
+                />
+              </div>
+
+              <ActionButton
+                icon={
+                  <svg
+                    className="-ml-1 mr-2 h-5 w-5"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                }
+                label="Nueva Categoría"
+                onClick={handleAdd}
+              />
+            </div>
+          </div>
+          {/* TABLA MODULARIZADA: Usamos los datos filtrados */}
+          <div className="mt-6">
+            <CategoriasTable
+              data={currentCategorias}
+              loading={loading}
+              onEdit={handleEdit}
+              onDelete={handleDelete}
             />
           </div>
-
-          {/* TABLA MODULARIZADA: Usamos los datos filtrados */}
-          <CategoriasTable
-            data={currentCategorias}
-            loading={loading}
-            onEdit={handleEdit}
-            onDelete={handleDelete}
-          />
-
           {/* SECCIÓN DE INFORMACIÓN Y PAGINADOR */}
           <div className="flex justify-between items-center mt-4">
             {/* Etiqueta de resultados a la izquierda (Usa 'pageSize' del estado) */}
