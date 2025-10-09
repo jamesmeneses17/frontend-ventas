@@ -84,9 +84,16 @@ export const getCategoriaById = async (id: number): Promise<Categoria> => {
 export const createCategoria = async (data: CreateCategoriaData): Promise<Categoria> => {
   const payload: any = { ...data };
   console.debug("[createCategoria] payload:", payload);
-  const res = await axios.post(`${API_URL}/categorias`, payload);
-  console.debug("[createCategoria] response:", res.data);
-  return res.data;
+  try {
+    const res = await axios.post(`${API_URL}/categorias`, payload);
+    console.debug("[createCategoria] response:", res.data);
+    return res.data;
+  } catch (err: any) {
+    // Log raw server response for diagnóstico (puede ser JSON o HTML)
+    console.error("[createCategoria] error response:", err?.response?.data ?? err?.toString());
+    // Re-lanzamos para que el caller (form) lo capture
+    throw err;
+  }
 };
 
 // ✅ ACTUALIZACIÓN: data espera Partial<{ nombre: string, estadoId: number }>
@@ -94,9 +101,14 @@ export const updateCategoria = async (id: number, data: UpdateCategoriaData): Pr
   // Nota: Cambié .patch a .put si tu backend usa PUT, pero mantengo PATCH por convención de actualización parcial
   const payload: any = { ...data };
   console.debug("[updateCategoria] id:", id, "payload:", payload);
-  const res = await axios.patch(`${API_URL}/categorias/${id}`, payload);
-  console.debug("[updateCategoria] response:", res.data);
-  return res.data;
+  try {
+    const res = await axios.patch(`${API_URL}/categorias/${id}`, payload);
+    console.debug("[updateCategoria] response:", res.data);
+    return res.data;
+  } catch (err: any) {
+    console.error("[updateCategoria] error response:", err?.response?.data ?? err?.toString());
+    throw err;
+  }
 };
 
 export const deleteCategoria = async (id: number): Promise<void> => {

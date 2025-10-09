@@ -150,7 +150,19 @@ export default function CategoriasPage() {
       loadCategorias();
     } catch (error) {
       console.error("[handleFormSubmit] error:", error);
-      // ... (Lógica de FALLO)
+      // Extraer mensaje de error del backend si existe
+      const err: any = error;
+      const resp = err?.response?.data ?? err?.data ?? null;
+      let message = err?.message ?? "Error desconocido";
+      if (resp) {
+        if (typeof resp === "string") message = resp;
+        else if (resp.message) message = resp.message;
+        else if (resp.errors) message = Array.isArray(resp.errors) ? resp.errors.join(', ') : String(resp.errors);
+        else message = JSON.stringify(resp);
+      }
+
+      // Mostrar notificación de error y mantener el modal abierto para que el usuario corrija
+      setNotification({ message, type: "error" });
     }
   };
 
