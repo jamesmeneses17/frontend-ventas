@@ -2,96 +2,84 @@
 "use client"; 
 
 import React, { useState, useEffect } from 'react';
-// Importamos el servicio de categorías temporalmente
-import { getCategorias, Categoria } from '../../components/services/categoriasService'; 
+// 🛑 Importamos el servicio y la interfaz Producto
+import { getProductos, Producto } from '../../components/services/productosService'; 
 
-// 🛑 FUTURO: Cuando tengas el servicio de productos, cambiarás esto:
-// import { getFeaturedProducts, Producto } from '../../services/productosService'; 
-
-interface ProductCardDisplayProps extends Categoria { 
-  // 🛑 TEMPORAL: Usamos la interfaz Categoria.
-  // FUTURO: Cambiar a 'extends Producto'
-  descripcion?:string;
+interface ProductCardDisplayProps extends Producto { 
   imageSrc: string; 
   href: string;     
+  displayPrice: string; 
+  displayDescription: string;
 }
 
-// Lógica de mapeo de imágenes (Se mantiene igual por ahora)
-const mapCategoryToImage = (nombre: string): string => {
-  const slug = nombre.toLowerCase()
-    .normalize("NFD").replace(/[\u0300-\u036f]/g, "") 
-    .replace(/\s+/g, '-'); 
-
-  // Mapeo temporal. En un futuro, podrías usar la URL de la imagen del producto
-  switch (slug) {
-    case 'paneles-solares':
-    case 'energia-solar':
-    case 'energia-solar-sostenible':
-      return '/images/panel.webp';
-    case 'baterias-solares':
-    case 'baterias':
-      return '/images/bateria.webp';
-    case 'controladores':
-    case 'controlador':
-      return '/images/controladores.webp';
-    case 'iluminacion-solar':
-    case 'iluminacion-ac':
-    case 'alumbrado-solar':
-      return '/images/iluminacion-solar.webp';
-    case 'sistemas-de-bombeo': 
-      return '/images/imagen.webp'; 
-    default:
-      return '/images/imagen.webp'; 
-  }
+// Lógica de mapeo de imágenes (Usaremos genéricas hasta tener un campo de imagen real en Producto)
+const mapProductToImage = (id: number | undefined): string => {
+  // Aquí puedes mapear IDs/SKUs a imágenes o usar una URL que venga del API
+  // TEMPORAL: Usamos un patrón básico
+  if (id === 1) return '/images/panel.webp'; 
+  if (id === 2) return '/images/bateria.webp';
+  if (id === 3) return '/images/controladores.webp';
+  if (id === 4) return '/images/iluminacion-solar.webp';
+  
+  // Imagen por defecto 
+  return '/images/imagen-defecto.webp'; 
 };
 
-
-// 🛑 CAMBIO CLAVE: Componente de Tarjeta de Producto (reutiliza el estilo de categoría)
-// Se puede adaptar para mostrar precio y rating (como en la imagen de ejemplo)
-const ProductCard: React.FC<ProductCardDisplayProps> = ({ nombre, descripcion, imageSrc, href }) => (
-  <a href={href} className="group relative block rounded-xl overflow-hidden shadow-lg hover:shadow-2xl transition duration-300 transform hover:-translate-y-1">
-    <img 
-      className="absolute inset-0 h-full w-full object-cover opacity-80 group-hover:opacity-100 transition duration-300" 
-      src={imageSrc} 
-      alt={nombre}
-    />
-    {/* Contenedor para texto */}
-    <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent"></div>
-    <div className="relative p-6 pt-40 flex flex-col justify-end h-full">
-      <div className="flex items-center space-x-2 text-white mb-2">
-        <h3 className="text-xl font-bold">{nombre}</h3> 
+// Componente de Tarjeta de Producto
+const ProductCard: React.FC<ProductCardDisplayProps> = ({ nombre, displayDescription, imageSrc, href, displayPrice }) => (
+  // Estilo de tarjeta simple y elegante para productos
+  <a href={href} className="group relative block rounded-xl overflow-hidden shadow-lg transition duration-300 transform hover:-translate-y-1 bg-white">
+    {/* Imagen */}
+    <div className="h-48">
+      <img 
+        className="h-full w-full object-cover transition duration-300" 
+        src={imageSrc} 
+        alt={nombre}
+      />
+      {/* Puedes agregar etiquetas como "Más Vendido" o "Nuevo" aquí si se necesita */}
+    </div>
+    
+    <div className="p-4 flex flex-col justify-between h-full">
+      {/* Rating (Simulación) */}
+      <div className="text-yellow-400 flex space-x-0.5 mb-2 text-sm">
+        {'★'.repeat(5)} 
       </div>
-      <p className="text-sm text-gray-300">{descripcion || "Soluciones y productos de energía solar."}</p>
-      {/* 🛑 ELEMENTOS VISUALES TEMPORALES ADICIONALES (Opcional: para parecer más un producto) */}
-      <div className="mt-2 text-yellow-400 flex space-x-0.5">
-        {'★'.repeat(5)} {/* Simulación de Rating 5 estrellas */}
+      
+      {/* Nombre y Descripción */}
+      <h3 className="text-lg font-bold text-gray-900">{nombre}</h3> 
+      <p className="text-sm text-gray-600 mt-1 line-clamp-2">{displayDescription}</p>
+      
+      {/* Precio y Botón */}
+      <div className="mt-4 flex justify-between items-center">
+        <p className="text-xl font-extrabold text-amber-600">{displayPrice}</p>
+        <button
+          className="px-3 py-1 text-xs font-medium rounded-lg text-white bg-gray-800 hover:bg-amber-600 transition duration-150"
+          onClick={(e) => { e.preventDefault(); /* Navegar a detalle */ }}
+        >
+          Ver más
+        </button>
       </div>
-      {/* 🛑 TEMPORAL: Precio fijo o variable */}
-      <p className="text-lg font-semibold text-white mt-1">$1.000.000</p>
     </div>
   </a>
 );
 
 
 const FeaturedProductsSection: React.FC = () => {
-  // 🛑 Cambiamos el tipo para prepararnos para productos, aunque use categorías
-  const [items, setItems] = useState<Categoria[]>([]); 
+  const [products, setProducts] = useState<Producto[]>([]); 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
-  const maxItems = 4; // Límite para productos destacados
+  
+  // 🛑 Límite estricto de 4 productos
+  const maxItems = 4; 
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
+        const data = await getProductos();
         
-        // 🛑 LÓGICA TEMPORAL: Cargamos categorías
-        const data = await getCategorias();
-        const activeItems = data.filter(c => c.estadoId === 1); 
-        
-        // 🛑 FUTURO: Aquí iría la llamada a getFeaturedProducts()
-        
-        setItems(activeItems);
+        // El API ya trae solo activos (estadoId: 1)
+        setProducts(data);
         setLoading(false);
       } catch (err) {
         console.error("Error al cargar productos destacados:", err); 
@@ -102,15 +90,32 @@ const FeaturedProductsSection: React.FC = () => {
     fetchData();
   }, []); 
 
-  const displayedItems: ProductCardDisplayProps[] = items
-    .slice(0, maxItems) 
-    .map(item => ({
-      ...item,
-      // Usamos el ID del elemento para la clave única (asumiendo que está en Categoria)
-      imageSrc: mapCategoryToImage(item.nombre), 
-      href: `/productos/${item.id}`, // Enlace a la página de detalle del producto (ID)
-    }));
+  // Función de formato de precio (Moneda colombiana COP)
+  const formatPrice = (price: number): string => {
+      // Usamos el locale de Colombia (es-CO)
+      return price.toLocaleString('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 });
+  }
 
+  const displayedProducts: ProductCardDisplayProps[] = products
+    // 🛑 Aplicamos el límite de 4 aquí
+    .slice(0, maxItems) 
+    .map(product => {
+        // Asumimos el primer precio en el array de precios. Si no existe, usamos 0.
+        let finalPrice = product.precios?.[0]?.valor ?? 0;
+        
+        // Descripción por defecto si no viene del API
+        const description = product.descripcion || "Producto de energía solar de alta calidad.";
+
+        return {
+            ...product,
+            imageSrc: mapProductToImage(product.id), 
+            href: `/productos/${product.id}`,
+            displayPrice: formatPrice(finalPrice),
+            displayDescription: description,
+        };
+    });
+
+  // ... (Manejo de loading y error, que se mantienen igual)
   if (loading) {
     return (
       <section className="py-16 text-center">
@@ -128,11 +133,10 @@ const FeaturedProductsSection: React.FC = () => {
   }
 
   return (
-    <section className="py-16 bg-white"> 
+    <section className="py-16 bg-gray-50"> 
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         
         <div className="text-center mb-12">
-          {/* 🛑 TÍTULO FIJO PARA PRODUCTOS DESTACADOS */}
           <h2 className="text-4xl font-extrabold text-gray-900">
             Productos Destacados
           </h2>
@@ -141,26 +145,25 @@ const FeaturedProductsSection: React.FC = () => {
           </p>
         </div>
 
-        {displayedItems.length > 0 ? (
+        {displayedProducts.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {displayedItems.map((item) => (
-              // 🛑 Usamos ProductCard aquí
-              <ProductCard key={item.id} {...item} />
+            {displayedProducts.map((product) => (
+              <ProductCard key={product.id} {...product} />
             ))}
           </div>
         ) : (
           <p className="text-center text-gray-500 text-lg">
-            No hay productos destacados para mostrar.
+            No hay productos activos para mostrar en este momento.
           </p>
         )}
 
-        {/* Botón para ver más productos (opcional) */}
+        {/* Botón para ver más productos */}
         <div className="mt-12 text-center">
           <a
             href="/productos"
             className="inline-flex items-center px-8 py-3 border border-transparent text-base font-medium rounded-lg shadow-md text-white bg-amber-600 hover:bg-amber-700 transition duration-150"
           >
-            Ver todos los productos →
+            Ver catálogo completo →
           </a>
         </div>
       </div>
