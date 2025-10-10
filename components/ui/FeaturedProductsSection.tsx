@@ -1,125 +1,100 @@
-// /components/ui/FeaturedProductsSection.tsx
-"use client"; 
+"use client";
 
-import React, { useState, useEffect } from 'react';
-// 🛑 Importamos el servicio y la interfaz Producto
-import { getProductos, Producto } from '../../components/services/productosService'; 
+import React, { useState, useEffect } from "react";
+import { getProductos, Producto as ProductoType } from "@/components/services/productosService";
 
-interface ProductCardDisplayProps extends Producto { 
-  imageSrc: string; 
-  href: string;     
-  displayPrice: string; 
-  displayDescription: string;
-}
+// Props del componente tarjeta (usa el tipo exportado)
+type ProductCardProps = ProductoType & { imageSrc: string; href: string };
 
-// Lógica de mapeo de imágenes (Usaremos genéricas hasta tener un campo de imagen real en Producto)
-const mapProductToImage = (id: number | undefined): string => {
-  // Aquí puedes mapear IDs/SKUs a imágenes o usar una URL que venga del API
-  // TEMPORAL: Usamos un patrón básico
-  if (id === 1) return '/images/panel.webp'; 
-  if (id === 2) return '/images/bateria.webp';
-  if (id === 3) return '/images/controladores.webp';
-  if (id === 4) return '/images/iluminacion-solar.webp';
-  
-  // Imagen por defecto 
-  return '/images/imagen-defecto.webp'; 
+// Puedes usar imágenes distintas según categoría o nombre
+const mapProductToImage = (nombre: string): string => {
+  const slug = nombre.toLowerCase()
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, '-');
+
+  switch (true) {
+    case slug.includes("panel"):
+      return "/images/panel.webp";
+    case slug.includes("bateria"):
+      return "/images/bateria.webp";
+    case slug.includes("controlador"):
+      return "/images/controladores.webp";
+    case slug.includes("inversor"):
+      return "/images/inversor.webp";
+    default:
+      return "/images/imagen.webp";
+  }
 };
 
-// Componente de Tarjeta de Producto
-const ProductCard: React.FC<ProductCardDisplayProps> = ({ nombre, displayDescription, imageSrc, href, displayPrice }) => (
-  // Estilo de tarjeta simple y elegante para productos
-  <a href={href} className="group relative block rounded-xl overflow-hidden shadow-lg transition duration-300 transform hover:-translate-y-1 bg-white">
-    {/* Imagen */}
-    <div className="h-48">
-      <img 
-        className="h-full w-full object-cover transition duration-300" 
-        src={imageSrc} 
+// Tarjeta visual (misma estructura que CategoryCard)
+const ProductCard: React.FC<ProductCardProps> = ({ nombre, precios, imageSrc, href }) => {
+  const valor = precios?.[0]?.valor_unitario ?? 0;
+
+  return (
+    <a
+      href={href}
+      className="group relative block rounded-xl overflow-hidden shadow-lg hover:shadow-2xl transition duration-300 transform hover:-translate-y-1"
+    >
+      <img
+        className="absolute inset-0 h-full w-full object-cover opacity-80 group-hover:opacity-100 transition duration-300"
+        src={imageSrc}
         alt={nombre}
       />
-      {/* Puedes agregar etiquetas como "Más Vendido" o "Nuevo" aquí si se necesita */}
-    </div>
-    
-    <div className="p-4 flex flex-col justify-between h-full">
-      {/* Rating (Simulación) */}
-      <div className="text-yellow-400 flex space-x-0.5 mb-2 text-sm">
-        {'★'.repeat(5)} 
-      </div>
-      
-      {/* Nombre y Descripción */}
-      <h3 className="text-lg font-bold text-gray-900">{nombre}</h3> 
-      <p className="text-sm text-gray-600 mt-1 line-clamp-2">{displayDescription}</p>
-      
-      {/* Precio y Botón */}
-      <div className="mt-4 flex justify-between items-center">
-        <p className="text-xl font-extrabold text-amber-600">{displayPrice}</p>
-        <button
-          className="px-3 py-1 text-xs font-medium rounded-lg text-white bg-gray-800 hover:bg-amber-600 transition duration-150"
-          onClick={(e) => { e.preventDefault(); /* Navegar a detalle */ }}
-        >
-          Ver más
-        </button>
-      </div>
-    </div>
-  </a>
-);
+      <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent"></div>
 
+      <div className="relative p-6 pt-40 flex flex-col justify-end h-full">
+        <div className="flex items-center space-x-2 text-white mb-2">
+          <svg
+            className="w-5 h-5 text-amber-400"
+            fill="currentColor"
+            viewBox="0 0 20 20"
+          >
+            <path d="M10 2a8 8 0 100 16A8 8 0 0010 2zM5.5 10a.5.5 0 01.5-.5h8a.5.5 0 010 1h-8a.5.5 0 01-.5-.5z" />
+          </svg>
+          <h3 className="text-xl font-bold">{nombre}</h3>
+        </div>
+
+        <p className="text-lg font-semibold text-amber-400">
+          ${valor.toLocaleString("es-CO")}
+        </p>
+      </div>
+    </a>
+  );
+};
 
 const FeaturedProductsSection: React.FC = () => {
-  const [products, setProducts] = useState<Producto[]>([]); 
+  const [productos, setProductos] = useState<ProductoType[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
-  
-  // 🛑 Límite estricto de 4 productos
-  const maxItems = 4; 
 
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchProductos = async () => {
       try {
         setLoading(true);
         const data = await getProductos();
-        
-        // El API ya trae solo activos (estadoId: 1)
-        setProducts(data);
+        setProductos(data);
         setLoading(false);
       } catch (err) {
-        console.error("Error al cargar productos destacados:", err); 
+        console.error("Error al cargar productos:", err);
         setError(true);
         setLoading(false);
       }
     };
-    fetchData();
-  }, []); 
 
-  // Función de formato de precio (Moneda colombiana COP)
-  const formatPrice = (price: number): string => {
-      // Usamos el locale de Colombia (es-CO)
-      return price.toLocaleString('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 });
-  }
+    fetchProductos();
+  }, []);
 
-  const displayedProducts: ProductCardDisplayProps[] = products
-    // 🛑 Aplicamos el límite de 4 aquí
-    .slice(0, maxItems) 
-    .map(product => {
-        // Asumimos el primer precio en el array de precios. Si no existe, usamos 0.
-        let finalPrice = product.precios?.[0]?.valor ?? 0;
-        
-        // Descripción por defecto si no viene del API
-        const description = product.descripcion || "Producto de energía solar de alta calidad.";
+  // Mostrar solo 4 productos
+  const displayedProducts = productos.slice(0, 4).map((p) => ({
+    ...p,
+    imageSrc: mapProductToImage(p.nombre),
+    href: `/producto/${p.id}`,
+  }));
 
-        return {
-            ...product,
-            imageSrc: mapProductToImage(product.id), 
-            href: `/productos/${product.id}`,
-            displayPrice: formatPrice(finalPrice),
-            displayDescription: description,
-        };
-    });
-
-  // ... (Manejo de loading y error, que se mantienen igual)
   if (loading) {
     return (
       <section className="py-16 text-center">
-        <p className="text-lg text-amber-600">Cargando productos destacados...</p>
+        <p className="text-lg text-amber-600">Cargando productos...</p>
       </section>
     );
   }
@@ -127,21 +102,22 @@ const FeaturedProductsSection: React.FC = () => {
   if (error) {
     return (
       <section className="py-16 text-center">
-        <p className="text-lg text-red-600">Error al cargar los productos. Intente de nuevo más tarde.</p>
+        <p className="text-lg text-red-600">
+          Error al cargar los productos. Intente de nuevo más tarde.
+        </p>
       </section>
     );
   }
 
   return (
-    <section className="py-16 bg-gray-50"> 
+    <section className="py-16 bg-white">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        
         <div className="text-center mb-12">
           <h2 className="text-4xl font-extrabold text-gray-900">
             Productos Destacados
           </h2>
           <p className="mt-4 text-xl text-gray-600 max-w-2xl mx-auto">
-            Los productos más populares y mejor valorados por nuestros clientes.
+            Descubre nuestros productos más vendidos y recomendados.
           </p>
         </div>
 
@@ -153,19 +129,20 @@ const FeaturedProductsSection: React.FC = () => {
           </div>
         ) : (
           <p className="text-center text-gray-500 text-lg">
-            No hay productos activos para mostrar en este momento.
+            No hay productos disponibles por ahora.
           </p>
         )}
 
-        {/* Botón para ver más productos */}
-        <div className="mt-12 text-center">
-          <a
-            href="/productos"
-            className="inline-flex items-center px-8 py-3 border border-transparent text-base font-medium rounded-lg shadow-md text-white bg-amber-600 hover:bg-amber-700 transition duration-150"
-          >
-            Ver catálogo completo →
-          </a>
-        </div>
+        {productos.length > 4 && (
+          <div className="mt-12 text-center">
+            <a
+              href="/productos"
+              className="inline-flex items-center px-8 py-3 border border-transparent text-base font-medium rounded-lg shadow-md text-white bg-amber-600 hover:bg-amber-700 transition duration-150"
+            >
+              Ver todos los productos →
+            </a>
+          </div>
+        )}
       </div>
     </section>
   );

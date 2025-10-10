@@ -17,7 +17,10 @@ export interface Categoria {
 // Interfaz simplificada para la relación de precios
 export interface Precio {
     id: number;
-    valor: number; // Suponemos que este es el campo del precio
+    valor_unitario: number; 
+    fecha_inicio: string;
+    fecha_fin: string | null;
+    productoId: number; 
 }
 
 // 1. INTERFAZ PRODUCTO (Alineada con tu backend)
@@ -57,12 +60,33 @@ export const getProductos = async (): Promise<Producto[]> => {
     
     try {
         const res = await axios.get(endpoint);
-        
-        if (Array.isArray(res.data)) {
-            return res.data;
+        // Normalizar formas comunes de respuesta del backend
+        // Algunas APIs devuelven directamente un array, otras envuelven en { data: [...] } o { productos: [...] }
+        let items: any = res.data;
+
+        if (!Array.isArray(items)) {
+            if (items && Array.isArray(items.data)) {
+                items = items.data;
+            } else if (items && Array.isArray(items.productos)) {
+                items = items.productos;
+            } else if (items && Array.isArray(items.items)) {
+                items = items.items;
+            } else {
+                // No es un array conocido: intentar extraer posibles campos o devolver array vacío
+                console.debug('[getProductos] respuesta inesperada, intentando normalizar:', res.data);
+                return [];
+            }
         }
-        
-        return res.data; 
+
+        // Asegurarnos de que los precios tengan valor_unitario como number
+        const normalized = items.map((it: any) => {
+            const precios = Array.isArray(it.precios)
+                ? it.precios.map((p: any) => ({ ...p, valor_unitario: Number(p.valor_unitario) }))
+                : [];
+            return { ...it, precios };
+        });
+
+        return normalized as Producto[];
         
     } catch (err: any) {
         console.error("[getProductos] Error al obtener productos:", err?.message ?? err);
