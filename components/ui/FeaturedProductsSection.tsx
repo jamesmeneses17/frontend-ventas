@@ -1,16 +1,29 @@
+// /components/ui/FeaturedProductsSection.tsx
+
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { getProductos, Producto as ProductoType } from "@/components/services/productosService";
+import {
+  getProductos,
+  Producto as ProductoType,
+} from "@/components/services/productosService";
+import { createSlug } from "@/utils/slug"; // Importamos la utilidad
+import ImageLinkCard from "./ImageLinkCard";
+
+// --- Tipos ---
 
 // Props del componente tarjeta (usa el tipo exportado)
-type ProductCardProps = ProductoType & { imageSrc: string; href: string };
+type ProductCardProps = ProductoType & {
+  imageSrc: string;
+  href: string;
+  displayPrice: string;
+};
 
-// Puedes usar imágenes distintas según categoría o nombre
+// --- Utilidad de Mapeo de Imagenes (Usa el Slug) ---
+
 const mapProductToImage = (nombre: string): string => {
-  const slug = nombre.toLowerCase()
-    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
-    .replace(/\s+/g, '-');
+  // 🛑 Usamos la función centralizada
+  const slug = createSlug(nombre);
 
   switch (true) {
     case slug.includes("panel"):
@@ -26,41 +39,52 @@ const mapProductToImage = (nombre: string): string => {
   }
 };
 
-// Tarjeta visual (misma estructura que CategoryCard)
-const ProductCard: React.FC<ProductCardProps> = ({ nombre, precios, imageSrc, href }) => {
-  const valor = precios?.[0]?.valor_unitario ?? 0;
+// --- Formato de Precio (para usar dentro de ProductCard) ---
 
+const formatPrice = (priceStr: string | number | undefined): string => {
+  // 1. Convertir a número, usando 0 como fallback
+  const priceNum = parseFloat(String(priceStr || 0));
+
+  // 2. Si es 0 o NaN, retorna un mensaje
+  if (isNaN(priceNum) || priceNum === 0) {
+    return "Consultar Precio";
+  }
+
+  // 3. Formato de moneda
+  return priceNum.toLocaleString("es-CO", {
+    style: "currency",
+    currency: "COP",
+    minimumFractionDigits: 0,
+  });
+};
+
+// --- Componente de Tarjeta (ProductCard) ---
+
+const ProductCard: React.FC<ProductCardProps> = ({
+  nombre,
+  displayPrice,
+  imageSrc,
+  href,
+}) => {
   return (
-    <a
-      href={href}
-      className="group relative block rounded-xl overflow-hidden shadow-lg hover:shadow-2xl transition duration-300 transform hover:-translate-y-1"
-    >
-      <img
-        className="absolute inset-0 h-full w-full object-cover opacity-80 group-hover:opacity-100 transition duration-300"
-        src={imageSrc}
-        alt={nombre}
-      />
-      <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent"></div>
-
-      <div className="relative p-6 pt-40 flex flex-col justify-end h-full">
-        <div className="flex items-center space-x-2 text-white mb-2">
-          <svg
-            className="w-5 h-5 text-amber-400"
-            fill="currentColor"
-            viewBox="0 0 20 20"
-          >
-            <path d="M10 2a8 8 0 100 16A8 8 0 0010 2zM5.5 10a.5.5 0 01.5-.5h8a.5.5 0 010 1h-8a.5.5 0 01-.5-.5z" />
-          </svg>
-          <h3 className="text-xl font-bold">{nombre}</h3>
-        </div>
-
-        <p className="text-lg font-semibold text-amber-400">
-          ${valor.toLocaleString("es-CO")}
-        </p>
+    <ImageLinkCard href={href} imageSrc={imageSrc} altText={nombre}>
+      <div className="flex items-center space-x-2 text-white mb-2">
+        <svg
+          className="w-5 h-5 text-amber-400"
+          fill="currentColor"
+          viewBox="0 0 20 20"
+        >
+          <path d="M10 2a8 8 0 100 16A8 8 0 0010 2zM5.5 10a.5.5 0 01.5-.5h8a.5.5 0 010 1h-8a.5.5 0 01-.5-.5z" />
+        </svg>
+        <h3 className="text-xl font-bold">{nombre}</h3>
       </div>
-    </a>
+
+      <p className="text-lg font-semibold text-amber-400">{displayPrice}</p>
+    </ImageLinkCard>
   );
 };
+
+// --- Componente de Sección Destacada (FeaturedProductsSection) ---
 
 const FeaturedProductsSection: React.FC = () => {
   const [productos, setProductos] = useState<ProductoType[]>([]);
@@ -85,11 +109,19 @@ const FeaturedProductsSection: React.FC = () => {
   }, []);
 
   // Mostrar solo 4 productos
-  const displayedProducts = productos.slice(0, 4).map((p) => ({
-    ...p,
-    imageSrc: mapProductToImage(p.nombre),
-    href: `/producto/${p.id}`,
-  }));
+  const displayedProducts = productos.slice(0, 4).map((p) => {
+    // Obtenemos el precio y lo formateamos
+    const priceValue = p.precios?.[0]?.valor_unitario;
+    const displayPrice = formatPrice(priceValue);
+
+    return {
+      ...p,
+      imageSrc: mapProductToImage(p.nombre),
+      // 🛑 La URL de producto es por ID, no requiere slugging del nombre
+      href: `/producto/${p.id}`,
+      displayPrice: displayPrice,
+    };
+  });
 
   if (loading) {
     return (

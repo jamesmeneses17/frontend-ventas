@@ -18,7 +18,11 @@ export default function ChatCard({
   right = false,
 }: ChatCardProps) {
   return (
-    <div className={`flex items-start space-x-3 my-2 ${right ? "justify-end" : ""}`}>
+    <div
+      className={`flex items-start space-x-3 my-2 ${
+        right ? "justify-end" : ""
+      }`}
+    >
       {!right && avatar && (
         <img
           src={avatar}
