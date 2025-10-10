@@ -6,23 +6,21 @@ import React from "react";
 import { useCrudCatalog } from "../../../../components/hooks/useCrudCatalog";
 import AuthenticatedLayout from "../../../../components/layout/AuthenticatedLayout";
 import ActionButton from "../../../../components/common/ActionButton";
-// Importamos los componentes específicos de Subcategorías
 import SubcategoriasTable from "../../../../components/catalogos/SubcategoriasTable";
 import SubcategoriasForm from "../../../../components/catalogos/SubcategoriasForm";
 import Paginator from "../../../../components/common/Paginator";
 import ModalVentana from "../../../../components/ui/ModalVentana";
 import Alert from "../../../../components/ui/Alert";
 import SearchInput from "../../../../components/common/form/SearchInput";
-// Importamos las funciones del servicio de Subcategorías
 import {
   getSubcategorias,
   createSubcategoria,
   updateSubcategoria,
   deleteSubcategoria,
-  Subcategoria, // Asume que esta interfaz está definida en el servicio
-  CreateSubcategoriaData, // Asume que esta interfaz está definida en el servicio
-  UpdateSubcategoriaData, // Asume que esta interfaz está definida en el servicio
-} from "../../../../components/services/subcategoriasService"; // 🛑 Asegúrate de que este archivo exista
+  Subcategoria, 
+  CreateSubcategoriaData,
+  UpdateSubcategoriaData,
+} from "../../../../components/services/subcategoriasService"; 
 
 // 1. COMPONENTE PRINCIPAL (SubcategoriasPage)
 export default function SubcategoriasPage() {
@@ -53,7 +51,7 @@ export default function SubcategoriasPage() {
       updateItem: updateSubcategoria,
       deleteItem: deleteSubcategoria,
     },
-    "Subcategoría" // Nombre que se usará en notificaciones (ej: "Subcategoría creada")
+    "Subcategoría" 
   );
 
   // Tipado explícito para la edición
