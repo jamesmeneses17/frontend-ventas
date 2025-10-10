@@ -61,7 +61,6 @@ const formatPrice = (priceStr: string | number | undefined): string => {
 
 // --- Componente de Tarjeta (ProductCard) ---
 
-
 // --- Componente de Sección Destacada (FeaturedProductsSection) ---
 
 const FeaturedProductsSection: React.FC = () => {

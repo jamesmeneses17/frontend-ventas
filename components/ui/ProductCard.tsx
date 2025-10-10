@@ -24,8 +24,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ nombre, displayPrice, imageSr
     return (
         // Estilo de tarjeta de producto: Fondo blanco con sombra
         <div 
-            className="group relative block bg-white rounded-xl overflow-hidden shadow-lg hover:shadow-2xl transition duration-300 transform hover:-translate-y-1"
-        >
+className="group relative block bg-white rounded-xl overflow-hidden shadow-xl hover:shadow-2xl transition duration-300 transform hover:-translate-y-1"        >
             {/* Contenedor de la Imagen */}
             <a href={href} className="block relative h-48 sm:h-56 overflow-hidden">
                 <img
