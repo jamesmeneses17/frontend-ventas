@@ -9,6 +9,7 @@ import {
 } from "@/components/services/productosService";
 import { createSlug } from "@/utils/slug"; // Importamos la utilidad
 import ImageLinkCard from "./ImageLinkCard";
+import ProductCard from "./ProductCard";
 
 // --- Tipos ---
 
@@ -60,29 +61,6 @@ const formatPrice = (priceStr: string | number | undefined): string => {
 
 // --- Componente de Tarjeta (ProductCard) ---
 
-const ProductCard: React.FC<ProductCardProps> = ({
-  nombre,
-  displayPrice,
-  imageSrc,
-  href,
-}) => {
-  return (
-    <ImageLinkCard href={href} imageSrc={imageSrc} altText={nombre}>
-      <div className="flex items-center space-x-2 text-white mb-2">
-        <svg
-          className="w-5 h-5 text-amber-400"
-          fill="currentColor"
-          viewBox="0 0 20 20"
-        >
-          <path d="M10 2a8 8 0 100 16A8 8 0 0010 2zM5.5 10a.5.5 0 01.5-.5h8a.5.5 0 010 1h-8a.5.5 0 01-.5-.5z" />
-        </svg>
-        <h3 className="text-xl font-bold">{nombre}</h3>
-      </div>
-
-      <p className="text-lg font-semibold text-amber-400">{displayPrice}</p>
-    </ImageLinkCard>
-  );
-};
 
 // --- Componente de Sección Destacada (FeaturedProductsSection) ---
 
