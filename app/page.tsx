@@ -9,6 +9,7 @@ import HeroSection from '../components/ui/HeroSection';
 import CategorySection from '../components/ui/CategorySection'; 
 // 👈 Importa la nueva sección de Productos Destacados
 import FeaturedProductsSection from '../components/ui/FeaturedProductsSection'; 
+import WhyChooseUsSection from '../components/ui/WhyChooseUsSection';
 
 export default function HomePage() {
   return (
@@ -21,6 +22,9 @@ export default function HomePage() {
 
       {/* 3. SECCIÓN DE PRODUCTOS DESTACADOS (usando el nuevo archivo) */}
       <FeaturedProductsSection />
+
+        {/* 3. SECCIÓN DE VALOR/PROPUESTA DE VENTA (NUEVO) */}
+      <WhyChooseUsSection />
       
     </PublicLayout>
   );
