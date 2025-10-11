@@ -20,11 +20,13 @@ export default function HomePage() {
       {/* 2. SECCIÓN DE CATEGORÍAS */}
       <CategorySection />
 
-      {/* 3. SECCIÓN DE PRODUCTOS DESTACADOS (usando el nuevo archivo) */}
+        {/* 3. SECCIÓN DE VALOR/PROPUESTA DE VENTA (NUEVO) */}
+      <WhyChooseUsSection />
+
+      {/* 4. SECCIÓN DE PRODUCTOS DESTACADOS (usando el nuevo archivo) */}
       <FeaturedProductsSection />
 
-        {/* 3. SECCIÓN DE VALOR/PROPUESTA DE VENTA (NUEVO) */}
-      <WhyChooseUsSection />
+      
       
     </PublicLayout>
   );
