@@ -1,7 +1,11 @@
 // /components/ui/WhyChooseUsSection.tsx
 
+"use client"; // Se recomienda si usas elementos interactivos o hooks, aunque aquí no es estrictamente necesario.
+
 import React from 'react';
 import Image from 'next/image';
+// 🛑 Importamos los iconos de Lucide
+import { Award, ShieldCheck, Zap, Lightbulb } from 'lucide-react'; 
 
 
 // Sub-componente para cada valor (simplicidad y reutilización)
@@ -13,39 +17,37 @@ interface ValueCardProps {
 
 const ValueCard: React.FC<ValueCardProps> = ({ title, description, icon }) => (
     <div className="flex flex-col items-center sm:items-start text-center sm:text-left">
-        <div className="flex items-center space-x-3 mb-2">
-            <div className="text-amber-500">{icon}</div> {/* Icono */}
-            <h3 className="text-xl font-semibold text-gray-800">{title}</h3>
-        </div>
+        {/* Usamos el icono directamente */}
+        <div className="text-amber-600 mb-4">{icon}</div> 
+        
+        <h3 className="text-xl font-semibold text-gray-800 mb-2">{title}</h3>
         <p className="text-gray-600">{description}</p>
     </div>
 );
 
 /**
  * Sección que comunica los valores clave y la propuesta de venta de la empresa.
- * Incluye la imagen y los cuatro puntos clave.
  */
 const WhyChooseUsSection: React.FC = () => {
-    // Definición de íconos (puedes usar iconos reales de React como Lucide o Heroicons)
-    // Aquí usamos un SVG simple para representar los iconos anaranjados de tu imagen.
-    const IconCircle = (
-        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="12" cy="12" r="10" strokeWidth="1.5" />
-        </svg>
-    );
-
+    
+    // 🛑 Definimos las props de los iconos aquí para DRY (Don't Repeat Yourself)
+    const IconProps = { className: "w-8 h-8 md:w-10 md:h-10" };
+    
     return (
         <section className="py-20 bg-white">
             <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
                 
-                {/* Lado Izquierdo: Imagen */}
-                <div className="order-2 lg:order-1">
-                    <img 
-                        // 🛑 RUTA ACTUALIZADA: La ruta es relativa a la carpeta /public
+                {/* Lado Izquierdo: Imagen (Usando Next/Image para optimización) */}
+                <div className="order-2 lg:order-1 relative rounded-xl shadow-2xl overflow-hidden" 
+                     style={{ aspectRatio: '16/10' }}>
+                    
+                    <Image 
                         src="/images/energia.webp" 
                         alt="Instalación de paneles solares por equipo experto"
-                        className="rounded-xl shadow-2xl w-full h-auto"
-                        style={{ aspectRatio: '16/10', objectFit: 'cover' }}
+                        fill // Hace que la imagen llene el contenedor padre
+                        style={{ objectFit: 'cover' }}
+                        sizes="(max-width: 1024px) 100vw, 50vw" // Ayuda a Next.js a optimizar
+                        priority // Se usa para imágenes importantes en la parte superior de la página
                     />
                 </div>
 
@@ -60,27 +62,27 @@ const WhyChooseUsSection: React.FC = () => {
                         transición hacia energías renovables.
                     </p>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
-                        {/* Mapeamos los valores clave */}
+                    <div className="grid grid-cols-2 gap-x-8 gap-y-12">
+                        {/* 🛑 Reemplazamos IconCircle con iconos Lucide */}
                         <ValueCard 
                             title="Calidad Certificada"
                             description="Todos nuestros productos cuentan con certificaciones internacionales."
-                            icon={IconCircle} // 🛑 Usa tu icono real aquí
+                            icon={<Award {...IconProps} />}
                         />
                         <ValueCard 
                             title="Garantía Extendida"
                             description="Hasta 25 años de garantía en paneles solares y equipos clave."
-                            icon={IconCircle} // 🛑 Usa tu icono real aquí
+                            icon={<ShieldCheck {...IconProps} />}
                         />
                         <ValueCard 
                             title="Asesoría Experta"
                             description="Equipo técnico especializado para guiarte en tu proyecto de inicio a fin."
-                            icon={IconCircle} // 🛑 Usa tu icono real aquí
+                            icon={<Lightbulb {...IconProps} />}
                         />
                         <ValueCard 
                             title="Instalación Profesional"
                             description="Servicio de instalación y mantenimiento especializado incluido."
-                            icon={IconCircle} // 🛑 Usa tu icono real aquí
+                            icon={<Zap {...IconProps} />}
                         />
                     </div>
                 </div>
