@@ -3,15 +3,10 @@
 import React, { useState } from 'react';
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
 
-interface InputFieldProps {
+interface InputFieldProps extends React.InputHTMLAttributes<HTMLInputElement> {
   id: string;
   label: string;
   icon?: React.ComponentType<React.SVGProps<SVGSVGElement>>;
-  type?: string;
-  required?: boolean;
-  autoComplete?: string;
-  placeholder?: string;
-  name?: string;
 }
 
 export default function InputField({
