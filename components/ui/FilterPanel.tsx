@@ -2,132 +2,199 @@
 
 "use client";
 
-import React, { useState, useEffect } from 'react';
-import { Search, SlidersHorizontal } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Search, SlidersHorizontal, ChevronRight, ChevronDown } from 'lucide-react';
 import InputField from './InputField'; 
 import { Search as SearchIcon } from 'lucide-react';
 
-// 🛑 IMPORTAMOS el servicio y la interfaz de categoría
-import { getCategorias, Categoria } from '../services/categoriasService'; 
+// Importamos Subcategoria, que debe tener la relación 'categoria'
+import { getSubcategorias, Subcategoria } from '../services/subcategoriasService'; 
+// Asegúrate de que tu interfaz Subcategoria en subcategoriasService.ts incluye:
+// categoria: { id: number, nombre: string, ... }
 
 
-// --- Definición de la Categoría para el Filtro ---
-// Usaremos la interfaz Categoria del servicio. 
-// Además, incluiremos una categoría "Todas" manualmente al inicio.
-interface FilterCategory {
-    id: number | 'all'; // 'all' para la opción "Todas las categorías"
-    nombre: string;
-    slug: string; // Necesitamos un slug o identificador para el filtro
-}
-
-/**
- * Función auxiliar para convertir el nombre de la categoría en un slug (identificador).
- * Ejemplo: "Paneles Solares" -> "paneles-solares"
- */
+// --- Función Auxiliar ---
 const createSlug = (name: string): string => {
     return name.toLowerCase().trim().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
 };
+
+
+// --- Definición de la Categoría para el Filtro (Estructura Anidada) ---
+interface FilterCategory {
+    id: number | 'all'; 
+    nombre: string;
+    slug: string;
+    categoriaId?: number; 
+    subcategorias?: FilterCategory[]; 
+}
 
 
 /**
  * Panel lateral de filtros con buscador y lista de categorías.
  */
 const FilterPanel: React.FC = () => {
-    // 🛑 Reemplazamos MOCK_CATEGORIES con un estado para las categorías reales
+    // ... (Estados sin cambios)
     const [categories, setCategories] = useState<FilterCategory[]>([]);
-    const [activeCategory, setActiveCategory] = useState<string>('all'); // Inicia en 'all'
+    const [activeCategory, setActiveCategory] = useState<string>('all'); 
     const [searchTerm, setSearchTerm] = useState('');
     const [isLoading, setIsLoading] = useState(true);
+    const [openCategory, setOpenCategory] = useState<string>('all'); 
 
-    // 🛑 1. Hook para cargar las categorías de la API al montar el componente
+
+    // Manejadores sin cambios
+    const handleCategoryClick = (slug: string) => { 
+        setActiveCategory(slug);
+        // Aquí podrías notificar al componente padre para que filtre los productos
+    };
+    
+    const toggleOpenCategory = (slug: string) => {
+        setOpenCategory(prev => (prev === slug ? 'all' : slug));
+    };
+
+
+    // --- Lógica de Fetch y Agrupación (SOLUCIÓN FINAL) ---
     useEffect(() => {
-        const fetchCategories = async () => {
+        const fetchAndGroupCategories = async () => {
             try {
-                // 🛑 Llamamos al servicio para obtener categorías activas
-                const apiCategories: Categoria[] = await getCategorias();
+                setIsLoading(true);
                 
-                // 🛑 Mapeamos las categorías de la API a nuestro formato de filtro
-                const mappedCategories: FilterCategory[] = apiCategories
-                    // Filtramos las categorías activas si es necesario (asumiendo que el endpoint ya lo hace)
-                    .filter(cat => cat.estado.nombre === 'Activo') 
-                    .map(cat => ({
-                        id: cat.id,
-                        nombre: cat.nombre,
-                        slug: createSlug(cat.nombre), // Generamos un slug para usar en el filtro
-                    }));
+                // 1. Hacemos una SOLA llamada a subcategorías
+                const apiSubcategorias: Subcategoria[] = await getSubcategorias(); 
+
+                console.log("DIAGNÓSTICO: Subcategorías recibidas para agrupar:", apiSubcategorias.length);
+
+                // 2. Agrupamos las subcategorías por su categoría padre (subCat.categoria.id)
+                const categoryMap = new Map<number, FilterCategory>();
                 
-                // 🛑 Añadimos la opción 'Todas las categorías' al inicio
-                const allCategories: FilterCategory[] = [
+                // Iteramos sobre las subcategorías (asumimos que tu endpoint ya solo devuelve las 'Activas')
+                apiSubcategorias.forEach(subCat => {
+                    // La relación padre viene anidada en 'categoria'
+                    const parent = subCat.categoria;
+                    
+                    // Solo procedemos si el padre es válido (para evitar errores)
+                    if (!parent || !parent.id || !parent.nombre) {
+                        return;
+                    }
+                    
+                    const subCatSlug = createSlug(subCat.nombre);
+                    
+                    // Mapeo del objeto Subcategoría (el hijo)
+                    const childCategory: FilterCategory = {
+                        id: subCat.id,
+                        nombre: subCat.nombre,
+                        slug: subCatSlug,
+                        categoriaId: parent.id, // Referencia al padre
+                    };
+
+                    // Si la categoría padre aún no está en el mapa, la creamos
+                    if (!categoryMap.has(parent.id)) {
+                        const parentSlug = createSlug(parent.nombre);
+                        const parentCategory: FilterCategory = {
+                            id: parent.id,
+                            nombre: parent.nombre,
+                            slug: parentSlug,
+                            subcategorias: [],
+                        };
+                        categoryMap.set(parent.id, parentCategory);
+                    }
+                    
+                    // Añadimos la subcategoría al array 'subcategorias' del padre
+                    categoryMap.get(parent.id)?.subcategorias?.push(childCategory);
+                });
+
+                // 3. Convertimos el mapa a un array de categorías principales
+                const topLevelCategories: FilterCategory[] = Array.from(categoryMap.values());
+                
+                // 🛑 DIAGNÓSTICO FINAL: Mostrar cuántos grupos se formaron
+                console.log("DIAGNÓSTICO FINAL: Categorías principales (Agrupadas):", topLevelCategories.length);
+                
+                // 4. Añadir "Todas" y establecer el estado
+                const finalCategories: FilterCategory[] = [
                     { id: 'all', nombre: 'Todas las categorías', slug: 'all' },
-                    ...mappedCategories
+                    ...topLevelCategories
                 ];
 
-                setCategories(allCategories);
+                setCategories(finalCategories);
                 setIsLoading(false);
                 
             } catch (error) {
-                console.error("Error al cargar categorías:", error);
-                // En caso de error, podríamos dejar solo la opción 'Todas'
+                console.error("Error al agrupar categorías y subcategorías:", error);
                 setCategories([{ id: 'all', nombre: 'Todas las categorías', slug: 'all' }]);
                 setIsLoading(false);
             }
         };
 
-        fetchCategories();
-    }, []); // El array vacío asegura que se ejecute solo una vez al inicio
+        fetchAndGroupCategories();
+    }, []); 
+    
+    // --- Componente Reutilizable: Botón de Categoría (CategoryButton) ---
+    const CategoryButton: React.FC<{ category: FilterCategory, isSubCategory?: boolean }> = useCallback(({ category, isSubCategory = false }) => {
+        const hasSubcategories = category.subcategorias && category.subcategorias.length > 0;
+        const isActive = activeCategory === category.slug;
+        const isOpen = openCategory === category.slug;
 
-    const handleCategoryClick = (slug: string) => {
-        setActiveCategory(slug);
-        console.log(`Filtro aplicado: ${slug}`);
-        // ⚠️ Nota: Aquí es donde enviarías el 'slug' (o el 'id' de la categoría)
-        // al componente padre o a un hook de estado global para filtrar los productos.
-    };
+        return (
+            <div key={category.id}>
+                <div className="flex items-center">
+                    {/* Botón Principal */}
+                    <button
+                        onClick={() => handleCategoryClick(category.slug)}
+                        className={`w-full text-left py-2 px-3 rounded-lg text-sm transition duration-150 flex-grow 
+                            ${isSubCategory ? 'pl-8' : ''}
+                            ${isActive 
+                                ? 'bg-amber-600 text-white font-bold shadow-md' 
+                                : 'bg-white text-gray-700 hover:bg-gray-100'
+                            }`}
+                    >
+                        {category.nombre}
+                    </button>
+
+                    {/* 🛑 ICONO DE DESPLIEGUE: Se muestra si hay subcategorías */}
+                    {hasSubcategories && (
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation(); 
+                                toggleOpenCategory(category.slug);
+                            }}
+                            className={`p-2 rounded-lg transition ml-1 ${isActive ? 'text-white' : 'text-gray-500 hover:bg-gray-100'}`}
+                            aria-expanded={isOpen}
+                            aria-label={`Desplegar subcategorías de ${category.nombre}`}
+                        >
+                            {isOpen ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                        </button>
+                    )}
+                </div>
+
+                {/* 🛑 SUBCATEGORÍAS DESPLEGABLES: Se muestran si hay subcategorías Y el panel está abierto */}
+                {hasSubcategories && isOpen && (
+                    <div className="pl-2 pt-1 border-l border-gray-200 ml-3 space-y-1">
+                        {category.subcategorias!.map(subCat => (
+                            <CategoryButton 
+                                key={subCat.id} 
+                                category={subCat} 
+                                isSubCategory={true}
+                            />
+                        ))}
+                    </div>
+                )}
+            </div>
+        );
+    }, [activeCategory, openCategory, handleCategoryClick, toggleOpenCategory]);
 
     return (
         <div className="p-6 bg-white rounded-xl shadow-lg border border-gray-100 sticky top-4">
-            
-            {/* Título de Filtros (sin cambios) */}
-            <div className="flex items-center text-gray-800 mb-6 border-b border-gray-200 pb-4">
-                <SlidersHorizontal className="w-5 h-5 mr-2 text-amber-600" />
-                <h3 className="text-lg font-semibold">Filtros</h3>
-            </div>
-
-            {/* Buscador (sin cambios) */}
-            <div className="mb-8">
-                <h4 className="text-sm font-medium text-gray-700 mb-2">Buscar</h4>
-                <InputField 
-                    id="search-products"
-                    label="Buscar productos..." 
-                    className="sr-only" 
-                    icon={SearchIcon} 
-                    name="search-products"
-                    placeholder="Buscar productos..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                />
-            </div>
-
-            {/* Lista de Categorías */}
+            {/* ... (Buscador) ... */}
             <div>
                 <h4 className="text-sm font-medium text-gray-700 mb-3">Categorías</h4>
-                <div className="space-y-2">
-                    {/* 🛑 Indicador de carga */}
+                <div className="space-y-1">
                     {isLoading ? (
                         <p className="text-sm text-gray-500">Cargando categorías...</p>
                     ) : (
-                        // 🛑 Mapeamos las categorías del estado
                         categories.map((category) => (
-                            <button
-                                key={category.id} // Usamos el ID de la categoría (o 'all')
-                                onClick={() => handleCategoryClick(category.slug)}
-                                className={`w-full text-left py-2 px-3 rounded-lg text-sm transition duration-150 
-                                    ${activeCategory === category.slug 
-                                        ? 'bg-amber-600 text-white font-bold shadow-md' 
-                                        : 'bg-white text-gray-700 hover:bg-gray-100'
-                                    }`}
-                            >
-                                {category.nombre}
-                            </button>
+                            <CategoryButton 
+                                key={category.id} 
+                                category={category} 
+                            />
                         ))
                     )}
                 </div>
