@@ -4,7 +4,6 @@
 
 import React, { useState, useEffect } from 'react';
 import PublicLayout from '../../../components/layout/PublicLayout';
-import FilterPanel from '@/components/ui/FilterPanel'; // 🛑 Importamos el nuevo panel de filtros
 import ProductCard from '@/components/ui/ProductCard'; // Importamos la tarjeta
 import { getProductos, Producto as ProductoType } from '@/components/services/productosService';
 import { ChevronDown, List, Grid } from 'lucide-react'; // Iconos para el selector de vista
@@ -117,81 +116,7 @@ export default function ProductosClientePage() {
                         </p>
                     </div>
 
-                    {/* Contenido Principal: Filtros y Listado */}
-                    <div className="grid grid-cols-1 lg:grid-cols-4 gap-10">
-                        
-                        {/* Columna Izquierda: Filtros (1/4 del ancho) */}
-                        <div className="lg:col-span-1">
-                            {/* El componente FilterPanel tiene un sticky top-4 */}
-                            <FilterPanel /> 
-                        </div>
-
-                        {/* Columna Derecha: Listado de Productos (3/4 del ancho) */}
-                        <div className="lg:col-span-3">
-                            
-                            {/* Barra de Controles (Contador, Ordenar, Vista) */}
-                            <div className="flex justify-between items-center mb-6 py-2 border-b border-gray-200">
-                                {/* Contador */}
-                                <p className="text-sm text-gray-600 font-medium">
-                                    Mostrando **{displayedProducts.length}** productos
-                                    {/* Puedes añadir la categoría activa aquí si implementas un contexto */}
-                                    {/* {activeCategory && ` en ${activeCategory}`} */}
-                                </p>
-                                
-                                {/* Ordenar y Vista */}
-                                <div className="flex items-center space-x-4">
-                                    {/* Selector de Orden */}
-                                    <div className="relative inline-flex items-center">
-                                        <span className="text-sm font-medium text-gray-700 mr-2 hidden sm:inline">Ordenar:</span>
-                                        <button className="inline-flex items-center rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50">
-                                            Precio: Menor a Mayor 
-                                            <ChevronDown className="ml-1.5 h-4 w-4" />
-                                        </button>
-                                    </div>
-                                    
-                                    {/* Selector de Vista (Grid/List) */}
-                                    <div className="flex space-x-1">
-                                        <button 
-                                            onClick={() => setViewMode('list')}
-                                            className={`p-2 rounded-lg transition ${viewMode === 'list' ? 'bg-amber-600 text-white shadow-md' : 'text-gray-500 hover:bg-gray-100'}`}
-                                            aria-label="Vista de Lista"
-                                        >
-                                            <List className="h-5 w-5" />
-                                        </button>
-                                        <button 
-                                            onClick={() => setViewMode('grid')}
-                                            className={`p-2 rounded-lg transition ${viewMode === 'grid' ? 'bg-amber-600 text-white shadow-md' : 'text-gray-500 hover:bg-gray-100'}`}
-                                            aria-label="Vista de Cuadrícula"
-                                        >
-                                            <Grid className="h-5 w-5" />
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            {/* Contenedor de Productos (ProductList) */}
-                            {loading ? (
-                                <div className="text-center py-12 text-gray-500">Cargando catálogo...</div>
-                            ) : displayedProducts.length === 0 ? (
-                                <div className="text-center py-12 text-gray-500">No se encontraron productos con estos filtros.</div>
-                            ) : (
-                                <div 
-                                    className={viewMode === 'grid' 
-                                        ? "grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6" 
-                                        : "space-y-4" // Si es lista, usamos espacio vertical
-                                    }
-                                >
-                                                                        {displayedProducts.map((product) => (
-                                                                            <ProductCard 
-                                                                                key={product.id}
-                                                                                {...product}
-                                                                            />
-                                                                        ))}
-                                </div>
-                            )}
-
-                        </div>
-                    </div>
+                   
                 </div>
             </div>
         </PublicLayout>

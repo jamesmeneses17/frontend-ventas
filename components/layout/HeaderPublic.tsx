@@ -12,17 +12,19 @@ const HeaderPublic: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false); 
   const [isProductsOpenMobile, setIsProductsOpenMobile] = useState(false); 
   
+  // Función para abrir/cerrar el menú principal de hamburguesa. 
+  // Cierra el submenú de Productos si se cierra el menú principal.
   const toggleMenu = () => {
     setIsOpen(!isOpen);
     if (isOpen) setIsProductsOpenMobile(false); 
   }
 
+  // Función para abrir/cerrar el desplegable de Productos dentro del menú móvil.
   const toggleProductsMobile = () => setIsProductsOpenMobile(!isProductsOpenMobile); 
 
   const pathname = usePathname();
 
-  // 🚨 DEFINICIÓN DEL ORDEN DE NAVEGACIÓN PRINCIPAL
-  // Esto incluye un marcador de posición para "Productos" para mantener el orden.
+  // DEFINICIÓN DEL ORDEN DE NAVEGACIÓN PRINCIPAL
   const navigationItems = [
     { name: "Inicio", href: "/", isDropdown: false },
     { name: "Productos", href: "/productos", isDropdown: true }, // Marcador para el desplegable
@@ -43,7 +45,7 @@ const HeaderPublic: React.FC = () => {
           
           {/* LADO IZQUIERDO: LOGO y Navegación Principal (Escritorio) */}
           <div className="flex items-center">
-            {/* Logo: Restaurado el sol y el texto */}
+            {/* Logo */}
             <div className="flex-shrink-0">
               <Link
                 href="/"
@@ -58,10 +60,10 @@ const HeaderPublic: React.FC = () => {
             <div className="hidden sm:ml-6 sm:flex sm:space-x-8 h-full">
               {navigationItems.map((item) => (
                 item.isDropdown ? (
-                  // Si es el enlace de Productos, usa el componente desplegable
+                  // ✅ COMPONENTE DE ESCRITORIO CON HOVER DE 2 COLUMNAS
                   <HeaderProductsDropdown key={item.name} />
                 ) : (
-                  // Si es un enlace normal (Inicio, Nosotros, Contacto)
+                  // Enlaces normales
                   <Link
                     key={item.name}
                     href={item.href}
@@ -111,13 +113,13 @@ const HeaderPublic: React.FC = () => {
       </div>
       
       {/* ========================================================== */}
-      {/* MENÚ MÓVIL DESPLEGABLE (Orden y Lógica Corregida)        */}
+      {/* MENÚ MÓVIL DESPLEGABLE COMPLETO */}
       {/* ========================================================== */}
 
       <div className={`${isOpen ? 'block' : 'hidden'} sm:hidden absolute w-full bg-white shadow-xl border-t border-gray-100`}>
         <div className="pt-2 pb-3 space-y-1 px-4">
           
-          {/* 🚨 Mapeamos todos los elementos en el orden de navigationItems */}
+          {/* Mapeamos todos los elementos de navegación */}
           {navigationItems.map((item) => (
             <div key={item.name}>
               {item.isDropdown ? (
@@ -134,15 +136,16 @@ const HeaderPublic: React.FC = () => {
                     </svg>
                   </button>
 
-                  {isProductsOpenMobile && (
-                      <MobileCategoryList onNavigate={toggleMenu} />
-                  )}
+                 {isProductsOpenMobile && (
+                      // Aquí pasamos onNavigate, lo cual es correcto si MobileCategoryList tiene la interfaz
+                      <MobileCategoryList onNavigate={toggleMenu} /> 
+                  )}
                 </div>
               ) : (
                 // Enlaces de navegación normales (Inicio, Nosotros, Contacto)
                 <Link
                   href={item.href}
-                  onClick={toggleMenu}
+                  onClick={toggleMenu} // Cierra el menú de hamburguesa al navegar
                   className={`block px-3 py-2 text-base font-medium rounded-md 
                     ${pathname === item.href ? 'bg-gray-100 text-amber-700' : 'text-gray-700 hover:bg-gray-50'}`}
                 >
