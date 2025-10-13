@@ -36,7 +36,7 @@ const HeroSection: React.FC = () => {
             {/* Botones de Acción */}
             <div className="mt-10 flex space-x-4">
               <a
-                href="/productos"
+                href="/users/productos"
                 className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-lg shadow-sm text-white bg-black hover:bg-gray-800"
               >
                 Ver Productos →
