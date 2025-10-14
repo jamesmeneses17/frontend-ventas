@@ -1,6 +1,5 @@
 import axios from "axios";
 
-// 🛑 Usa la variable de entorno NEXT_PUBLIC_API_URL
 const API_URL = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000").replace(/\/+$/g, "");
 
 // --- Interfaces de Soporte ---
@@ -17,10 +16,10 @@ export interface Categoria {
 // Interfaz simplificada para la relación de precios
 export interface Precio {
     id: number;
-    valor_unitario: number; 
+    valor_unitario: number;
     fecha_inicio: string;
     fecha_fin: string | null;
-    productoId: number; 
+    productoId: number;
 }
 
 // 1. INTERFAZ PRODUCTO (Alineada con tu backend)
@@ -30,12 +29,12 @@ export interface Producto {
     descripcion?: string; // Opcional
     sku?: string;
     stock?: number;
-    
+
     // Relaciones (El findAll() del backend NO las incluye por defecto, son opcionales aquí)
-    caracteristicas?: any[]; 
+    caracteristicas?: any[];
     precios?: Precio[]; // Usaremos esto para el precio en el frontend
-    inventario?: any[]; 
-    
+    inventario?: any[];
+
     // Campos obligatorios/de relación
     estadoId: number;
     categoriaId: number;
@@ -52,16 +51,34 @@ export type CreateProductoData = {
 export type UpdateProductoData = Partial<CreateProductoData>;
 
 
+
 /**
  * Obtener productos activos (el endpoint del backend filtra por estadoId: 1).
+ * @param subcategoriaId Opcional. Si se pasa, filtra productos por subcategoría.
  */
-export const getProductos = async (): Promise<Producto[]> => {
-    const endpoint = `${API_URL}/productos`; 
-    
+
+
+export const getProductos = async (subcategoriaId?: number, categoriaId?: number): Promise<Producto[]> => {
+    let endpoint = `${API_URL}/productos`;
+    const params = new URLSearchParams();
+
+    if (subcategoriaId && !isNaN(subcategoriaId) && subcategoriaId > 0) {
+        params.append('subcategoriaId', String(subcategoriaId));
+        console.log(`[getProductos] Filtrando por subcategoría ID: ${subcategoriaId}`);
+    } else if (categoriaId && !isNaN(categoriaId) && categoriaId > 0) { 
+        params.append('categoriaId', String(categoriaId));
+        console.log(`[getProductos] Filtrando por CATEGORÍA ID: ${categoriaId}`);
+    } else {
+        console.log('[getProductos] Trayendo todos los productos (sin filtro).');
+    }
+
+    if (params.toString()) {
+        endpoint += `?${params.toString()}`;
+    }
+
+
     try {
         const res = await axios.get(endpoint);
-        // Normalizar formas comunes de respuesta del backend
-        // Algunas APIs devuelven directamente un array, otras envuelven en { data: [...] } o { productos: [...] }
         let items: any = res.data;
 
         if (!Array.isArray(items)) {
@@ -72,7 +89,6 @@ export const getProductos = async (): Promise<Producto[]> => {
             } else if (items && Array.isArray(items.items)) {
                 items = items.items;
             } else {
-                // No es un array conocido: intentar extraer posibles campos o devolver array vacío
                 console.debug('[getProductos] respuesta inesperada, intentando normalizar:', res.data);
                 return [];
             }
@@ -87,9 +103,14 @@ export const getProductos = async (): Promise<Producto[]> => {
         });
 
         return normalized as Producto[];
-        
+
     } catch (err: any) {
         console.error("[getProductos] Error al obtener productos:", err?.message ?? err);
+        // Usar axios.isAxiosError para un mejor manejo de errores de red/API
+        if (axios.isAxiosError(err) && err.response) {
+            console.error("Respuesta del API:", err.response.data);
+            throw new Error(`Error en el API: ${err.response.statusText}.`);
+        }
         throw new Error("No se pudo conectar al servicio de productos. Verifique API_URL.");
     }
 };
@@ -102,5 +123,3 @@ export const getProductoById = async (id: number): Promise<Producto> => {
     return res.data;
 };
 
-// ... (Las funciones create, update y delete se omiten aquí por ser de administración, 
-// pero están definidas en el código anterior si las necesitas).

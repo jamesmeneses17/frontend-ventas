@@ -9,6 +9,7 @@ import { getProductos, Producto as ProductoType } from '@/components/services/pr
 import { ChevronDown, List, Grid, Zap } from 'lucide-react'; 
 import { createSlug } from '@/utils/slug';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 
 // --- Tipos de Ordenamiento ---
 type SortOption = 'relevancia' | 'precio-asc' | 'precio-desc';
@@ -63,6 +64,13 @@ const getNumericPrice = (priceStr: string | number | undefined): number => {
 // --- Componente Principal ---
 
 export default function ProductosClientePage() {
+
+    const searchParams = useSearchParams();
+
+    const subcategoriaIdParam = searchParams.get('subcategoriaId');
+     const categoriaIdParam = searchParams.get('categoriaId'); 
+
+
     const [productos, setProductos] = useState<BaseProductType[]>([]);
     const [loading, setLoading] = useState(true);
     // Modo de vista predeterminado: lista vertical
@@ -71,9 +79,15 @@ export default function ProductosClientePage() {
     const [sortOption, setSortOption] = useState<SortOption>('relevancia'); 
 
     useEffect(() => {
+                setLoading(true); 
+
         const fetchProductos = async () => {
-            try {
-                const data = await getProductos();
+             try {
+                const subId = subcategoriaIdParam ? parseInt(subcategoriaIdParam, 10) : undefined;
+                const catId = categoriaIdParam ? parseInt(categoriaIdParam, 10) : undefined;
+
+                const data = await getProductos(subId, catId); 
+                
                 setProductos(data);
                 setLoading(false);
             } catch (err) {
@@ -82,7 +96,7 @@ export default function ProductosClientePage() {
             }
         };
         fetchProductos();
-    }, []);
+    }, [subcategoriaIdParam,categoriaIdParam]);
 
     
     // Lógica de Mapeo y Ordenamiento de Productos
