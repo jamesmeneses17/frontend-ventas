@@ -100,7 +100,7 @@ const MobileCategoryList: React.FC<MobileCategoryListProps> = ({
             >
               {/* 1. Enlace a la Categoría */}
               <Link
-                href={`/productos?categoriaId=${category.id}`}
+                href={`/users/productos?categoriaId=${category.id}`}
                 onClick={onNavigate}
                 // ✅ Color del texto de la categoría
                 className={`flex-1 px-3 py-2 text-base font-bold ${
