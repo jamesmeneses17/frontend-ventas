@@ -2,7 +2,7 @@
 
 "use client";
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, Suspense } from 'react';
 import PublicLayout from '../../../components/layout/PublicLayout';
 import ProductCard from '@/components/ui/ProductCard'; 
 import { getProductos, Producto as ProductoType } from '@/components/services/productosService';
@@ -63,31 +63,32 @@ const getNumericPrice = (priceStr: string | number | undefined): number => {
 
 // --- Componente Principal ---
 
+
 export default function ProductosClientePage() {
+  return (
+    <Suspense fallback={<div className="text-center py-12 text-gray-500">Cargando catálogo...</div>}>
+      <ProductosClientePageContent />
+    </Suspense>
+  );
+}
 
+function ProductosClientePageContent() {
     const searchParams = useSearchParams();
-
     const subcategoriaIdParam = searchParams.get('subcategoriaId');
-     const categoriaIdParam = searchParams.get('categoriaId'); 
-
+    const categoriaIdParam = searchParams.get('categoriaId');
 
     const [productos, setProductos] = useState<BaseProductType[]>([]);
     const [loading, setLoading] = useState(true);
-    // Modo de vista predeterminado: lista vertical
-    const [viewMode, setViewMode] = useState<'grid' | 'list'>('list'); 
-    // Opción de ordenamiento predeterminada
-    const [sortOption, setSortOption] = useState<SortOption>('relevancia'); 
+    const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
+    const [sortOption, setSortOption] = useState<SortOption>('relevancia');
 
     useEffect(() => {
-                setLoading(true); 
-
+        setLoading(true);
         const fetchProductos = async () => {
-             try {
+            try {
                 const subId = subcategoriaIdParam ? parseInt(subcategoriaIdParam, 10) : undefined;
                 const catId = categoriaIdParam ? parseInt(categoriaIdParam, 10) : undefined;
-
-                const data = await getProductos(subId, catId); 
-                
+                const data = await getProductos(subId, catId);
                 setProductos(data);
                 setLoading(false);
             } catch (err) {
@@ -96,7 +97,7 @@ export default function ProductosClientePage() {
             }
         };
         fetchProductos();
-    }, [subcategoriaIdParam,categoriaIdParam]);
+    }, [subcategoriaIdParam, categoriaIdParam]);
 
     
     // Lógica de Mapeo y Ordenamiento de Productos
