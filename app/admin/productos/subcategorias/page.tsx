@@ -195,8 +195,9 @@ export default function SubcategoriasPage() {
                 editingSubcategoria
                   ? {
                       nombre: editingSubcategoria.nombre,
+                      categoriaId: editingSubcategoria.categoria.id,
                       estadoId: editingSubcategoria.estadoId, // Asume que existe
-                      categoriaId: editingSubcategoria.categoriaId, // Asume que existe
+                      id: editingSubcategoria.id,
                     }
                   : {
                       nombre: "",
