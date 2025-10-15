@@ -96,7 +96,7 @@ const HeaderProductsDropdown: React.FC = () => {
     >
       {/* Enlace principal "Productos" */}
       <Link
-        href="/productos"
+        href="/users/productos"
         className={`${baseLinkClasses} 
                     ${
                       isProductsActive
