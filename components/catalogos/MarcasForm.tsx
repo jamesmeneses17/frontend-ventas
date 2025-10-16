@@ -48,6 +48,9 @@ export default function MarcasForm({ initialData, onSubmit, onCancel }: Props) {
         }
     };
 
+      const [loading, setLoading] = useState(false);
+    
+
     return (
         <form onSubmit={handleSubmit} className="space-y-4">
             <FormInput
@@ -70,20 +73,22 @@ export default function MarcasForm({ initialData, onSubmit, onCancel }: Props) {
                 onChange={(e: React.ChangeEvent<HTMLSelectElement>) => handleChange("estadoId", e.target.value)}
             />
 
-            <div className="flex justify-end gap-4 pt-4">
-                <button
-                    type="button"
-                    onClick={onCancel}
-                    className="px-4 py-2 border rounded-md text-gray-600 hover:bg-gray-100"
-                >
-                    Cancelar
-                </button>
-                <button
-                    type="submit"
-                    className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
-                >
-                    Guardar
-                </button>
+        <div className="flex items-center justify-end gap-4">
+                <button
+            type="button"
+            onClick={() => onCancel?.()}
+            className="px-4 py-2 border rounded-md text-gray-600 hover:bg-gray-100"
+            disabled={loading}
+          >
+            Cancelar
+          </button>
+               <button
+            type="submit"
+            className="px-4 py-2 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50"
+            disabled={loading}
+          >
+            {loading ? 'Guardando...' : 'Guardar'}
+          </button>
             </div>
         </form>
     );
