@@ -86,7 +86,6 @@ export default function CategoriasPage() {
             <nav className="-mb-px flex space-x-8" aria-label="Tabs">
               {/* Enlace Categorías */}
               <a
-                // 🛑 CORRECCIÓN: Usar la ruta base /admin/productos
                 href="/admin/productos"
                 className={
                   // La página principal de categorías debe coincidir con /admin/productos
