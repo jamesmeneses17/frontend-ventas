@@ -1,32 +1,27 @@
-import React, { useState } from 'react';
-import Alert from '@/components/ui/Alert'; // Componente de alerta
-import FormInput from '@/components/common/form/FormInput'; // asumo disponible
+import React, { useState, useEffect } from 'react'; // <-- Añadido useEffect
+import FormInput from '@/components/common/form/FormInput'; 
 import { createCliente, CreateClienteData, updateCliente, UpdateClienteData } from '../services/clientesServices';
-// Importamos los tipos de datos y los servicios específicos de clientes
+// <-- Importamos el nuevo servicio y tipo de datos
+import { getTiposDocumento, TipoDocumento } from '../services/tiposDocumentoService'; 
+import Alert from '../ui/Alert';
 
-// --- Configuración de Opciones Fijas (Simulación) ---
-// En una app real, estas opciones se cargarían desde un servicio (ej: /tipos-documento)
-const DOCUMENTO_OPTIONS = [
-  { id: 1, name: "DNI" },
-  { id: 2, name: "RUC" },
-  { id: 3, name: "Carnet Extranjería" },
-];
+// --- Configuración de Opciones Fijas (Eliminada - La cargaremos dinámicamente) ---
+// const DOCUMENTO_OPTIONS = [...] 
 
 // --- INTERFACES ---
 
 interface InitialClientData extends CreateClienteData {
-  id?: number; // Opcional solo cuando es creación
+  id?: number; 
 }
 
 interface Props {
   initialData?: InitialClientData;
   onSuccess?: (cliente: any) => void;
   onCancel?: () => void;
-  // La función onSubmit ahora recibe los datos específicos del Cliente
   onSubmit?: (formData: CreateClienteData) => Promise<any>;
 }
 
-// --- FUNCIÓN DE UTILIDAD PARA ERRORES (Copiada de CategoriasForm) ---
+// --- FUNCIÓN DE UTILIDAD PARA ERRORES (Reutilizada) ---
 const extractErrorMessage = (err: any): string => {
   const respData = err?.response?.data;
 
@@ -57,18 +52,51 @@ const extractErrorMessage = (err: any): string => {
 const ClientesForm: React.FC<Props> = ({ initialData, onSuccess, onCancel, onSubmit }) => {
   const [values, setValues] = useState<CreateClienteData>({
     nombre: initialData?.nombre ?? '',
-    tipo_documento_id: initialData?.tipo_documento_id ?? 1, // Valor por defecto
+    tipo_documento_id: initialData?.tipo_documento_id ?? 1, 
     numero_documento: initialData?.numero_documento ?? '',
     direccion: initialData?.direccion ?? '',
     correo: initialData?.correo ?? '',
     telefono: initialData?.telefono ?? '',
   });
 
+  // ESTADOS PARA CARGAR LOS TIPOS DE DOCUMENTO
+  const [documentTypes, setDocumentTypes] = useState<TipoDocumento[]>([]);
+  const [docLoading, setDocLoading] = useState(true);
+  const [docError, setDocError] = useState<string | null>(null);
+
   const [apiError, setApiError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const isEditing = !!initialData?.id;
+
+  // EFECTO para cargar los tipos de documento al iniciar el componente
+  useEffect(() => {
+    const fetchDocumentTypes = async () => {
+      try {
+        setDocLoading(true);
+        const data = await getTiposDocumento();
+        setDocumentTypes(data);
+
+        // Si estamos creando un nuevo cliente y tenemos documentos, establecemos el primer ID como valor por defecto.
+        // O si estamos editando, nos aseguramos de que el ID exista en la lista cargada.
+        if (data.length > 0) {
+            const initialDocId = initialData?.tipo_documento_id || data[0].id;
+            setValues(s => ({ ...s, tipo_documento_id: initialDocId }));
+        }
+        
+      } catch (err) {
+        setDocError("Error al cargar los tipos de documento. Por favor, recargue la página.");
+        setDocumentTypes([]); // Aseguramos que la lista esté vacía en caso de error
+      } finally {
+        setDocLoading(false);
+      }
+    };
+
+    fetchDocumentTypes();
+    // La dependencia inicialData?.tipo_documento_id ayuda si el initialData cambia (ej: de crear a editar)
+  }, [initialData?.tipo_documento_id]); 
+
 
   const handleChange = (field: keyof CreateClienteData, value: string | number) => {
-    // Asegurarse de que tipo_documento_id se guarde como número
     const finalValue = field === 'tipo_documento_id' ? Number(value) : value;
     setValues((s) => ({ ...s, [field]: finalValue }));
   };
@@ -83,15 +111,12 @@ const ClientesForm: React.FC<Props> = ({ initialData, onSuccess, onCancel, onSub
     try {
       let result: any;
       if (onSubmit) {
-        // Usa la función de la página (useCrudCatalog)
         result = await onSubmit(payload);
       } else {
         if (initialData?.id) {
-          // Edición
-          const updatePayload: UpdateClienteData = payload; // UpdateData es Partial<CreateData>
+          const updatePayload: UpdateClienteData = payload; 
           result = await updateCliente(initialData.id, updatePayload);
         } else {
-          // Creación
           result = await createCliente(payload);
         }
       }
@@ -105,88 +130,107 @@ const ClientesForm: React.FC<Props> = ({ initialData, onSuccess, onCancel, onSub
     }
   };
 
-  const isEditing = !!initialData?.id;
-
   return (
     <div>
-      {/* Alerta de error */}
+      {/* Alerta de error principal */}
       {apiError && (
         <div className="mb-4">
           <Alert type="error" message={apiError} onClose={() => setApiError(null)} />
         </div>
       )}
 
+    
       <form onSubmit={handleSubmit} className="space-y-4">
-        {/* Campo Nombre */}
-        <FormInput
-          label="Nombre Completo"
-          name="nombre"
-          value={values.nombre}
-          onChange={(e) => handleChange('nombre', e.target.value)}
-          required
-        />
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+            
+            {/* Nombre Completo */}
+            <div className="md:col-span-2"> 
+                <FormInput
+                    label="Nombre Completo"
+                    name="nombre"
+                    value={values.nombre}
+                    onChange={(e) => handleChange('nombre', e.target.value)}
+                    required
+                />
+            </div>
 
-        {/* Campo Tipo de Documento (Select) */}
-        <div>
-          <label htmlFor="tipo_documento_id" className="block text-sm font-medium text-gray-700">
-            Tipo de Documento
-          </label>
-          <select
-            id="tipo_documento_id"
-            name="tipo_documento_id"
-            value={values.tipo_documento_id}
-            onChange={(e: React.ChangeEvent<HTMLSelectElement>) => handleChange('tipo_documento_id', Number(e.target.value))}
-            className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
-            required
-          >
-            {DOCUMENTO_OPTIONS.map(opt => (
-              <option key={opt.id} value={opt.id}>{opt.name}</option>
-            ))}
-          </select>
+            {/* Tipo de Documento (1ra columna) */}
+            <div>
+                <label htmlFor="tipo_documento_id" className="block text-sm font-medium text-gray-700">
+                    Tipo de Documento *
+                </label>
+                {docLoading ? (
+                    <p className="mt-1 text-sm text-gray-500">Cargando...</p>
+                ) : (
+                    <select
+                        id="tipo_documento_id"
+                        name="tipo_documento_id"
+                        value={values.tipo_documento_id}
+                        onChange={(e: React.ChangeEvent<HTMLSelectElement>) => handleChange('tipo_documento_id', Number(e.target.value))}
+                        className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+                        required
+                        disabled={documentTypes.length === 0} // Deshabilita si no hay opciones cargadas
+                    >
+                        {/* Renderiza las opciones dinámicas */}
+                        {documentTypes.map(opt => (
+                            <option key={opt.id} value={opt.id}>{opt.nombre}</option>
+                        ))}
+                    </select>
+                )}
+            </div>
+            
+            {/* Número de Documento (2da columna) */}
+            <div>
+                <FormInput
+                    label="Número de Documento"
+                    name="numero_documento"
+                    value={values.numero_documento}
+                    onChange={(e) => handleChange('numero_documento', e.target.value)}
+                    required
+                />
+            </div>
+
+            {/* Correo Electrónico (1ra columna) */}
+            <div>
+                <FormInput
+                    label="Correo Electrónico"
+                    name="correo"
+                    value={values.correo}
+                    onChange={(e) => handleChange('correo', e.target.value)}
+                    type="email"
+                />
+            </div>
+
+            {/* Teléfono (2da columna) */}
+            <div>
+                <FormInput
+                    label="Teléfono"
+                    name="telefono"
+                    value={values.telefono}
+                    onChange={(e) => handleChange('telefono', e.target.value)}
+                    type="tel"
+                />
+            </div>
+
+            {/* Dirección (Ocupa las dos columnas en PC) */}
+            <div className="md:col-span-2"> 
+                <FormInput
+                    label="Dirección"
+                    name="direccion"
+                    value={values.direccion}
+                    onChange={(e) => handleChange('direccion', e.target.value)}
+                />
+            </div>
         </div>
         
-        {/* Campo Número de Documento */}
-        <FormInput
-          label="Número de Documento"
-          name="numero_documento"
-          value={values.numero_documento}
-          onChange={(e) => handleChange('numero_documento', e.target.value)}
-          required
-        />
-
-        {/* Campo Teléfono */}
-        <FormInput
-          label="Teléfono"
-          name="telefono"
-          value={values.telefono}
-          onChange={(e) => handleChange('telefono', e.target.value)}
-          type="tel"
-        />
-
-        {/* Campo Correo */}
-        <FormInput
-          label="Correo Electrónico"
-          name="correo"
-          value={values.correo}
-          onChange={(e) => handleChange('correo', e.target.value)}
-          type="email"
-        />
-
-        {/* Campo Dirección */}
-        <FormInput
-          label="Dirección"
-          name="direccion"
-          value={values.direccion}
-          onChange={(e) => handleChange('direccion', e.target.value)}
-        />
-        
         {/* Botones de Acción */}
-        <div className="flex items-center justify-end gap-4">
+        <div className="flex items-center justify-end gap-4 pt-4">
           <button
             type="button"
             onClick={() => onCancel?.()}
             className="px-4 py-2 border rounded-md text-gray-600 hover:bg-gray-100"
-            disabled={loading}
+            disabled={loading || docLoading}
           >
             Cancelar
           </button>
@@ -194,7 +238,8 @@ const ClientesForm: React.FC<Props> = ({ initialData, onSuccess, onCancel, onSub
           <button
             type="submit"
             className="px-4 py-2 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50"
-            disabled={loading}
+            // Deshabilita si está cargando el formulario o los documentos
+            disabled={loading || docLoading || documentTypes.length === 0} 
           >
             {loading ? 'Guardando...' : (isEditing ? 'Guardar Cambios' : 'Crear Cliente')}
           </button>
