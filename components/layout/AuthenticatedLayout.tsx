@@ -8,10 +8,9 @@ import Layout from "./Layout";
 interface AuthenticatedLayoutProps {
   children: React.ReactNode;
   redirectTo?: string;
-  requiredRole?: string; // 🔹 opcional si después manejas roles
+  requiredRole?: string;
 }
 
-// 🔹 Componente de pantalla de carga
 function LoadingScreen() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -36,7 +35,6 @@ export default function AuthenticatedLayout({
       if (!isAuthenticated) {
         router.replace(redirectTo);
       } else if (requiredRole && user?.rol !== requiredRole) {
-        // 🔹 en caso de roles: lo puedes redirigir a un "403" o home
         router.replace("/unauthorized");
       }
     }
@@ -46,9 +44,14 @@ export default function AuthenticatedLayout({
 
   if (!isAuthenticated) return null;
 
-  // 🔹 Si pediste role y no lo cumple, no renderiza nada
   if (requiredRole && user?.rol !== requiredRole) return null;
 
-  // ✅ Usuario autenticado → Renderiza el layout principal
-  return <Layout>{children}</Layout>;
+  
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <Layout>
+        {children}
+      </Layout>
+    </div>
+  );
 }

@@ -1,30 +1,25 @@
-// /app/admin/productos/page.tsx (CategoriasPage.tsx)
-
 "use client";
 
 import React from "react";
-// Importamos el Hook y los componentes
+// Importamos el Hook y los componentes comunes
 import { useCrudCatalog } from "../../../components/hooks/useCrudCatalog";
 import AuthenticatedLayout from "../../../components/layout/AuthenticatedLayout";
 import ActionButton from "../../../components/common/ActionButton";
-import CategoriasTable from "../../../components/catalogos/CategoriasTable";
-import CategoriasForm from "../../../components/catalogos/CategoriasForm";
 import Paginator from "../../../components/common/Paginator";
 import ModalVentana from "../../../components/ui/ModalVentana";
 import Alert from "../../../components/ui/Alert";
 import SearchInput from "../../../components/common/form/SearchInput";
-import {
-  getCategorias,
-  createCategoria,
-  updateCategoria,
-  deleteCategoria,
-  Categoria,
-  CreateCategoriaData,
-  UpdateCategoriaData,
-} from "../../../components/services/categoriasService";
+import { UserPlus, Users } from "lucide-react"; // Iconos para clientes
 
-// 1. COMPONENTE PRINCIPAL (Simplificado)
-export default function CategoriasPage() {
+// 1. IMPORTACIONES ESPECÍFICAS DE CLIENTES
+import ClientesTable from "../../../components/catalogos/ClientesTable";
+import ClientesForm from "../../../components/catalogos/ClientesForm";
+import { Cliente, createCliente, CreateClienteData, deleteCliente, getClientes, updateCliente, UpdateClienteData } from "../../../components/services/clientesServices";
+
+
+
+// 2. COMPONENTE PRINCIPAL DE CLIENTES
+export default function ClientesPage() {
   const {
     currentItems,
     loading,
@@ -44,84 +39,69 @@ export default function CategoriasPage() {
     handleFormSubmit,
     handleCloseModal,
     setNotification,
-  } = useCrudCatalog<Categoria, CreateCategoriaData, UpdateCategoriaData>(
+  } = useCrudCatalog<Cliente, CreateClienteData, UpdateClienteData>(
     {
-      loadItems: getCategorias,
-      createItem: createCategoria,
-      updateItem: updateCategoria,
-      deleteItem: deleteCategoria,
+      // Usamos las funciones CRUD del nuevo servicio de clientes
+      loadItems: getClientes as any, // Asegúrate de que getClientes cumpla con la firma de useCrudCatalog
+      createItem: createCliente,
+      updateItem: updateCliente,
+      deleteItem: deleteCliente,
     },
-    "Categoría"
+    "Cliente" // Nombre de la entidad para notificaciones
   );
 
   // Tipado explícito para la edición
-  const editingCategoria = editingItem as Categoria | null;
-
-  // Corregimos la ruta base para que apunte a la ruta real de Next.js: /admin/productos
-  const currentPath =
-    typeof window !== "undefined"
-      ? window.location.pathname
-      : "/admin/productos"; // Usar la ruta base correcta del proyecto
+  const editingCliente = editingItem as Cliente | null;
 
   return (
     <AuthenticatedLayout>
       <div className="space-y-6">
-        {/* ... (Header - Se mantiene) ... */}
+        {/* Encabezado de la página */}
         <div className="bg-white shadow rounded-lg p-6">
           <div className="flex justify-between items-center">
-            {/* ... (Título y descripción) ... */}
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Categorias</h1>
+              <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+                <Users className="w-6 h-6 text-indigo-600" />
+                Clientes
+              </h1>
               <p className="text-gray-600 mt-2">
-                Gestiona las configuraciones básicas del sistema
+                Gestiona la información de tus clientes y proveedores.
               </p>
             </div>
           </div>
         </div>
 
-        {/* Contenido principal */}
+        {/* Contenido principal: Buscador, Botón y Tabla */}
         <div className="bg-white shadow rounded-lg p-6">
           {/* Header tabla */}
           <div className="w-full space-y-3">
             <h3 className="text-xl font-semibold text-gray-900 mb-0 text-left">
-              Lista de Categorías
+              Lista de Clientes
             </h3>
-            {/* ... (Buscador y botón se mantienen) ... */}
+            {/* Buscador y botón "Nuevo Cliente" */}
             <div className="flex justify-between items-center w-full">
               <div className="w-full max-w-sm">
                 <SearchInput
                   searchTerm={searchTerm}
-                  placeholder="Buscar categorías..."
-                  onSearchChange={setSearchTerm} // Usamos el handler del hook
+                  placeholder="Buscar clientes por nombre o documento..."
+                  onSearchChange={setSearchTerm}
                 />
               </div>
               <ActionButton
-                icon={
-                  <svg
-                    className="-ml-1 mr-2 h-5 w-5"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                }
-                label="Nueva Categoría"
-                onClick={handleAdd} // Usamos el handler del hook
+                icon={<UserPlus className="-ml-1 mr-2 h-5 w-5" />}
+                label="Nuevo Cliente"
+                onClick={handleAdd}
               />
             </div>
           </div>
 
-          {/* TABLA MODULARIZADA */}
+          {/* TABLA DE CLIENTES MODULARIZADA */}
           <div className="mt-6">
-            <CategoriasTable
-              data={currentItems as Categoria[]} // Casteo al tipo específico
+            <ClientesTable
+              data={currentItems as Cliente[]} // Casteo al tipo específico
               loading={loading}
-              onEdit={handleEdit} // Usamos el handler del hook
-              onDelete={handleDelete} // Usamos el handler del hook
+              onEdit={handleEdit}
+              onDelete={handleDelete}
             />
           </div>
 
@@ -140,23 +120,32 @@ export default function CategoriasPage() {
           </div>
         </div>
 
-        {/* Modal reutilizable */}
+        {/* Modal reutilizable para el Formulario */}
         {showModal && (
           <ModalVentana
             isOpen={showModal}
             onClose={handleCloseModal}
-            title={editingCategoria ? "Editar Categoría" : "Nueva Categoría"}
+            title={editingCliente ? "Editar Cliente" : "Nuevo Cliente"}
           >
-            <CategoriasForm
+            <ClientesForm
               initialData={
-                editingCategoria
+                editingCliente
                   ? {
-                      nombre: editingCategoria.nombre,
-                      estadoId: editingCategoria.estadoId, // Asumiendo que existe en Categoria
+                      id: editingCliente.id,
+                      nombre: editingCliente.nombre,
+                      tipo_documento_id: editingCliente.tipo_documento_id,
+                      numero_documento: editingCliente.numero_documento,
+                      direccion: editingCliente.direccion,
+                      correo: editingCliente.correo,
+                      telefono: editingCliente.telefono,
                     }
                   : {
                       nombre: "",
-                      estadoId: 1,
+                      tipo_documento_id: 1, 
+                      numero_documento: "",
+                      direccion: "",
+                      correo: "",
+                      telefono: "",
                     }
               }
               onSubmit={handleFormSubmit}
@@ -165,6 +154,7 @@ export default function CategoriasPage() {
           </ModalVentana>
         )}
 
+        {/* Notificaciones */}
         {notification && (
           <div className="fixed top-10 right-4 z-[9999]">
             <Alert

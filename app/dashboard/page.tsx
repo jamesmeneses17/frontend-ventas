@@ -6,7 +6,6 @@ import RecentSales from "../../components/layout/RecentSales";
 import { useAuth } from "../../contexts/AuthContext";
 import { SVGProps } from "react";
 
-// --- ÍCONOS ---
 const IconShoppingBag = (props: SVGProps<SVGSVGElement>) => (
   <svg {...props} fill="none" stroke="currentColor" viewBox="0 0 24 24">
     <path
@@ -54,7 +53,6 @@ const IconAlert = (props: SVGProps<SVGSVGElement>) => (
 export default function Dashboard() {
   const { user } = useAuth();
 
-  // ⚡ Ejemplo de datos para Ventas Recientes
   const sales = [
     { id: 1, cliente: "Carlos", producto: "Panel Solar", fecha: "2025-10-02", total: 1200 },
     { id: 2, cliente: "María", producto: "Inversor", fecha: "2025-10-03", total: 800 },
@@ -63,16 +61,20 @@ export default function Dashboard() {
 
   return (
     <AuthenticatedLayout>
-      {/* Welcome */}
-      <div className="bg-white overflow-hidden shadow rounded-lg mb-6">
-        <div className="px-4 py-5 sm:p-6">
+      
+      <div className="bg-white overflow-hidden shadow-sm rounded-2xl border border-gray-300 mb-6">
+        
+        <div className="px-4 pt-5 sm:px-6 sm:pt-6 pb-0">
           <h2 className="text-2xl font-bold text-gray-900 mb-4">
             ¡Bienvenido {user?.nombre || ""}!
           </h2>
           <p className="text-gray-600 mb-4">
             Resumen general de tu sistema de ventas
           </p>
-          <div className="bg-green-50 border border-green-200 rounded-md p-4 flex">
+        </div>
+        
+        <div className="px-4 pb-5 sm:px-6 sm:pb-6">
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4 flex">
             <svg
               className="h-5 w-5 text-green-400"
               viewBox="0 0 20 20"
@@ -91,17 +93,16 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Cards de estadísticas */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <CardStat title="Ventas del día" value="$0.00" color="text-blue-600" icon={<IconShoppingBag className="h-8 w-8" />} />
-        <CardStat title="Stock Bajo" value="0" color="text-red-600" icon={<IconAlert className="h-8 w-8" />} />
-        <CardStat title="Total de productos" value="0" color="text-yellow-600" icon={<IconBox className="h-8 w-8" />} />
-        <CardStat title="Clientes Registrados" value="0" color="text-indigo-600" icon={<IconUsers className="h-8 w-8" />} />
+        <CardStat title="Ventas del día" value="$0.00" color="text-blue-600" icon={<IconShoppingBag className="h-4 w-4" />} />
+        <CardStat title="Stock Bajo" value="0" color="text-red-600" icon={<IconAlert className="h-4 w-4" />} />
+        <CardStat title="Total de productos" value="0" color="text-yellow-600" icon={<IconBox className="h-4 w-4" />} />
+        <CardStat title="Clientes Registrados" value="0" color="text-indigo-600" icon={<IconUsers className="h-4 w-4" />} />
       </div>
 
-      {/* Gráficos */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 bg-white shadow rounded-lg">
+        
+        <div className="lg:col-span-2 bg-white shadow-sm rounded-2xl border border-gray-300">
           <div className="px-4 py-5 sm:p-6">
             <h3 className="text-xl font-semibold text-gray-900 mb-4">Ventas por Categoría</h3>
             <div className="h-80 bg-gray-50 flex items-center justify-center text-gray-500 border border-dashed rounded-md">
@@ -110,7 +111,7 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <div className="bg-white shadow rounded-lg">
+        <div className="bg-white shadow-sm rounded-2xl border border-gray-300">
           <div className="px-4 py-5 sm:p-6">
             <h3 className="text-xl font-semibold text-gray-900 mb-4">Productos Más Vendidos</h3>
             <div className="h-80 bg-gray-50 flex items-center justify-center text-gray-500 border border-dashed rounded-md">
@@ -120,7 +121,6 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Ventas Recientes */}
       <div className="mt-6">
         <RecentSales sales={sales} />
       </div>
