@@ -25,7 +25,6 @@ import {
 
 // 1. COMPONENTE PRINCIPAL (Simplificado)
 export default function CategoriasPage() {
-  // 🚀 Usamos el hook genérico, inyectando el servicio y el nombre del ítem
   const {
     currentItems,
     loading,
@@ -72,7 +71,7 @@ export default function CategoriasPage() {
           <div className="flex justify-between items-center">
             {/* ... (Título y descripción) ... */}
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Catálogos</h1>
+              <h1 className="text-2xl font-bold text-gray-900">Catálogoss</h1>
               <p className="text-gray-600 mt-2">
                 Gestiona las configuraciones básicas del sistema
               </p>
@@ -97,12 +96,11 @@ export default function CategoriasPage() {
                     : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm"
                 }
               >
-                Categorías
+                Categoríass
               </a>
 
               {/* Enlace Subcategorías */}
               <a
-                // 🛑 CORRECCIÓN: Usar la ruta real de subcategorías /admin/productos/subcategorias
                 href="/admin/productos/subcategorias"
                 className={
                   currentPath.includes("/subcategorias")
@@ -115,7 +113,6 @@ export default function CategoriasPage() {
 
               {/* Enlace Marcas */}
               <a
-                // 🛑 CORRECCIÓN: Usar la ruta real de marcas /admin/productos/marcas
                 href="/admin/productos/marcas"
                 className={
                   currentPath.includes("/marcas")
@@ -198,7 +195,6 @@ export default function CategoriasPage() {
               initialData={
                 editingCategoria
                   ? {
-                      // Asegúrate de que Categoria tenga una propiedad nombre y estadoId.
                       nombre: editingCategoria.nombre,
                       estadoId: editingCategoria.estadoId, // Asumiendo que existe en Categoria
                     }
@@ -207,13 +203,12 @@ export default function CategoriasPage() {
                       estadoId: 1,
                     }
               }
-              onSubmit={handleFormSubmit} // Usamos el handler del hook
-              onCancel={handleCloseModal} // Usamos el handler del hook
+              onSubmit={handleFormSubmit} 
+              onCancel={handleCloseModal} 
             />
           </ModalVentana>
         )}
 
-        {/* Notificación flotante */}
         {notification && (
           <div className="fixed top-10 right-4 z-[9999]">
             <Alert
