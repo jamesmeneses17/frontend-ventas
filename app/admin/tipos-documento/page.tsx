@@ -1,25 +1,26 @@
 "use client";
 
 import React from "react";
-// Importamos el Hook y los componentes comunes
+import { TipoDocumento } from "../../../components/services/clientesServices";
 import { useCrudCatalog } from "../../../components/hooks/useCrudCatalog";
+import { createTipoDocumento, CreateTipoDocumentoData, deleteTipoDocumento, getTiposDocumento, updateTipoDocumento, UpdateTipoDocumentoData } from "../../../components/services/tiposDocumentoService";
 import AuthenticatedLayout from "../../../components/layout/AuthenticatedLayout";
+import { FileText, Plus } from "lucide-react";
+import SearchInput from "../../../components/common/form/SearchInput";
 import ActionButton from "../../../components/common/ActionButton";
-import Paginator from "../../../components/common/Paginator";
+import TiposDocumentoTable from "../../../components/catalogos/TiposDocumentoTable";
+import TiposDocumentoForm from "../../../components/catalogos/TiposDocumentoForm";
 import ModalVentana from "../../../components/ui/ModalVentana";
 import Alert from "../../../components/ui/Alert";
-import SearchInput from "../../../components/common/form/SearchInput";
-import { UserPlus, Users } from "lucide-react"; // Iconos para clientes
-
-// 1. IMPORTACIONES ESPECÍFICAS DE CLIENTES
-import ClientesTable from "../../../components/catalogos/ClientesTable";
-import ClientesForm from "../../../components/catalogos/ClientesForm";
-import { Cliente, createCliente, CreateClienteData, deleteCliente, getClientes, updateCliente, UpdateClienteData } from "../../../components/services/clientesServices";
+import Paginator from "../../../components/common/Paginator";
+// Importamos el Hook y los componentes comunes
 
 
 
-// 2. COMPONENTE PRINCIPAL DE CLIENTES
-export default function ClientesPage() {
+
+
+// 2. COMPONENTE PRINCIPAL DE TIPOS DE DOCUMENTO
+export default function TiposDocumentoPage() {
   const {
     currentItems,
     loading,
@@ -31,27 +32,29 @@ export default function ClientesPage() {
     editingItem,
     notification,
     setSearchTerm,
-    handlePageChange,
-    handlePageSizeChange,
+    handlePageChange, 
+    handlePageSizeChange,
     handleAdd,
     handleEdit,
     handleDelete,
     handleFormSubmit,
     handleCloseModal,
     setNotification,
-  } = useCrudCatalog<Cliente, CreateClienteData, UpdateClienteData>(
+
+  } = useCrudCatalog<TipoDocumento, CreateTipoDocumentoData, UpdateTipoDocumentoData>(
     {
-      // Usamos las funciones CRUD del nuevo servicio de clientes
-      loadItems: getClientes as any, // Asegúrate de que getClientes cumpla con la firma de useCrudCatalog
-      createItem: createCliente,
-      updateItem: updateCliente,
-      deleteItem: deleteCliente,
+      // Usamos las funciones CRUD del servicio de Tipos de Documento
+      loadItems: getTiposDocumento as any, 
+      createItem: createTipoDocumento,
+      updateItem: updateTipoDocumento,
+      deleteItem: deleteTipoDocumento,
     },
-    "Cliente" // Nombre de la entidad para notificaciones
+    "Tipo de Documento", // Nombre de la entidad para notificaciones
+    // Pasamos un pageSize muy grande o no pasamos la paginación si el hook lo soporta
   );
 
   // Tipado explícito para la edición
-  const editingCliente = editingItem as Cliente | null;
+  const editingTipo = editingItem as TipoDocumento | null;
 
   return (
     <AuthenticatedLayout>
@@ -61,11 +64,11 @@ export default function ClientesPage() {
           <div className="flex justify-between items-center">
             <div>
               <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-                <Users className="w-6 h-6 text-indigo-600" />
-                Clientes
+                <FileText className="w-6 h-6 text-indigo-600" />
+                Tipos de Documento
               </h1>
               <p className="text-gray-600 mt-2">
-                Gestiona la información de tus clientes y proveedores.
+                Gestiona los tipos de documentos utilizados por clientes (DNI, RUC, Cédula, etc.).
               </p>
             </div>
           </div>
@@ -76,41 +79,38 @@ export default function ClientesPage() {
           {/* Header tabla */}
           <div className="w-full space-y-3">
             <h3 className="text-xl font-semibold text-gray-900 mb-0 text-left">
-              Lista de Clientes
+              Lista de Tipos de Documento
             </h3>
-            {/* Buscador y botón "Nuevo Cliente" */}
+            {/* Buscador y botón "Nuevo Tipo" */}
             <div className="flex justify-between items-center w-full">
+              {/* En Tipos de Documento, el buscador no suele ser necesario, 
+                  pero lo mantenemos para consistencia. */}
               <div className="w-full max-w-sm">
                 <SearchInput
                   searchTerm={searchTerm}
-                  placeholder="Buscar clientes por nombre o documento..."
+                  placeholder="Buscar tipo de documento..."
                   onSearchChange={setSearchTerm}
                 />
               </div>
               <ActionButton
-                icon={<UserPlus className="-ml-1 mr-2 h-5 w-5" />}
-                label="Nuevo Cliente"
+                icon={<Plus className="-ml-1 mr-2 h-5 w-5" />}
+                label="Nuevo Tipo"
                 onClick={handleAdd}
               />
             </div>
           </div>
 
-          {/* TABLA DE CLIENTES MODULARIZADA */}
+          {/* TABLA DE TIPOS DE DOCUMENTO MODULARIZADA */}
           <div className="mt-6">
-            <ClientesTable
-              data={currentItems as Cliente[]} // Casteo al tipo específico
+            <TiposDocumentoTable
+              data={currentItems as TipoDocumento[]} // Casteo al tipo específico
               loading={loading}
               onEdit={handleEdit}
               onDelete={handleDelete}
             />
           </div>
-
-          {/* SECCIÓN DE INFORMACIÓN Y PAGINADOR */}
-        <div className="flex justify-between items-center mt-4">
-            {/* Muestra el contador de ítems */}
-            <p className="text-sm text-gray-600">
-              Mostrando {currentItems.length} de {totalItems} tipos.
-            </p>
+          <div className="flex justify-between items-center mt-4">
+            
             {/* Muestra el paginador si no está cargando y hay ítems */}
             {!loading && totalItems > 0 && (
               <Paginator
@@ -122,6 +122,7 @@ export default function ClientesPage() {
               />
             )}
           </div>
+
         </div>
 
         {/* Modal reutilizable para el Formulario */}
@@ -129,30 +130,11 @@ export default function ClientesPage() {
           <ModalVentana
             isOpen={showModal}
             onClose={handleCloseModal}
-            title={editingCliente ? "Editar Cliente" : "Nuevo Cliente"}
+            title={editingTipo ? "Editar Tipo de Documento" : "Crear Tipo de Documento"}
           >
-            <ClientesForm
-              initialData={
-                editingCliente
-                  ? {
-                      id: editingCliente.id,
-                      nombre: editingCliente.nombre,
-                      tipo_documento_id: editingCliente.tipo_documento_id,
-                      numero_documento: editingCliente.numero_documento,
-                      direccion: editingCliente.direccion,
-                      correo: editingCliente.correo,
-                      telefono: editingCliente.telefono,
-                    }
-                  : {
-                      nombre: "",
-                      tipo_documento_id: 1, 
-                      numero_documento: "",
-                      direccion: "",
-                      correo: "",
-                      telefono: "",
-                    }
-              }
-              onSubmit={handleFormSubmit}
+            <TiposDocumentoForm
+              initialData={editingTipo ? { id: editingTipo.id, nombre: editingTipo.nombre } : undefined}
+              onSuccess={handleFormSubmit} // onSuccess en el formulario mapea a onSubmit en useCrudCatalog
               onCancel={handleCloseModal}
             />
           </ModalVentana>

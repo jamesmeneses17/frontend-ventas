@@ -5,9 +5,7 @@
 import React from "react";
 import PublicLayout from "../components/layout/PublicLayout";
 import HeroSection from "../components/ui/HeroSection";
-// 👈 Importa la sección de Categorías (la que ya tenías)
 import CategorySection from "../components/ui/CategorySection";
-// 👈 Importa la nueva sección de Productos Destacados
 import FeaturedProductsSection from "../components/ui/FeaturedProductsSection";
 import WhyChooseUsSection from "../components/ui/WhyChooseUsSection";
 import ContactSection from "../components/ui/ContactSection";
