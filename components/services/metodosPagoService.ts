@@ -71,8 +71,12 @@ export const createMetodoPago = async (data: CreateMetodoPagoData): Promise<Meto
   const payload: CreateMetodoPagoData = { ...data };
   console.debug("[createMetodoPago] payload:", payload);
   try {
+      console.log("[🛰️ createMetodoPago] Enviando POST...");
+
     const res = await axios.post(METODOS_PAGO_BASE_URL, payload);
     console.debug("[createMetodoPago] response:", res.data);
+  console.log("[✅ createMetodoPago] Respuesta recibida:", res.data);
+
     return res.data;
   } catch (err: any) {
     console.error("[createMetodoPago] error response:", err?.response?.data ?? err?.toString());

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import FormInput from "@/components/common/form/FormInput";
 import Alert from "@/components/ui/Alert";
 import {
@@ -34,52 +34,64 @@ const extractErrorMessage = (err: any): string => {
 };
 
 // --- Componente principal ---
-const MetodosPagoForm: React.FC<Props> = ({ initialData, onSuccess, onCancel }) => {
+const MetodosPagoForm: React.FC<Props> = ({
+  initialData,
+  onSuccess,
+  onCancel,
+}) => {
   const [nombre, setNombre] = useState(initialData?.nombre ?? "");
   const [apiError, setApiError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const isSubmittingRef = useRef(false); // Evita doble submit instantáneo
 
   const isEditing = !!initialData?.id;
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setApiError(null);
-    setLoading(true);
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  console.log("➡️ handleSubmit disparado");
 
-    const payload = { nombre: nombre.trim() };
+  if (isSubmittingRef.current) {
+    console.warn("🚫 Ignorado por doble click");
+    return;
+  }
 
-    if (!payload.nombre) {
-      setApiError("El nombre del método de pago es obligatorio.");
-      setLoading(false);
-      return;
-    }
+  isSubmittingRef.current = true;
+  setApiError(null);
+  setLoading(true);
 
-    try {
-      let result: MetodoPago;
+  const payload = { nombre: nombre.trim() };
 
-      if (isEditing && initialData?.id) {
-        console.debug("[MetodosPagoForm] Editando método de pago ID:", initialData.id);
-        result = await updateMetodoPago(initialData.id, payload);
-      } else {
-        console.debug("[MetodosPagoForm] Creando nuevo método de pago con payload:", payload);
-        result = await createMetodoPago(payload);
-      }
+  if (!payload.nombre) {
+    setApiError("El nombre del método de pago es obligatorio.");
+    setLoading(false);
+    isSubmittingRef.current = false;
+    return;
+  }
 
-      onSuccess(result);
-    } catch (err: any) {
-      console.error("[MetodosPagoForm] Error en guardado:", err?.response?.data ?? err);
-      setApiError(extractErrorMessage(err));
-    } finally {
-      setLoading(false);
-    }
-  };
+  try {
+    // 🔹 En lugar de hacer la petición al backend aquí,
+    // simplemente enviamos los datos al padre (Page)
+    onSuccess(payload as any);
+  } catch (err: any) {
+    console.error("[MetodosPagoForm] Error al enviar datos:", err);
+    setApiError("Error al enviar el formulario.");
+  } finally {
+    setLoading(false);
+    isSubmittingRef.current = false;
+  }
+};
+
 
   return (
     <div>
       {/* Alerta de error */}
       {apiError && (
         <div className="mb-4">
-          <Alert type="error" message={apiError} onClose={() => setApiError(null)} />
+          <Alert
+            type="error"
+            message={apiError}
+            onClose={() => setApiError(null)}
+          />
         </div>
       )}
 
@@ -90,6 +102,7 @@ const MetodosPagoForm: React.FC<Props> = ({ initialData, onSuccess, onCancel }) 
           value={nombre}
           onChange={(e) => setNombre(e.target.value)}
           required
+          disabled={loading}
         />
 
         <div className="flex items-center justify-end gap-4">
@@ -101,14 +114,14 @@ const MetodosPagoForm: React.FC<Props> = ({ initialData, onSuccess, onCancel }) 
           >
             Cancelar
           </button>
+<button
+  type="submit"
+  className="px-4 py-2 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50"
+  disabled={loading || isSubmittingRef.current || nombre.trim() === ""}
+>
+  {loading ? "Guardando..." : isEditing ? "Guardar Cambios" : "Crear Método"}
+</button>
 
-          <button
-            type="submit"
-            className="px-4 py-2 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50"
-            disabled={loading || nombre.trim() === ""}
-          >
-            {loading ? "Guardando..." : isEditing ? "Guardar Cambios" : "Crear Método"}
-          </button>
         </div>
       </form>
     </div>
