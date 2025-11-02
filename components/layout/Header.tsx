@@ -1,6 +1,6 @@
 "use client";
 
-import { Bell, LogOut } from "lucide-react";
+import { Bell, LogOut, Menu } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "../../contexts/AuthContext";
 import Image from "next/image";
@@ -25,12 +25,22 @@ export default function Header({ toggleSidebar, isSidebarOpen }: HeaderProps) {
         flex items-center justify-between 
         bg-white px-6 py-3 shadow
         sticky top-0 z-40
-        ml-[258px]        // 🔹 deja espacio del sidebar
         h-[80px]
+        md:ml-[258px]     /* 👈 solo aplica en escritorio */
       "
     >
       {/* === LADO IZQUIERDO === */}
       <div className="flex items-center gap-4">
+        {/* Botón hamburguesa SOLO visible en móvil */}
+        <button
+          onClick={toggleSidebar}
+          className="text-gray-600 hover:text-gray-900 md:hidden"
+          aria-label={isSidebarOpen ? 'Cerrar menú' : 'Abrir menú'}
+        >
+          <Menu className="w-6 h-6" />
+        </button>
+
+        {/* Logo */}
         <Image
           src="/images/logo-disem.jpeg"
           alt="Logo DiSem"
