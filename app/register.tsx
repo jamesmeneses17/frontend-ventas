@@ -6,7 +6,6 @@ export default function Register() {
     <div className="flex min-h-screen flex-col justify-center px-6 py-12 bg-white">
       <div className="sm:mx-auto sm:w-full sm:max-w-sm">
         <img
-          src="/images/logodisem.jpg"
           alt="Logo de la empresa"
           className="mx-auto h-20 w-auto"
         />

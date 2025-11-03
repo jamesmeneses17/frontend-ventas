@@ -166,11 +166,10 @@ export default function ProductosPage() {
 
           {/* TABLA MODULARIZADA */}
           <ProductosTable
-            data={currentItems as Producto[]} 
+            data={currentItems as Producto[]}
             loading={loading}
             onEdit={handleEdit}
-            onDelete={handleDelete}
-          />
+            onDelete={handleDelete} allCategorias={[]} allEstados={[]}          />
 
           {/* SECCIÓN DE INFORMACIÓN Y PAGINADOR */}
           <div className="flex justify-between items-center mt-4">
