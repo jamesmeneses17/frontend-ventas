@@ -46,6 +46,8 @@ export interface Producto {
     // Campos obligatorios/de relación
     estadoId: number;
     categoriaId: number;
+    // Relación opcional para mostrar el nombre del estado directamente si viene en el producto
+    estado?: Estado;
 }
 
 // 2. TIPO DE DATOS PARA CREACIÓN/ACTUALIZACIÓN (CORREGIDO)

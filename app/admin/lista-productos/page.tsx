@@ -1,13 +1,11 @@
-// app/admin/productos/page.tsx
+// app/admin/lista-productos/page.tsx
 "use client";
 
 import React from "react";
-// Importaciones del CRUD Hook y Layout
 import { useCrudCatalog } from "../../../components/hooks/useCrudCatalog";
 import AuthenticatedLayout from "../../../components/layout/AuthenticatedLayout";
 
 // Componentes UI comunes
-// NOTA: Asegúrate de que las rutas de estos componentes sean correctas
 import Paginator from "../../../components/common/Paginator";
 import ModalVentana from "../../../components/ui/ModalVentana";
 import Alert from "../../../components/ui/Alert";
@@ -18,7 +16,10 @@ import CardStat from "../../../components/ui/CardStat";
 import ProductosTable from "../../../components/catalogos/ProductosTable"; 
 import ProductosForm from "../../../components/catalogos/ProductosForm";
 
-// Servicios y Tipos
+// Servicios
+import { getCategorias } from "../../../components/services/categoriasService";
+import { getEstados } from "../../../components/services/estadosService";
+
 import {
   getProductos,
   createProducto,
@@ -27,10 +28,12 @@ import {
   Producto,
   CreateProductoData,
   UpdateProductoData,
+  Estado,
+  Categoria,
 } from "../../../components/services/productosService";
 
 // Iconos
-import { Package, AlertTriangle, Zap, Box, Upload } from "lucide-react"; 
+import { Package, AlertTriangle, Box, Upload } from "lucide-react"; 
 import ActionButton from "../../../components/common/ActionButton";
 
 // Tipos para el resumen de widgets
@@ -40,8 +43,12 @@ interface ProductSummary {
   sinStock: number;
 }
 
-// 1. COMPONENTE PRINCIPAL
-export default function ProductosPage() {
+// -------------------- COMPONENTE PRINCIPAL --------------------
+export default function ListaProductosPage() {
+  const [categorias, setCategorias] = React.useState<Categoria[]>([]);
+  const [estados, setEstados] = React.useState<Estado[]>([]);
+
+  // Hook CRUD principal
   const {
     currentItems,
     loading,
@@ -54,7 +61,6 @@ export default function ProductosPage() {
     notification,
     setSearchTerm,
     handlePageChange,
-    // La función handlePageSizeChange no se usa en este paginador pero se mantiene la lógica
     handlePageSizeChange, 
     handleAdd,
     handleEdit,
@@ -64,10 +70,7 @@ export default function ProductosPage() {
     setNotification,
   } = useCrudCatalog<Producto, CreateProductoData, UpdateProductoData>(
     {
-      loadItems: async (all: boolean) => {
-        // Si all es true, trae todos los productos
-        return await getProductos();
-      },
+      loadItems: async (all: boolean) => await getProductos(),
       createItem: createProducto,
       updateItem: updateProducto,
       deleteItem: deleteProducto,
@@ -75,24 +78,25 @@ export default function ProductosPage() {
     "Producto"
   );
 
-  // Tipado explícito para la edición
+  // Cargar catálogos de categorías y estados
+  React.useEffect(() => {
+    getCategorias().then(setCategorias).catch(err => console.error("Error cargando categorías:", err));
+    getEstados().then(setEstados).catch(err => console.error("Error cargando estados:", err));
+  }, []);
+
   const editingProducto = editingItem as Producto | null;
 
-  // Datos simulados para los widgets.
-  // En una aplicación real, los valores de Stock Bajo y Sin Stock
-  // deberían venir de una consulta optimizada al backend.
+  // Datos de resumen para widgets
   const productSummary: ProductSummary = {
-    totalProductos: totalItems, 
-    // Los siguientes son SIMULADOS por ahora, usa lógica real en producción:
+    totalProductos: totalItems,
     stockBajo: (currentItems as Producto[]).filter(p => p.stock && p.stock > 0 && p.stock <= 10).length,
-    sinStock: (currentItems as Producto[]).filter(p => p.stock === 0).length, 
-  };
-  
-  // Función para simular el botón de "Importar Datos"
-  const handleImport = () => {
-      alert("Función de Importar Datos no implementada. [Pendiente de desarrollo]");
+    sinStock: (currentItems as Producto[]).filter(p => p.stock === 0).length,
   };
 
+  // Función de Importar (simulada)
+  const handleImport = () => {
+    alert("Función de Importar Datos no implementada. [Pendiente de desarrollo]");
+  };
 
   return (
     <AuthenticatedLayout>
@@ -119,11 +123,11 @@ export default function ProductosPage() {
             icon={<Package className="h-4 w-4" />} 
           />
         </div>
-        
-        {/* --- Contenido principal: Título y Tabla --- */}
+
+        {/* --- CONTENIDO PRINCIPAL --- */}
         <div className="bg-white shadow rounded-2xl p-6 border border-gray-300">
           
-          {/* Título y Botones */}
+          {/* TÍTULO Y BOTONES */}
           <div className="flex justify-between items-start mb-6">
             <div>
               <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
@@ -136,7 +140,6 @@ export default function ProductosPage() {
             </div>
             
             <div className="flex items-center gap-3">
-              {/* NOTA: Usamos el ícono de Lucide para Importar (Upload) para simplificar y mantener la consistencia */}
               <ActionButton 
                 icon={<Upload className="w-5 h-5 mr-1" />}
                 label="Importar Datos"
@@ -154,8 +157,8 @@ export default function ProductosPage() {
               />
             </div>
           </div>
-          
-          {/* Buscador */}
+
+          {/* BUSCADOR */}
           <div className="w-full max-w-md mb-6">
             <SearchInput
               searchTerm={searchTerm}
@@ -164,19 +167,22 @@ export default function ProductosPage() {
             />
           </div>
 
-          {/* TABLA MODULARIZADA */}
+          {/* TABLA DE PRODUCTOS */}
           <ProductosTable
             data={currentItems as Producto[]}
             loading={loading}
             onEdit={handleEdit}
-            onDelete={handleDelete} allCategorias={[]} allEstados={[]}          />
+            onDelete={handleDelete}
+            categorias={categorias}
+            estados={estados}
+          />
 
-          {/* SECCIÓN DE INFORMACIÓN Y PAGINADOR */}
+          {/* PAGINADOR */}
           <div className="flex justify-between items-center mt-4">
             <p className="text-sm text-gray-600">
-                {!loading && totalItems > 0 
-                  ? `Mostrando ${currentItems.length} de ${totalItems} productos` 
-                  : (loading ? "Cargando..." : "No hay productos registrados")}
+              {!loading && totalItems > 0 
+                ? `Mostrando ${currentItems.length} de ${totalItems} productos` 
+                : (loading ? "Cargando..." : "No hay productos registrados")}
             </p>
             {!loading && totalItems > 0 && (
               <Paginator
@@ -184,14 +190,13 @@ export default function ProductosPage() {
                 currentPage={currentPage}
                 pageSize={pageSize}
                 onPageChange={handlePageChange}
-                // Si tienes un componente para cambiar el tamaño, úsalo, sino omite el prop onPageSizeChange
-                onPageSizeChange={handlePageSizeChange} 
+                onPageSizeChange={handlePageSizeChange}
               />
             )}
           </div>
         </div>
 
-        {/* Modal reutilizable */}
+        {/* MODAL */}
         {showModal && (
           <ModalVentana
             isOpen={showModal}
@@ -206,7 +211,7 @@ export default function ProductosPage() {
           </ModalVentana>
         )}
 
-        {/* Notificación de alerta */}
+        {/* ALERTA */}
         {notification && (
           <div className="fixed top-10 right-4 z-[9999]">
             <Alert

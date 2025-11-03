@@ -7,26 +7,20 @@ import ActionButton from "../common/ActionButton";
 import { Producto, Categoria, Estado } from "../services/productosService"; // ✅ Asegúrate de importar Categoria y Estado
 import { Trash, Pencil } from "lucide-react";
 
-// Interfaz actualizada para aceptar las listas de lookup (Cat. y Estado)
+// Interfaz (Simplificada al no necesitar las listas de lookup)
 interface Props {
-  data: Producto[];
-  loading?: boolean;
-  onEdit: (producto: Producto) => void;
-  onDelete: (id: number) => void;
-  // ✅ Props necesarias para el lookup
-  allCategorias: Categoria[]; 
-  allEstados: Estado[];
+    data: Producto[];
+    categorias: Categoria[];
+    estados: Estado[];
+    loading?: boolean;
+    onEdit: (producto: Producto) => void;
+    onDelete: (id: number) => void;
 }
 
-// 💡 FUNCIÓN HELPER para buscar el nombre por ID
-const lookupNombre = (id: number | undefined, lookupList: { id: number; nombre: string }[]): string => {
-  if (id === undefined || id === null) return 'N/A';
-  const item = lookupList.find(item => item.id === id);
-  return item ? item.nombre : 'Desconocido';
-};
+// 🛑 ELIMINAMOS la función lookupNombre() si no vamos a usar listas externas.
+// Los nombres vendrán directamente de row.categoria.nombre
 
-
-export default function ProductosTable({ data, loading, onEdit, onDelete, allCategorias, allEstados }: Props) {
+export default function ProductosTable({ data, categorias, estados, loading, onEdit, onDelete }: Props) {
   
   // Función para obtener la clase de color para el estado
   const getEstadoClasses = (estadoNombre: string) => {
@@ -45,12 +39,17 @@ export default function ProductosTable({ data, loading, onEdit, onDelete, allCat
   const columns = [
     { key: "codigo", label: "Código" },
     { key: "nombre", label: "Nombre" },
-    // ✅ COLUMNA CATEGORÍA CORREGIDA: Usa el ID del producto para buscar el nombre en la lista de categorías.
-    { 
-      key: "categoriaId", 
-      label: "Categoría", 
-      render: (row: Producto) => lookupNombre(row.categoriaId, allCategorias)
-    },
+    
+    // ✅ CORRECCIÓN: Accede directamente al objeto 'categoria' cargado por TypeORM
+        {
+            key: "categoria",
+            label: "Categoría",
+            render: (row: Producto) => {
+                const categoria = categorias.find(c => c.id === row.categoriaId);
+                return categoria?.nombre || 'N/A';
+            }
+        },
+    
     { key: "stock", label: "Stock" },
     { 
       key: "precio", 
@@ -61,19 +60,26 @@ export default function ProductosTable({ data, loading, onEdit, onDelete, allCat
         </span>
       ),
     },
-    // ✅ COLUMNA ESTADO CORREGIDA: Usa el ID del producto para buscar el nombre en la lista de estados.
-    { 
-      key: "estadoId", 
-      label: "Estado",
-      render: (row: Producto) => {
-        const estadoNombre = lookupNombre(row.estadoId, allEstados);
-        return (
-          <span className={`inline-flex items-center px-3 py-0.5 rounded-full text-xs font-medium ${getEstadoClasses(estadoNombre)}`}>
-            {estadoNombre}
-          </span>
-        );
-      },
-    },
+    
+    // ✅ CORRECCIÓN: Accede directamente al objeto 'estado' cargado por TypeORM
+        {
+            key: "estado",
+            label: "Estado",
+            render: (row: Producto) => {
+                // Prioridad: mostrar el nombre del estado desde el objeto estado si existe
+                let estadoNombre = row.estado?.nombre;
+                if (!estadoNombre) {
+                  const estado = estados.find(e => e.id === row.estadoId);
+                  estadoNombre = estado?.nombre;
+                }
+                estadoNombre = estadoNombre || 'Desconocido';
+                return (
+                    <span className={`inline-flex items-center px-3 py-0.5 rounded-full text-xs font-medium ${getEstadoClasses(estadoNombre)}`}>
+                        {estadoNombre}
+                    </span>
+                );
+            },
+        },
   ];
 
   return (
@@ -86,13 +92,11 @@ export default function ProductosTable({ data, loading, onEdit, onDelete, allCat
           <ActionButton
             icon={<Pencil className="w-4 h-4" />}
             onClick={() => onEdit(row)}
-            label="Editar Producto"
           />
           <ActionButton
             icon={<Trash className="w-4 h-4" />}
             onClick={() => onDelete(row.id)}
             color="danger"
-            label="Eliminar Producto"
           />
         </div>
       )}

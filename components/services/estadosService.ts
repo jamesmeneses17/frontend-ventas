@@ -28,12 +28,9 @@ const ENDPOINT = `${API_URL}/catalogos/estados`;
 export const getEstados = async (): Promise<Estado[]> => {
     try {
         console.log('[getEstados] Trayendo todos los estados.');
-        
-        // El controller de NestJS (findAll) debería retornar directamente el array de Estados
         const res = await axios.get(ENDPOINT);
         let items: any = res.data;
 
-        // Normalización de la respuesta (similar al molde de productos, si el backend envuelve la respuesta)
         if (!Array.isArray(items)) {
             if (items && Array.isArray(items.data)) {
                 items = items.data;
@@ -41,20 +38,20 @@ export const getEstados = async (): Promise<Estado[]> => {
                 items = items.items;
             } else {
                 console.debug('[getEstados] Respuesta inesperada, intentando normalizar:', res.data);
-                // Si no se pudo normalizar y no es array, retornamos un array vacío
                 return []; 
             }
         }
 
+        console.log('[getEstados] Estados recibidos:', items);
         return items as Estado[];
 
     } catch (err: any) {
         console.error("[getEstados] Error al obtener estados:", err?.message ?? err);
-        // Manejo de errores de Axios
         if (axios.isAxiosError(err) && err.response) {
             console.error("Respuesta del API:", err.response.data);
-            throw new Error(`Error en el API: ${err.response.statusText}.`);
         }
+        // Log extra para depuración
+        console.error('[getEstados] Error completo:', err);
         throw new Error("No se pudo conectar al servicio de estados. Verifique API_URL.");
     }
 };
