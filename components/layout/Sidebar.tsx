@@ -35,7 +35,7 @@ const navigation = [
   {
     title: "INVENTARIO Y PRODUCTOS",
     items: [
-      { name: "Lista de Productos", href: "/admin/productoss", icon: Box },
+      { name: "Lista de Productos", href: "/admin/lista-productos", icon: Box },
       { name: "Control de Stock", href: "/admin/stock", icon: Package },
       { name: "Precios & Ofertas", href: "/admin/precios", icon: DollarSign },
     ],
