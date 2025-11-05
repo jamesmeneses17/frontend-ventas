@@ -9,6 +9,7 @@ import Button from "../ui/button";
 import { Producto, CreateProductoData } from "../services/productosService";
 import { getCategorias, Categoria } from "../../components/services/categoriasService";
 import { getEstados, Estado } from "../../components/services/estadosService";
+import { formatCurrency } from "../../utils/formatters"; // ✅ IMPORTAMOS EL FORMATEADOR
 
 type FormData = CreateProductoData & { id?: number };
 
@@ -45,7 +46,6 @@ export default function ProductosForm({ initialData, onSubmit, onCancel }: Props
   const [estados, setEstados] = useState<Estado[]>([]);
   const [loadingLookups, setLoadingLookups] = useState(false);
 
-  // 🔁 Carga de catálogos y sincronización
   useEffect(() => {
     const loadLookups = async () => {
       setLoadingLookups(true);
@@ -58,7 +58,6 @@ export default function ProductosForm({ initialData, onSubmit, onCancel }: Props
         setCategorias(catResponse);
         setEstados(estResponse);
 
-        // Asignar valores por defecto coherentes
         const defaultCategoriaId = initialData?.categoriaId || catResponse[0]?.id || 0;
         const defaultEstadoId = initialData?.estadoId || estResponse[0]?.id || 0;
 
@@ -83,22 +82,29 @@ export default function ProductosForm({ initialData, onSubmit, onCancel }: Props
   }, [initialData, reset]);
 
   const submitForm: SubmitHandler<FormData> = (data) => {
+    // ✅ Aseguramos que el precio se envíe como número limpio (sin comas ni $)
+    data.precio = Number(String(data.precio).replace(/[^\d]/g, ""));
     onSubmit(data);
   };
 
   const handleChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
-    >
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
   ) => {
     const { name, value, type } = e.target;
     const isIdField = name === "categoriaId" || name === "estadoId";
-    const parsedValue =
-      type === "number" || isIdField ? Number(value) : value;
 
-    setValue(name as keyof FormData, parsedValue as any, {
-      shouldValidate: true,
-    });
+    // ✅ Si el campo es "precio", limpiamos y formateamos
+    if (name === "precio") {
+      // Quitamos $ y comas
+      const numericValue = value.replace(/[^\d]/g, "");
+      const numberValue = Number(numericValue || 0);
+      // Actualizamos el valor formateado visualmente
+      setValue(name as keyof FormData, numberValue as any, { shouldValidate: true });
+      return;
+    }
+
+    const parsedValue = type === "number" || isIdField ? Number(value) : value;
+    setValue(name as keyof FormData, parsedValue as any, { shouldValidate: true });
   };
 
   const categoriaOptions = categorias.map((c) => ({
@@ -159,10 +165,10 @@ export default function ProductosForm({ initialData, onSubmit, onCancel }: Props
         <FormInput
           label="Precio"
           name="precio"
-          type="number"
-          value={String(formValues.precio)}
+          type="text" // 👈 cambia a texto para permitir formato
+          value={formatCurrency(Number(formValues.precio || 0))} // 👈 muestra formateado
           onChange={handleChange}
-          placeholder="180.00"
+          placeholder="$180,000"
           required
         />
         <FormInput
