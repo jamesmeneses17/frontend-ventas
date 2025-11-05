@@ -16,7 +16,7 @@ export type CreateEstadoData = Omit<Estado, 'id'>;
 export type UpdateEstadoData = Partial<CreateEstadoData>;
 
 // --- ENDPOINT BASE ---
-const ENDPOINT = `${API_URL}/catalogos/estados`;
+const ENDPOINT = `${API_URL}/estados`;
 
 // --- FUNCIONES CRUD (Consumiendo el endpoint) ---
 
