@@ -23,11 +23,14 @@ export default function ProductosTable({ data, categorias, estados, loading, onE
   const getEstadoClasses = (estadoNombre: string) => {
     switch (estadoNombre) {
       case "Disponible":
-        return "bg-green-100 text-green-800";
+              return "bg-[#00c951] text-white px-3 py-1 rounded-full text-sm font-semibold";
+
       case "Stock Bajo":
-        return "bg-yellow-100 text-yellow-800";
+                     return "bg-[#f0b100] text-white px-3 py-1 rounded-full text-sm font-semibold";
+
       case "Agotado":
-        return "bg-red-100 text-red-800";
+                     return "bg-[#fe293f] text-white px-3 py-1 rounded-full text-sm font-semibold";
+       
       default:
         return "bg-gray-100 text-gray-800";
     }
