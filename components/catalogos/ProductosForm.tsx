@@ -45,41 +45,65 @@ export default function ProductosForm({ initialData, onSubmit, onCancel }: Props
   const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [estados, setEstados] = useState<Estado[]>([]);
   const [loadingLookups, setLoadingLookups] = useState(false);
+useEffect(() => {
+  const loadLookups = async () => {
+    setLoadingLookups(true);
+    try {
+      const [catResponse, estResponse] = await Promise.all([
+        getCategorias(),
+        getEstados(),
+      ]);
 
-  useEffect(() => {
-    const loadLookups = async () => {
-      setLoadingLookups(true);
-      try {
-        const [catResponse, estResponse] = await Promise.all([
-          getCategorias(),
-          getEstados(),
-        ]);
+      setCategorias(catResponse);
+      setEstados(estResponse);
 
-        setCategorias(catResponse);
-        setEstados(estResponse);
+      // Detectamos si es edición o nuevo
+      const isEditing = Boolean(initialData?.id);
 
-        const defaultCategoriaId = initialData?.categoriaId || catResponse[0]?.id || 0;
-        const defaultEstadoId = initialData?.estadoId || estResponse[0]?.id || 0;
+      // Si es nuevo, asignamos la primera categoría/estado disponibles
+      const defaultCategoriaId = isEditing
+        ? initialData?.categoriaId
+        : catResponse.length > 0 ? catResponse[0].id : 0;
 
-        reset({
-          ...initialData,
-          categoriaId: defaultCategoriaId,
-          estadoId: defaultEstadoId,
-        });
-      } catch (error) {
-        console.error("Error al cargar datos de lookup:", error);
-        reset({
-          ...initialData,
-          categoriaId: 0,
-          estadoId: 0,
-        });
-      } finally {
-        setLoadingLookups(false);
-      }
-    };
+      const defaultEstadoId = isEditing
+        ? initialData?.estadoId
+        : estResponse.length > 0 ? estResponse[0].id : 0;
 
-    loadLookups();
-  }, [initialData, reset]);
+      // 🔥 Forzamos el reset siempre, incluso si initialData no cambia
+      reset({
+        id: initialData?.id ?? undefined,
+        nombre: initialData?.nombre ?? "",
+        codigo: initialData?.codigo ?? "",
+        precio: initialData?.precio ?? 0,
+        stock: initialData?.stock ?? 0,
+        descripcion: initialData?.descripcion ?? "",
+        ficha_tecnica_url: initialData?.ficha_tecnica_url ?? "",
+        categoriaId: defaultCategoriaId,
+        estadoId: defaultEstadoId,
+      });
+    } catch (error) {
+      console.error("Error al cargar datos de lookup:", error);
+      reset({
+        id: initialData?.id ?? undefined,
+        nombre: initialData?.nombre ?? "",
+        codigo: initialData?.codigo ?? "",
+        precio: initialData?.precio ?? 0,
+        stock: initialData?.stock ?? 0,
+        descripcion: initialData?.descripcion ?? "",
+        ficha_tecnica_url: initialData?.ficha_tecnica_url ?? "",
+        categoriaId: 0,
+        estadoId: 0,
+      });
+    } finally {
+      setLoadingLookups(false);
+    }
+  };
+
+  loadLookups();
+  // 👇 Agregamos dependencias para que siempre cargue bien
+}, [initialData, reset, getCategorias, getEstados]);
+
+
 
   const submitForm: SubmitHandler<FormData> = (data) => {
     // ✅ Aseguramos que el precio se envíe como número limpio (sin comas ni $)
