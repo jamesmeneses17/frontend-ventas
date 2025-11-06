@@ -1,3 +1,25 @@
+/**
+ * Crea un nuevo producto.
+ */
+export const createProducto = async (data: CreateProductoData): Promise<Producto> => {
+    const res = await axios.post(ENDPOINT_BASE, data);
+    return res.data as Producto;
+};
+
+/**
+ * Actualiza un producto existente.
+ */
+export const updateProducto = async (id: number, data: UpdateProductoData): Promise<Producto> => {
+    const res = await axios.patch(`${ENDPOINT_BASE}/${id}`, data);
+    return res.data as Producto;
+};
+
+/**
+ * Elimina un producto.
+ */
+export const deleteProducto = async (id: number): Promise<void> => {
+    await axios.delete(`${ENDPOINT_BASE}/${id}`);
+};
 // components/services/productosService.ts
 
 import axios from "axios";
@@ -7,67 +29,67 @@ const ENDPOINT_BASE = `${API_URL}/productos`;
 
 // --- Interfaces de Soporte ---
 export interface Estado {
-    id: number;
-    nombre: string;
+    id: number;
+    nombre: string;
 }
 
 export interface Categoria {
-    id: number;
-    nombre: string;
+    id: number;
+    nombre: string;
 }
 
 // Interfaz simplificada para la relación de precios
 export interface Precio {
-    id: number;
-    valor_unitario: number;
-    fecha_inicio: string;
-    fecha_fin: string | null;
-    productoId: number;
+    id: number;
+    valor_unitario: number;
+    fecha_inicio: string;
+    fecha_fin: string | null;
+    productoId: number;
 }
 
-// 1. INTERFAZ PRODUCTO (Actualizada para incluir campos del formulario y DTO)
+// 1. INTERFAZ PRODUCTO (CORREGIDA)
 export interface Producto {
-    id: number;
-    nombre: string;
-    codigo: string;             // <-- Añadido: Requerido por el formulario
-    descripcion?: string; 
-    ficha_tecnica_url?: string; // <-- Añadido: Requerido por el formulario
-    
-    // Estos campos se usan en el formulario, aunque en el backend
-    // provengan de tablas relacionadas (Inventario/Precios)
-    stock?: number;             
-    precio?: number;            // <-- Añadido para RHF, aunque se use de la relación 'precios'
-    
-    // Relaciones 
-    caracteristicas?: any[];
-    precios?: Precio[]; 
-    inventario?: any[];
+    id: number;
+    nombre: string;
+    codigo: string;
+    descripcion?: string; 
+    ficha_tecnica_url?: string;
+    
+    // ✅ Campos aplanados/calculados que vienen del backend
+    stock: number;             // DEBE SER OBLIGATORIO si siempre viene del backend
+    precio: number;            // DEBE SER OBLIGATORIO
+    // ✅ Campo de Stock Mínimo (Necesario para el formulario de edición)
+    stockMinimo?: number;
+    estado_stock: 'Disponible' | 'Stock Bajo' | 'Agotado'; // DEBE SER OBLIGATORIO
+    
+    // Relaciones 
+    caracteristicas?: any[];
+    precios?: Precio[]; 
+    inventario?: any[]; // La entidad inventario completa
 
-    // Campos obligatorios/de relación
-    estadoId: number;
-    categoriaId: number;
-    // Relación opcional para mostrar el nombre del estado directamente si viene en el producto
-    estado?: Estado;
+    // Campos obligatorios/de relación
+    estadoId: number;
+    categoriaId: number;
+    estado?: Estado;
+    categoria?: Categoria; // Añadido: Útil para mostrar en la tabla o editar
 }
 
-// 2. TIPO DE DATOS PARA CREACIÓN/ACTUALIZACIÓN (CORREGIDO)
-// Estos tipos deben reflejar exactamente lo que espera tu DTO de NestJS (CreateProductoDto)
+// 2. TIPO DE DATOS PARA CREACIÓN/ACTUALIZACIÓN (ASUMIENDO STOCK MÍNIMO)
 export type CreateProductoData = {
-    nombre: string;
-    codigo: string;
-    descripcion: string;
-    ficha_tecnica_url?: string;
-    
-    // Asumimos que el DTO de NestJS espera estos valores
-    // para crear registros iniciales en Inventario y/o Precios.
-    stock: number;
-    precio: number;
-    
-    categoriaId: number;
-    estadoId?: number;
+    nombre: string;
+    codigo: string;
+    descripcion: string;
+    ficha_tecnica_url?: string;
+    
+    // Se espera que el DTO reciba estos datos
+    stock: number;
+    precio: number;
+    stockMinimo?: number; // ✅ Asumiendo que agregaste esto al DTO
+    
+    categoriaId: number;
+    estadoId?: number;
 };
 export type UpdateProductoData = Partial<CreateProductoData>;
-
 
 
 // --------------------------------------------------------------------------------
@@ -75,8 +97,8 @@ export type UpdateProductoData = Partial<CreateProductoData>;
 // --------------------------------------------------------------------------------
 
 /**
- * Obtener productos activos.
- */
+ * Obtener productos activos.
+ */
 export const getProductos = async (subcategoriaId?: number, categoriaId?: number): Promise<Producto[]> => {
     let endpoint = ENDPOINT_BASE;
     const params = new URLSearchParams();
@@ -91,73 +113,51 @@ export const getProductos = async (subcategoriaId?: number, categoriaId?: number
         const res = await axios.get(endpoint);
         let items: any = res.data;
 
-        // ... (Lógica de normalización de la respuesta [Array.isArray(items), etc.])
+        // Si el backend no garantiza un array, corregimos
+        if (!Array.isArray(items)) {
+            // Esto sucede a veces si el backend devuelve un objeto de paginación
+            // Por ahora, asumimos que es el array de datos
+            items = []; 
+        }
 
-        // Asegurarnos de que los precios tengan valor_unitario como number y aplanar stock/precio
+        // ✅ CORRECCIÓN CLAVE: El backend ya devuelve los campos aplanados
+        // Ya no necesitas hacer el mapeo de `stock` y `precio` manualmente.
+        // Solo necesitas asegurarte de que `valor_unitario` sea Number si es necesario.
         const normalized = items.map((it: any) => {
-            const precios = Array.isArray(it.precios)
-                ? it.precios.map((p: any) => ({ ...p, valor_unitario: Number(p.valor_unitario) }))
-                : [];
-            
-            // Opcional: Asignar el precio más reciente/actual al campo 'precio' del Producto para RHF
-            const precioActual = precios.length > 0 ? precios[0].valor_unitario : 0; 
+            // Asegúrate que el precio aplanado y stock aplanado sean números
+            const finalPrice = Number(it.precio) || 0;
+            const finalStock = Number(it.stock) || 0;
+            const finalStockMinimo = Number(it.stockMinimo) || 5;
 
-            return { 
-                ...it, 
-                precios,
-                precio: precioActual, 
-                // ✅ CORRECCIÓN: Usar 'stock' en lugar de 'stock_actual' para aplanar el inventario.
-                stock: it.inventario?.[0]?.stock || 0 
-            };
-        });
+            return { 
+                ...it,
+                precio: finalPrice, 
+                stock: finalStock,
+                stockMinimo: finalStockMinimo,
+                // Asume que estado_stock ya viene correctamente calculado
+            };
+        });
 
         return normalized as Producto[];
 
     } catch (err: any) {
-        // ... (Manejo de errores)
-        throw new Error("No se pudo conectar al servicio de productos. Verifique API_URL.");
+        console.error("Error al obtener productos:", err);
+        throw new Error("No se pudo conectar al servicio de productos. Verifique API_URL o el backend.");
     }
 };
 
 /**
- * Obtener un producto por ID.
- */
+ * Obtener un producto por ID.
+ */
 export const getProductoById = async (id: number): Promise<Producto> => {
-    // Usa findOneWithRelations en el backend para obtener todos los campos necesarios
-    const res = await axios.get(`${ENDPOINT_BASE}/${id}/with-relations`); 
-    return res.data;
+    const res = await axios.get(`${ENDPOINT_BASE}/${id}/with-relations`); 
+    // Asegurarse de que el precio y stock sean números para RHF
+    const data = res.data;
+    data.precio = Number(data.precio) || 0;
+    data.stock = Number(data.stock) || 0;
+    data.stockMinimo = Number(data.stockMinimo) || 5;
+
+    return data as Producto;
 };
 
-/**
- * Crea un nuevo producto.
- * Consume POST /productos
- * @param {CreateProductoData} data - Datos del nuevo producto.
- * @returns {Promise<Producto>} El producto creado.
- */
-export const createProducto = async (data: CreateProductoData): Promise<Producto> => {
-    console.log("[createProducto] Enviando datos:", data);
-    const res = await axios.post(ENDPOINT_BASE, data);
-    return res.data;
-};
-
-/**
- * Actualiza un producto existente.
- * Consume PATCH /productos/:id
- * @param {number} id - ID del producto a actualizar.
- * @param {UpdateProductoData} data - Datos a actualizar.
- * @returns {Promise<Producto>} El producto actualizado.
- */
-export const updateProducto = async (id: number, data: UpdateProductoData): Promise<Producto> => {
-    console.log(`[updateProducto] Enviando actualización para ID ${id}:`, data);
-    const res = await axios.patch(`${ENDPOINT_BASE}/${id}`, data);
-    return res.data;
-};
-
-/**
- * Elimina un producto.
- * Consume DELETE /productos/:id
- * @param {number} id - ID del producto a eliminar.
- */
-export const deleteProducto = async (id: number): Promise<void> => {
-    await axios.delete(`${ENDPOINT_BASE}/${id}`);
-};
+// ... (createProducto, updateProducto, deleteProducto se mantienen)
