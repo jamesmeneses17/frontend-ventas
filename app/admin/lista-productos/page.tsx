@@ -53,6 +53,8 @@ const ESTADOS_STOCK_FILTRO = [
 
 // -------------------- COMPONENTE PRINCIPAL --------------------
 export default function ListaProductosPage() {
+  // Estado para mostrar error de validación en el formulario
+  const [formError, setFormError] = React.useState<string>("");
   const [categorias, setCategorias] = React.useState<Categoria[]>([]);
   const [estados, setEstados] = React.useState<Estado[]>([]);
   const [estadoStockFiltro, setEstadoStockFiltro] = React.useState<string>("");
@@ -104,11 +106,44 @@ export default function ListaProductosPage() {
 
   const editingProducto = editingItem as Producto | null;
 
+  // Estado para los totales reales por estado
+  const [stats, setStats] = React.useState<{ total: number; stockBajo: number; agotado: number }>({ total: 0, stockBajo: 0, agotado: 0 });
+
+  // Función para actualizar los stats
+  const updateStats = React.useCallback(() => {
+    import("../../../components/services/productosService").then(mod => {
+      mod.getProductosStats().then(setStats).catch(() => setStats({ total: 0, stockBajo: 0, agotado: 0 }));
+    });
+  }, []);
+
+  // Consumir los totales al montar el componente
+  React.useEffect(() => {
+    updateStats();
+  }, [updateStats]);
+
+  // Handlers locales para actualizar stats después de operaciones CRUD
+  const handleFormSubmitWithStats = async (data: CreateProductoData | UpdateProductoData) => {
+    setFormError("");
+    try {
+      await handleFormSubmit(data);
+      updateStats();
+    } catch (error: any) {
+      // Intenta extraer el mensaje del backend
+      const msg = error?.response?.data?.message || error?.message || "Error al guardar el producto.";
+      setFormError(msg);
+    }
+  };
+
+  const handleDeleteWithStats = async (id: number) => {
+    await handleDelete(id);
+    updateStats();
+  };
+
   // Datos de resumen para widgets
   const productSummary: ProductSummary = {
-    totalProductos: totalItems,
-    stockBajo: (currentItems as Producto[]).filter(p => p.stock && p.stock > 0 && p.stock <= 10).length,
-    sinStock: (currentItems as Producto[]).filter(p => p.stock === 0).length,
+    totalProductos: stats.total,
+    stockBajo: stats.stockBajo,
+    sinStock: stats.agotado,
   };
 
   // Esto resuelve el error "No se encuentra el nombre 'handleStockFilterChange'"
@@ -204,7 +239,7 @@ export default function ListaProductosPage() {
             data={currentItems as Producto[]}
             loading={loading}
             onEdit={handleEdit}
-            onDelete={handleDelete}
+            onDelete={handleDeleteWithStats}
             categorias={categorias}
             estados={estados}
           />
@@ -230,18 +265,22 @@ export default function ListaProductosPage() {
 
         {/* MODAL */}
         {showModal && (
-          <ModalVentana
-            isOpen={showModal}
-            onClose={handleCloseModal}
-            title={editingProducto ? "Editar Producto" : "Nuevo Producto"}
-          >
-            <ProductosForm
-              initialData={editingProducto}
-              onSubmit={handleFormSubmit}
-              onCancel={handleCloseModal}
-            />
-          </ModalVentana>
-        )}
+  <ModalVentana
+    isOpen={showModal}
+    onClose={handleCloseModal}
+    title={editingProducto ? "Editar Producto" : "Nuevo Producto"}
+  >
+    <ProductosForm
+      initialData={editingProducto}
+      onSubmit={handleFormSubmitWithStats}
+      onCancel={handleCloseModal}
+      formError={formError}
+    />
+    {formError && (
+      <div className="text-red-600 text-sm mt-2 text-center">{formError}</div>
+    )}
+  </ModalVentana>
+)}
 
         {/* ALERTA */}
         {notification && (

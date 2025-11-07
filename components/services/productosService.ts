@@ -1,4 +1,23 @@
 /**
+ * Obtener estadísticas de productos por estado.
+ * Ejemplo de respuesta esperada del backend:
+ * {
+ *   total: 168,
+ *   stockBajo: 3,
+ *   agotado: 1
+ * }
+ */
+export const getProductosStats = async (): Promise<{ total: number; stockBajo: number; agotado: number }> => {
+    const endpoint = `${ENDPOINT_BASE}/stats`;
+    try {
+        const res = await axios.get(endpoint);
+        return res.data;
+    } catch (err: any) {
+        console.error("Error al obtener estadísticas de productos:", err);
+        return { total: 0, stockBajo: 0, agotado: 0 };
+    }
+};
+/**
  * Crea un nuevo producto.
  */
 export const createProducto = async (data: CreateProductoData): Promise<Producto> => {

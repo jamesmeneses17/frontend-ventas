@@ -17,9 +17,10 @@ interface Props {
   initialData?: Partial<Producto> | null;
   onSubmit: (data: FormData) => void;
   onCancel: () => void;
+  formError?: string;
 }
 
-export default function ProductosForm({ initialData, onSubmit, onCancel }: Props) {
+export default function ProductosForm({ initialData, onSubmit, onCancel, formError }: Props) {
   const {
     handleSubmit,
     formState: { errors, isSubmitting },
@@ -140,6 +141,7 @@ useEffect(() => {
     label: e.nombre,
   }));
 
+  // Ocultar el campo de estado tanto en creación como edición
   return (
     <form onSubmit={handleSubmit(submitForm)} className="space-y-4">
       {/* Fila 1: Nombre y Código */}
@@ -162,7 +164,7 @@ useEffect(() => {
         />
       </div>
 
-      {/* Fila 2: Categoría y Estado */}
+      {/* Fila 2: Solo categoría, nunca estado */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <FormSelect
           label="Categoría"
@@ -170,15 +172,6 @@ useEffect(() => {
           value={String(formValues.categoriaId)}
           onChange={handleChange}
           options={categoriaOptions}
-          disabled={loadingLookups}
-          required
-        />
-        <FormSelect
-          label="Estado"
-          name="estadoId"
-          value={String(formValues.estadoId)}
-          onChange={handleChange}
-          options={estadoOptions}
           disabled={loadingLookups}
           required
         />
@@ -238,6 +231,9 @@ useEffect(() => {
           {initialData?.id ? "Guardar Cambios" : "Crear Producto"}
         </Button>
       </div>
+      {formError && (
+        <div className="text-red-600 text-sm mt-2 text-center">{formError}</div>
+      )}
     </form>
   );
 }
