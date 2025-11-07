@@ -116,6 +116,14 @@ export const getProductos = async (
     if (searchTerm) params.append("search", searchTerm);
 
     const endpoint = `${ENDPOINT_BASE}?${params.toString()}`;
+    // Log para depuración del filtro de estado
+    console.log('[getProductos] Endpoint:', endpoint);
+    console.log('[getProductos] Parámetros:', {
+        page,
+        size,
+        estado_stock: stockFiltro,
+        search: searchTerm
+    });
 
     try {
         const res = await axios.get(endpoint);

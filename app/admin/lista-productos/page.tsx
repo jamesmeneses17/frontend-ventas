@@ -82,10 +82,10 @@ export default function ListaProductosPage() {
    {
       // 🔑 CORRECCIÓN 1: loadItems DEBE recibir los parámetros de paginación y filtro.
        // Los parámetros ya no son implícitos 'any', los tipamos o los pasamos.
-      loadItems: async (all, page, size, stockFiltro) => {
-        // El useCrudCatalog pasa (all: boolean, page: number, size: number, ...customDependencies)
-        // Aquí solo necesitamos page, size y stockFiltro (que es la primera customDependency)
-        return await getProductos(page, size, stockFiltro);
+      loadItems: async (all, page, size, searchTerm, stockFiltro) => {
+        // El useCrudCatalog pasa (all: boolean, page: number, size: number, searchTerm, ...customDependencies)
+        // Ahora el filtro de estado se pasa correctamente
+        return await getProductos(page, size, stockFiltro, searchTerm);
       },
       createItem: createProducto,
       updateItem: updateProducto,
@@ -113,6 +113,7 @@ export default function ListaProductosPage() {
 
   // Esto resuelve el error "No se encuentra el nombre 'handleStockFilterChange'"
   const handleStockFilterChange = (value: string) => {
+    console.log('[Filtro Estado] Valor seleccionado:', value);
     setEstadoStockFiltro(value);
     handlePageChange(1); // Resetear a la primera página cuando el filtro cambia
   };
@@ -184,11 +185,7 @@ export default function ListaProductosPage() {
 
           {/* BUSCADOR */}
           <div className="w-full max-w-md mb-6">
-            <SearchInput
-              searchTerm={searchTerm}
-              placeholder="Buscar productos por nombre o código..."
-              onSearchChange={setSearchTerm}
-            />
+            
 
           <FilterBar
             searchTerm={searchTerm}
@@ -198,9 +195,7 @@ export default function ListaProductosPage() {
             selectOptions={ESTADOS_STOCK_FILTRO}
             selectFilterValue={estadoStockFiltro}
             onSelectFilterChange={handleStockFilterChange} // Usar el handler que resetea la página
-            
-            onActionButtonClick={handleImport}
-            actionButtonLabel="Importar Datos"
+       
           />
           </div>
 
