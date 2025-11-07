@@ -73,6 +73,10 @@ export interface Producto {
     estado?: Estado;
     categoria?: Categoria; // Añadido: Útil para mostrar en la tabla o editar
 }
+export interface PaginacionResponse<T> {
+  data: T[];
+  total: number;
+}
 
 // 2. TIPO DE DATOS PARA CREACIÓN/ACTUALIZACIÓN (ASUMIENDO STOCK MÍNIMO)
 export type CreateProductoData = {
@@ -97,53 +101,55 @@ export type UpdateProductoData = Partial<CreateProductoData>;
 // --------------------------------------------------------------------------------
 
 /**
- * Obtener productos activos.
- */
-export const getProductos = async (subcategoriaId?: number, categoriaId?: number): Promise<Producto[]> => {
-    let endpoint = ENDPOINT_BASE;
-    const params = new URLSearchParams();
+ * Obtener productos activos con paginación y filtro.
+ */
+export const getProductos = async (
+    page: number = 1,
+    size: number = 5,
+    stockFiltro: string = "",
+    searchTerm: string = ""
+): Promise<PaginacionResponse<Producto>> => {
+    const params = new URLSearchParams();
+    params.append("page", page.toString());
+    params.append("limit", size.toString());
+    if (stockFiltro) params.append("estado_stock", stockFiltro);
+    if (searchTerm) params.append("search", searchTerm);
 
-    // ... (Lógica de filtrado)
+    const endpoint = `${ENDPOINT_BASE}?${params.toString()}`;
 
-    if (params.toString()) {
-        endpoint += `?${params.toString()}`;
-    }
+    try {
+        const res = await axios.get(endpoint);
+        let items: any = res.data;
+        let productos: Producto[] = [];
+        let total = 0;
 
-    try {
-        const res = await axios.get(endpoint);
-        let items: any = res.data;
-
-        // Si el backend no garantiza un array, corregimos
-        if (!Array.isArray(items)) {
-            // Esto sucede a veces si el backend devuelve un objeto de paginación
-            // Por ahora, asumimos que es el array de datos
-            items = []; 
+        // Si el backend responde con paginación
+        if (items && Array.isArray(items.data)) {
+            productos = items.data;
+            total = items.total || productos.length;
+        } else if (Array.isArray(items)) {
+            productos = items;
+            total = productos.length;
         }
 
-        // ✅ CORRECCIÓN CLAVE: El backend ya devuelve los campos aplanados
-        // Ya no necesitas hacer el mapeo de `stock` y `precio` manualmente.
-        // Solo necesitas asegurarte de que `valor_unitario` sea Number si es necesario.
-        const normalized = items.map((it: any) => {
-            // Asegúrate que el precio aplanado y stock aplanado sean números
+        // Normalizar los campos numéricos
+        const normalized = productos.map((it: any) => {
             const finalPrice = Number(it.precio) || 0;
             const finalStock = Number(it.stock) || 0;
             const finalStockMinimo = Number(it.stockMinimo) || 5;
-
-            return { 
-                ...it,
-                precio: finalPrice, 
+            return {
+                ...it,
+                precio: finalPrice,
                 stock: finalStock,
                 stockMinimo: finalStockMinimo,
-                // Asume que estado_stock ya viene correctamente calculado
             };
         });
 
-        return normalized as Producto[];
-
-    } catch (err: any) {
-        console.error("Error al obtener productos:", err);
-        throw new Error("No se pudo conectar al servicio de productos. Verifique API_URL o el backend.");
-    }
+        return { data: normalized, total };
+    } catch (err: any) {
+        console.error("Error al obtener productos:", err);
+        return { data: [], total: 0 };
+    }
 };
 
 /**

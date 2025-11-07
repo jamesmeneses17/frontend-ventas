@@ -72,8 +72,8 @@ const FeaturedProductsSection: React.FC = () => {
     const fetchProductos = async () => {
       try {
         setLoading(true);
-        const data = await getProductos();
-        setProductos(data);
+  const response = await getProductos();
+  setProductos(response.data);
         setLoading(false);
       } catch (err) {
         console.error("Error al cargar productos:", err);

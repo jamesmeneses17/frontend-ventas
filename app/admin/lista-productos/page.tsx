@@ -35,6 +35,7 @@ import {
 // Iconos
 import { Package, AlertTriangle, Box, Upload } from "lucide-react"; 
 import ActionButton from "../../../components/common/ActionButton";
+import FilterBar from "../../../components/common/FilterBar";
 
 // Tipos para el resumen de widgets
 interface ProductSummary {
@@ -43,10 +44,19 @@ interface ProductSummary {
   sinStock: number;
 }
 
+const ESTADOS_STOCK_FILTRO = [
+  { label: "Filtrar por: Todos los Estados", value: "" },
+  { label: "Disponible", value: "Disponible" },
+  { label: "Stock Bajo", value: "Stock Bajo" },
+  { label: "Agotado", value: "Agotado" },
+];
+
 // -------------------- COMPONENTE PRINCIPAL --------------------
 export default function ListaProductosPage() {
   const [categorias, setCategorias] = React.useState<Categoria[]>([]);
   const [estados, setEstados] = React.useState<Estado[]>([]);
+  const [estadoStockFiltro, setEstadoStockFiltro] = React.useState<string>("");
+  
 
   // Hook CRUD principal
   const {
@@ -69,14 +79,22 @@ export default function ListaProductosPage() {
     handleCloseModal,
     setNotification,
   } = useCrudCatalog<Producto, CreateProductoData, UpdateProductoData>(
-    {
-      loadItems: async (all: boolean) => await getProductos(),
-      createItem: createProducto,
-      updateItem: updateProducto,
-      deleteItem: deleteProducto,
-    },
-    "Producto"
-  );
+   {
+      // 🔑 CORRECCIÓN 1: loadItems DEBE recibir los parámetros de paginación y filtro.
+       // Los parámetros ya no son implícitos 'any', los tipamos o los pasamos.
+      loadItems: async (all, page, size, stockFiltro) => {
+        // El useCrudCatalog pasa (all: boolean, page: number, size: number, ...customDependencies)
+        // Aquí solo necesitamos page, size y stockFiltro (que es la primera customDependency)
+        return await getProductos(page, size, stockFiltro);
+      },
+      createItem: createProducto,
+      updateItem: updateProducto,
+      deleteItem: deleteProducto,
+    },
+    "Producto",
+    // 🔑 CORRECCIÓN 2: Pasamos el filtro de stock como dependencia custom
+    { customDependencies: [estadoStockFiltro] } 
+  );
 
   // Cargar catálogos de categorías y estados
   React.useEffect(() => {
@@ -91,6 +109,12 @@ export default function ListaProductosPage() {
     totalProductos: totalItems,
     stockBajo: (currentItems as Producto[]).filter(p => p.stock && p.stock > 0 && p.stock <= 10).length,
     sinStock: (currentItems as Producto[]).filter(p => p.stock === 0).length,
+  };
+
+  // Esto resuelve el error "No se encuentra el nombre 'handleStockFilterChange'"
+  const handleStockFilterChange = (value: string) => {
+    setEstadoStockFiltro(value);
+    handlePageChange(1); // Resetear a la primera página cuando el filtro cambia
   };
 
   // Función de Importar (simulada)
@@ -165,6 +189,19 @@ export default function ListaProductosPage() {
               placeholder="Buscar productos por nombre o código..."
               onSearchChange={setSearchTerm}
             />
+
+          <FilterBar
+            searchTerm={searchTerm}
+            onSearchChange={setSearchTerm}
+            searchPlaceholder="Buscar productos por nombre o código..."
+            
+            selectOptions={ESTADOS_STOCK_FILTRO}
+            selectFilterValue={estadoStockFiltro}
+            onSelectFilterChange={handleStockFilterChange} // Usar el handler que resetea la página
+            
+            onActionButtonClick={handleImport}
+            actionButtonLabel="Importar Datos"
+          />
           </div>
 
           {/* TABLA DE PRODUCTOS */}

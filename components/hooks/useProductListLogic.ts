@@ -40,8 +40,8 @@ export const useProductListLogic = (initialSort: SortOption = 'relevancia') => {
                 const catId = categoriaIdParam ? parseInt(categoriaIdParam, 10) : undefined;
                 
                 // Llamada al servicio de productos
-                const data = await getProductos(subId, catId);
-                setProductos(data);
+                const response = await getProductos(subId, catId);
+                setProductos(response.data);
                 setLoading(false);
             } catch (err) {
                 console.error("Error al cargar productos:", err);
