@@ -105,23 +105,8 @@ export const useCrudCatalog = <T extends CrudItem, C extends ItemForm, U extends
         setCurrentPage(1); 
     };
 
-  // Lógica de filtrado y paginación (Memoizada)
-  const currentItems = useMemo(() => {
-    let filteredData = allItems;
-
-    if (searchTerm) {
-      // Búsqueda genérica por el campo 'nombre'. 
-      // Si la Subcategoría necesita buscar por 'categoria.nombre', esto debe extenderse.
-      filteredData = filteredData.filter((item) =>
-        item.nombre.toLowerCase().includes(searchTerm.toLowerCase()) || 
-        (item.categoria?.nombre && item.categoria.nombre.toLowerCase().includes(searchTerm.toLowerCase()))
-      );
-    }
-
-    const startIndex = (currentPage - 1) * pageSize;
-    const endIndex = startIndex + pageSize;
-    return filteredData.slice(startIndex, endIndex);
-  }, [allItems, currentPage, pageSize, searchTerm]);
+  // Mostrar directamente los datos paginados del backend
+  const currentItems = allItems;
 
   // (Eliminada duplicidad de totalItems)
 
