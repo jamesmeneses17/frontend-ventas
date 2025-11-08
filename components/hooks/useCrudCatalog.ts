@@ -119,16 +119,35 @@ export const useCrudCatalog = <T extends CrudItem, C extends ItemForm, U extends
 
         setTotalItems(total);
 
+        // Si la página solicitada excede el total disponible, ajustarla y salir
+        const totalPages = Math.max(1, Math.ceil(total / pageSize));
+        if (currentPage > totalPages) {
+          setCurrentPage(totalPages);
+          // Dejamos que el efecto que depende de currentPage recargue los items
+          return;
+        }
+
         // Calcular la porción paginada para mostrar en la tabla
         const start = (currentPage - 1) * pageSize;
         const end = start + pageSize;
         setCurrentItems(items.slice(start, end));
       } else if ((response as any).data) {
         const items = (response as any).data as T[];
+        // Cuando el backend implementa paginación, `items` corresponde a la página
+        // actual y `total` al total real. No almacenamos la lista completa en
+        // allItemsFull para evitar confusiones.
         setAllItemsFull(items);
-        setTotalItems((response as any).total ?? (items?.length ?? 0));
+        const total = (response as any).total ?? (items?.length ?? 0);
+        setTotalItems(total);
 
-        // Si backend ya devuelve la página correcta, la usamos tal cual
+        // Si la página solicitada excede el total disponible, ajustarla y salir
+        const totalPages = Math.max(1, Math.ceil(total / pageSize));
+        if (currentPage > totalPages) {
+          setCurrentPage(totalPages);
+          return;
+        }
+
+        // Usamos la página devuelta por el backend directamente
         setCurrentItems(items);
       } else {
         // Fallback: si la respuesta es inesperada, tratamos como array
@@ -159,7 +178,20 @@ export const useCrudCatalog = <T extends CrudItem, C extends ItemForm, U extends
     const handleSearch = (term: string) => {
         setSearchTerm(term);
         // Resetear a la página 1 cuando se realiza una nueva búsqueda
-        setCurrentPage(1); 
+        setCurrentPage(1);
+    };
+
+    // Wrapper para cambiar el tamaño de página y resetear a la página 1
+    const handlePageSizeChangeWrapper = (size: number) => {
+      setPageSize(size);
+      setCurrentPage(1);
+    };
+
+    // Wrapper para cambiar de página (evita valores inválidos)
+    const handlePageChangeWrapper = (page: number) => {
+      const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+      const clamped = Math.max(1, Math.min(page, totalPages));
+      setCurrentPage(clamped);
     };
 
   // currentItems ya está calculado arriba (paginado o devuelto por backend)
@@ -243,8 +275,8 @@ export const useCrudCatalog = <T extends CrudItem, C extends ItemForm, U extends
 
     // Handlers
     setSearchTerm: handleSearch,
-    handlePageChange: setCurrentPage,
-    handlePageSizeChange: setPageSize,
+  handlePageChange: handlePageChangeWrapper,
+  handlePageSizeChange: handlePageSizeChangeWrapper,
     handleAdd,
     handleEdit,
     handleDelete,

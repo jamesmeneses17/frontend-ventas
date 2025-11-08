@@ -2,7 +2,7 @@
 
 import axios from "axios";
 // Asumiendo que tienes tu Producto interface importable o definida.
-import { Producto, Categoria } from "./productosService"; 
+import { Producto, Categoria, getProductos } from "./productosService"; 
 
 const API_URL = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000").replace(/\/+$/g, "");
 const ENDPOINT_BASE = `${API_URL}/precios`;
@@ -65,7 +65,7 @@ export const getPrecios = async (
     page: number = 1,
     size: number = 5,
     searchTerm: string = ""
-): Promise<PaginacionResponse<PrecioConProducto>> => {
+): Promise<PaginacionResponse<PrecioConProducto> | PrecioConProducto[]> => {
     const params = new URLSearchParams();
     params.append("page", page.toString());
     params.append("limit", size.toString());
@@ -75,8 +75,57 @@ export const getPrecios = async (
 
     try {
         const res = await axios.get(endpoint);
-        // Asume que el backend devuelve { data: PrecioConProducto[], total: number }
-        return res.data; 
+        // El backend puede devolver { data: Precio[], total } o simplemente un array.
+        let items: any = res.data;
+        let precios: any[] = [];
+        let total = 0;
+
+        if (items && Array.isArray(items.data)) {
+            precios = items.data;
+            total = items.total || precios.length;
+        } else if (Array.isArray(items)) {
+            precios = items;
+            total = precios.length;
+        }
+
+        // Intentamos obtener lista de productos para enriquecer los precios si vienen solo con productoId
+        let productosList: Producto[] = [];
+        try {
+            const prodsRes = await getProductos(1, 1000, "", "");
+            productosList = prodsRes.data || [];
+        } catch (e) {
+            // Si falla, dejamos la lista vacía; seguiremos devolviendo precios sin producto asociado
+            productosList = [];
+        }
+
+    const enriched = precios.map((p: any) => {
+            const productoEncontrado = productosList.find(pr => Number(pr.id) === Number(p.productoId) || Number(pr.id) === Number(p.producto?.id));
+            const valor_unitario = Number(p.valor_unitario ?? p.valor ?? 0);
+            const descuento = Number(p.descuento_porcentaje ?? 0);
+            const valor_final = Number(p.valor_final ?? (valor_unitario * (1 - descuento / 100)));
+
+            return {
+                id: Number(p.id),
+                productoId: Number(p.productoId ?? p.producto?.id ?? 0),
+                valor_unitario,
+                descuento_porcentaje: descuento,
+                valor_final,
+                estado: p.estado || (descuento > 0 ? "En Promoción" : "Normal"),
+                fecha_inicio: p.fecha_inicio ?? p.start_date ?? null,
+                fecha_fin: p.fecha_fin ?? p.end_date ?? null,
+                producto: productoEncontrado || p.producto || null,
+            } as PrecioConProducto;
+        });
+
+        // Si el backend originalmente devolvió un array simple, devolvemos
+        // también un array para que useCrudCatalog haga el paginado en cliente.
+        if (Array.isArray(items)) {
+            return enriched;
+        }
+
+        // Si el backend devolvió un objeto paginado ({ data, total }),
+        // respetamos esa forma y devolvemos { data, total }.
+        return { data: enriched, total };
     } catch (err) {
         console.error("Error al obtener precios:", err);
         return { data: [], total: 0 };

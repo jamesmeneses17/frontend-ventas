@@ -63,6 +63,11 @@ export default function PreciosTable({
         render: (row: PrecioConProducto) => row.producto?.nombre || "N/A",
     },
     { 
+        key: "producto.nombre", 
+        label: "Costo",
+        render: (row: PrecioConProducto) => row.producto?.nombre || "N/A",
+    },
+    { 
         key: "valor_unitario", 
         label: "Precio Base",
         render: (row: PrecioConProducto) => (
@@ -102,17 +107,7 @@ export default function PreciosTable({
         </span>
       ),
     },
-    { 
-        key: "fecha_inicio", 
-        label: "Vigencia",
-        render: (row: PrecioConProducto) => (
-            <div className="text-sm text-gray-600 whitespace-nowrap">
-                {formatDate(row.fecha_inicio)} 
-                <span className="mx-1">{"->"}</span> 
-                {formatDate(row.fecha_fin)}
-            </div>
-        ),
-    },
+   
   ];
 
   return (
@@ -125,13 +120,11 @@ export default function PreciosTable({
                     <ActionButton
                         icon={<Pencil className="w-4 h-4" />}
                         onClick={() => onEdit(row)}
-                        label="Editar Precio"
                     />
           <ActionButton
             icon={<Trash className="w-4 h-4" />}
             onClick={() => onDelete(row.id)}
             color="danger"
-                        label="Eliminar Precio"
           />
         </div>
       )}
