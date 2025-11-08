@@ -11,15 +11,15 @@ interface Column {
 }
 
 interface CrudTableProps {
-  columns: Column[];
-  data: any[];
+  columns?: Column[];
+  data?: any[];
   onEdit?: (row: any) => void;
   onDelete?: (row: any) => void;
   renderRowActions?: (row: any) => React.ReactNode;
   loading?: boolean;
 }
 
-const CrudTable: React.FC<CrudTableProps> = ({ columns, data, onEdit, onDelete, renderRowActions, loading = false }) => {
+const CrudTable: React.FC<CrudTableProps> = ({ columns = [], data = [], onEdit, onDelete, renderRowActions, loading = false }) => {
   if (loading) {
     return (
       <div className="flex justify-center items-center py-8">
@@ -48,8 +48,16 @@ const CrudTable: React.FC<CrudTableProps> = ({ columns, data, onEdit, onDelete, 
           </tr>
         </thead>
         <tbody className="bg-white divide-y divide-gray-200">
-          {data.map((row, idx) => (
-            <tr key={row?.id ?? idx}>
+          {data.length === 0 ? (
+            <tr>
+              <td colSpan={columns.length + 1} className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
+                No hay registros.
+              </td>
+            </tr>
+          ) : (
+            data.map((row, idx) => {
+              return (
+              <tr key={row?.id ?? idx}>
               {columns.map((col) => {
                 if (col.render) {
                   return (
@@ -132,7 +140,9 @@ const CrudTable: React.FC<CrudTableProps> = ({ columns, data, onEdit, onDelete, 
                 )}
               </td>
             </tr>
-          ))}
+              );
+            })
+          )}
         </tbody>
       </table>
     </div>

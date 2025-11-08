@@ -31,7 +31,7 @@ export default function FilterBar({
   searchTerm,
   onSearchChange,
   searchPlaceholder = "Buscar...",
-  selectOptions,
+  selectOptions = [],
   selectFilterValue,
   onSelectFilterChange,
   onActionButtonClick,
@@ -55,7 +55,7 @@ export default function FilterBar({
           onChange={(e) => onSelectFilterChange(e.target.value)}
           className="p-2 border border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500 text-sm"
         >
-          {selectOptions.map((option) => (
+          {(selectOptions || []).map((option) => (
             <option key={option.value} value={option.value}>
               {option.label}
             </option>

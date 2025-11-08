@@ -3,12 +3,12 @@
 import { useState, useEffect, useMemo } from "react";
 
 type LoadItemsFunction<T> = (
-    all: boolean, 
-    page: number, 
-    size: number, 
-    searchTerm: string, 
-    ...customFilters: any[]
-) => Promise<PaginacionResponse<T>>;
+  all: boolean, 
+  page: number, 
+  size: number, 
+  searchTerm: string, 
+  ...customFilters: any[]
+) => Promise<PaginacionResponse<T> | T[]>;
 
 // Definición de tipos genéricos para las funciones de servicio CRUD
 type CrudService<T, C, U> = {
@@ -42,7 +42,10 @@ export const useCrudCatalog = <T extends CrudItem, C extends ItemForm, U extends
   itemKey: string, // Ej: 'Categoría' o 'Subcategoría'
   options: CrudOptions = {}
 ) => {
-  const [allItems, setAllItems] = useState<T[]>([]);
+  // allItemsFull mantiene la lista completa cuando el servicio devuelve un array
+  // currentItems contiene los items que se muestran en la tabla (paginados)
+  const [allItemsFull, setAllItemsFull] = useState<T[]>([]);
+  const [currentItems, setCurrentItems] = useState<T[]>([]);
   const [loading, setLoading] = useState(true);
   const [totalItems, setTotalItems] = useState(0);
 
@@ -73,22 +76,76 @@ export const useCrudCatalog = <T extends CrudItem, C extends ItemForm, U extends
     setLoading(true);
   try {
             // 🔑 Llamamos a loadItems con todos los parámetros de paginación/búsqueda/filtros
-            const response = await service.loadItems(
-                false, 
-                currentPage, 
-                pageSize, 
-                searchTerm, 
-                ...(options.customDependencies || []) // Pasamos los filtros custom (ej: estadoStockFiltro)
+      const response = await service.loadItems(
+        false,
+        currentPage,
+        pageSize,
+        searchTerm,
+        ...(options.customDependencies || []) // Pasamos los filtros custom (ej: estadoStockFiltro)
+      );
+
+      // Aceptamos dos formatos de respuesta del servicio:
+      // 1) { data: T[], total: number }  (paginación desde backend)
+      // 2) T[] (lista simple)
+      if (Array.isArray(response)) {
+        const items = response as T[];
+        setAllItemsFull(items);
+        let total = items.length;
+
+        // Heurística: si la respuesta parece contener exactamente `pageSize` items,
+        // puede que el backend esté devolviendo sólo la página actual (sin total).
+        // Intentamos pedir la lista completa (`all = true`) para conocer el total real.
+        if (items.length === pageSize) {
+          try {
+            const fullResp = await service.loadItems(
+              true,
+              1,
+              Math.max(1000, pageSize),
+              searchTerm,
+              ...(options.customDependencies || [])
             );
+            if (Array.isArray(fullResp)) {
+              total = (fullResp as T[]).length;
+              setAllItemsFull(fullResp as T[]);
+            } else if ((fullResp as any).data) {
+              total = (fullResp as any).total ?? total;
+              setAllItemsFull((fullResp as any).data as T[]);
+            }
+          } catch (err) {
+            // Si falla el intento de full list, seguimos con el conteo parcial
+            console.debug("No se pudo obtener lista completa para total, usando longitud parcial", err);
+          }
+        }
 
-            setAllItems(response.data);
-            setTotalItems(response.total);
+        setTotalItems(total);
 
-        }catch (error) {
-            console.error(`Error cargando ${itemKey}s:`, error);
-            setNotification({ message: `Error al cargar las ${itemKey}s.`, type: 'error' });
-            setAllItems([]);
-            setTotalItems(0);
+        // Calcular la porción paginada para mostrar en la tabla
+        const start = (currentPage - 1) * pageSize;
+        const end = start + pageSize;
+        setCurrentItems(items.slice(start, end));
+      } else if ((response as any).data) {
+        const items = (response as any).data as T[];
+        setAllItemsFull(items);
+        setTotalItems((response as any).total ?? (items?.length ?? 0));
+
+        // Si backend ya devuelve la página correcta, la usamos tal cual
+        setCurrentItems(items);
+      } else {
+        // Fallback: si la respuesta es inesperada, tratamos como array
+        const items = (response as unknown) as T[];
+        setAllItemsFull(items || []);
+        setTotalItems((items as any)?.length ?? 0);
+        const start = (currentPage - 1) * pageSize;
+        const end = start + pageSize;
+        setCurrentItems((items || []).slice(start, end));
+      }
+
+    }catch (error) {
+      console.error(`Error cargando ${itemKey}s:`, error);
+      setNotification({ message: `Error al cargar las ${itemKey}s.`, type: 'error' });
+      setAllItemsFull([]);
+      setCurrentItems([]);
+      setTotalItems(0);
         } finally {
             setLoading(false);
         }
@@ -105,8 +162,7 @@ export const useCrudCatalog = <T extends CrudItem, C extends ItemForm, U extends
         setCurrentPage(1); 
     };
 
-  // Mostrar directamente los datos paginados del backend
-  const currentItems = allItems;
+  // currentItems ya está calculado arriba (paginado o devuelto por backend)
 
   // (Eliminada duplicidad de totalItems)
 
@@ -154,7 +210,7 @@ export const useCrudCatalog = <T extends CrudItem, C extends ItemForm, U extends
   };
 
   const handleDelete = async (id: number) => {
-    const item = allItems.find((c) => c.id === id);
+    const item = allItemsFull.find((c) => c.id === id);
     if (
       item &&
       confirm(`¿Estás seguro de eliminar ${itemKey.toLowerCase()} "${item.nombre}"?`)

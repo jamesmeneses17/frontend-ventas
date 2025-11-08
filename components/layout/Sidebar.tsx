@@ -36,14 +36,12 @@ const navigation = [
     title: "INVENTARIO Y PRODUCTOS",
     items: [
       { name: "Lista de Productos", href: "/admin/lista-productos", icon: Box },
-      { name: "Control de Stock", href: "/admin/stock", icon: Package },
       { name: "Precios & Ofertas", href: "/admin/precios", icon: DollarSign },
     ],
   },
   {
     title: "OPERACIONES",
     items: [
-      { name: "Compras", href: "/admin/compras", icon: ShoppingCart },
       { name: "Ventas", href: "/admin/ventas", icon: ShoppingCart },
     ],
   },
