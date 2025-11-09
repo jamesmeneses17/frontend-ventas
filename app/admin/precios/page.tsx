@@ -43,6 +43,8 @@ export default function PreciosPage() {
         precioPromedio: 0,
     });
 
+    const [estadoStockFiltro, setEstadoStockFiltro] = React.useState<string>("");
+
     const {
         currentItems,
         loading,
@@ -66,9 +68,10 @@ export default function PreciosPage() {
         {
             // loadItems: listar TODOS los productos (usar la misma lógica de lista de productos)
             // para mostrar en la sección de Precios & Ofertas. Mapeamos Producto -> PrecioConProducto
-            loadItems: async (all, page, size, searchTerm) => {
+            loadItems: async (all, page, size, searchTerm, stockFiltro) => {
                 // Obtenemos productos con la paginación y filtro proporcionados
-                const prodsResp = await getProductos(page, size, "", searchTerm);
+                // Ahora respetamos el filtro de estado de stock (stockFiltro)
+                const prodsResp = await getProductos(page, size, stockFiltro ?? "", searchTerm);
                 const productos = prodsResp.data || [];
                 const total = (prodsResp as any).total ?? productos.length;
 
@@ -194,7 +197,7 @@ export default function PreciosPage() {
             deleteItem: deletePrecio,
         },
         "Precio", // itemKey
-        {} // No necesitamos customDependencies aquí
+        { customDependencies: [estadoStockFiltro] }
     );
 
     // Función para obtener las estadísticas del dashboard de precios
@@ -280,6 +283,19 @@ export default function PreciosPage() {
         { label: "En Promoción", value: "Promocion" },
     ];
 
+    const ESTADOS_STOCK_FILTRO = [
+        { label: "Filtrar por: Todos los Estados", value: "" },
+        { label: "Disponible", value: "Disponible" },
+        { label: "Stock Bajo", value: "Stock Bajo" },
+        { label: "Agotado", value: "Agotado" },
+    ];
+
+    const handleStockFilterChange = (value: string) => {
+        setEstadoStockFiltro(value);
+        // Resetear a la primera página cuando el filtro cambia
+        handlePageChange(1);
+    };
+
 
     return (
         <AuthenticatedLayout>
@@ -344,12 +360,10 @@ export default function PreciosPage() {
                         <FilterBar
                             searchTerm={searchTerm}
                             onSearchChange={setSearchTerm}
-                            searchPlaceholder="Buscar producto por nombre o código..." selectOptions={[]} selectFilterValue={""} onSelectFilterChange={function (value: string): void {
-                                throw new Error("Function not implemented.");
-                            } }                            // Si implementamos filtro por estado de promoción:
-                            // selectOptions={ESTADO_PROMOCION_FILTRO}
-                            // selectFilterValue={""}
-                            // onSelectFilterChange={() => {}}
+                            searchPlaceholder="Buscar producto por nombre o código..."
+                            selectOptions={ESTADOS_STOCK_FILTRO}
+                            selectFilterValue={estadoStockFiltro}
+                            onSelectFilterChange={handleStockFilterChange}
                         />
                     </div>
 

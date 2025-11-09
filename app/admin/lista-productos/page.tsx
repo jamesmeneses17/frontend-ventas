@@ -82,7 +82,6 @@ export default function ListaProductosPage() {
     setNotification,
   } = useCrudCatalog<Producto, CreateProductoData, UpdateProductoData>(
    {
-      // 🔑 CORRECCIÓN 1: loadItems DEBE recibir los parámetros de paginación y filtro.
        // Los parámetros ya no son implícitos 'any', los tipamos o los pasamos.
       loadItems: async (all, page, size, searchTerm, stockFiltro) => {
         // El useCrudCatalog pasa (all: boolean, page: number, size: number, searchTerm, ...customDependencies)
