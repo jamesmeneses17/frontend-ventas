@@ -69,64 +69,73 @@ export default function PreciosPage() {
             loadItems: async (all, page, size, searchTerm) => {
                 return await getPrecios(page, size, searchTerm);
             },
-            // Al crear/editar desde este UI queremos que el valor se guarde en la entidad `productos`
+            // Al crear/editar desde este UI queremos crear/actualizar el registro en la tabla `precios`
+            // y dejar que el servicio de precios (createPrecio) se encargue de sincronizar el producto
             createItem: async (data: CreatePrecioData) => {
-                // LOG: depuración - desde UI de Precios
                 console.log('[PreciosPage.createItem] datos recibidos del formulario:', data);
-                // Actualiza el producto con el nuevo precio (mapeado a precio_costo por productosService)
-                console.log(`[PreciosPage.createItem] actualizando producto id=${data.productoId} con precio_costo=${data.valor_unitario}`);
-                // Enviar explícitamente `precio_costo` al backend para asegurar que se guarde
-                await updateProducto(Number(data.productoId), { precio_costo: Number(data.valor_unitario) } as any);
-                // Obtener el producto actualizado para devolver un objeto compatible con la tabla
-                const producto = await getProductoById(Number(data.productoId));
-                // Emitir evento global para notificar a otras páginas que un producto fue actualizado
+                // Llamamos al servicio que crea el registro de precio. Este servicio ya intenta
+                // propagar el valor al producto (updateProducto) para escribir precio_costo.
                 try {
-                    if (typeof window !== 'undefined') {
-                        window.dispatchEvent(new CustomEvent('producto:updated', { detail: { id: producto.id } }));
+                    const created = await (await import('@/components/services/preciosService')).createPrecio(data);
+                    // Si el servicio devolvió el precio creado, tratamos de obtener el producto relacionado
+                    const producto = created && (created.producto || created.productoId)
+                        ? await getProductoById(Number(created.productoId ?? created.producto?.id))
+                        : await getProductoById(Number(data.productoId));
+
+                    // Emitir evento global para notificar a otras páginas que un producto fue actualizado
+                    try {
+                        if (typeof window !== 'undefined') {
+                            window.dispatchEvent(new CustomEvent('producto:updated', { detail: { id: producto.id } }));
+                        }
+                    } catch (e) {
+                        console.debug('No se pudo emitir evento producto:updated', e);
                     }
-                } catch (e) {
-                    console.debug('No se pudo emitir evento producto:updated', e);
+
+                    const descuento = Number(data.descuento_porcentaje ?? 0);
+                    const valor_unitario = Number(data.valor_unitario ?? 0);
+                    const valor_final = Number((data as any).valor_final ?? (valor_unitario * (1 - descuento / 100)));
+                    return {
+                        id: created?.id ?? 0,
+                        productoId: Number(data.productoId),
+                        valor_unitario,
+                        descuento_porcentaje: descuento,
+                        valor_final,
+                        estado: descuento > 0 ? "En Promoción" : "Normal",
+                        fecha_inicio: data.fecha_inicio || new Date().toISOString().substring(0,10),
+                        fecha_fin: data.fecha_fin ?? null,
+                        producto,
+                    } as PrecioConProducto;
+                } catch (err) {
+                    console.error('[PreciosPage.createItem] error creando precio:', err);
+                    throw err;
                 }
-                const descuento = Number(data.descuento_porcentaje ?? 0);
-                const valor_unitario = Number(data.valor_unitario ?? 0);
-                const valor_final = Number((data as any).valor_final ?? (valor_unitario * (1 - descuento / 100)));
-                return {
-                    id: 0,
-                    productoId: Number(data.productoId),
-                    valor_unitario,
-                    descuento_porcentaje: descuento,
-                    valor_final,
-                    estado: descuento > 0 ? "En Promoción" : "Normal",
-                    fecha_inicio: data.fecha_inicio || new Date().toISOString().substring(0,10),
-                    fecha_fin: data.fecha_fin ?? null,
-                    producto,
-                } as PrecioConProducto;
             },
             updateItem: async (id: number, data: UpdatePrecioData) => {
-                // LOG: depuración - desde UI de Precios
                 console.log('[PreciosPage.updateItem] editar precio id=', id, 'data=', data);
-                // Si se edita un precio, aplicamos el cambio al producto asociado
-                const pid = Number((data as any).productoId ?? 0);
-                if (pid > 0 && typeof (data as any).valor_unitario !== "undefined") {
-                    console.log(`[PreciosPage.updateItem] actualizando producto id=${pid} con precio_costo=${(data as any).valor_unitario}`);
-                    // Enviar `precio_costo` explícito para forzar la escritura en la columna correcta
-                    await updateProducto(pid, { precio_costo: Number((data as any).valor_unitario) } as any);
+                try {
+                    const preciosService = await import('@/components/services/preciosService');
+                    const updated = await preciosService.updatePrecio(id, data);
+                    const pid = Number((data as any).productoId ?? updated?.productoId ?? 0);
+                    const producto = pid > 0 ? await getProductoById(pid) : null;
+
+                    const descuento = Number((data as any).descuento_porcentaje ?? 0);
+                    const valor_unitario = Number((data as any).valor_unitario ?? 0);
+                    const valor_final = Number((data as any).valor_final ?? (valor_unitario * (1 - descuento / 100)));
+                    return {
+                        id: id,
+                        productoId: pid,
+                        valor_unitario,
+                        descuento_porcentaje: descuento,
+                        valor_final,
+                        estado: descuento > 0 ? "En Promoción" : "Normal",
+                        fecha_inicio: (data as any).fecha_inicio || new Date().toISOString().substring(0,10),
+                        fecha_fin: (data as any).fecha_fin ?? null,
+                        producto: producto,
+                    } as PrecioConProducto;
+                } catch (err) {
+                    console.error('[PreciosPage.updateItem] error actualizando precio:', err);
+                    throw err;
                 }
-                const producto = pid > 0 ? await getProductoById(pid) : null;
-                const descuento = Number((data as any).descuento_porcentaje ?? 0);
-                const valor_unitario = Number((data as any).valor_unitario ?? 0);
-                const valor_final = Number((data as any).valor_final ?? (valor_unitario * (1 - descuento / 100)));
-                return {
-                    id: id,
-                    productoId: pid,
-                    valor_unitario,
-                    descuento_porcentaje: descuento,
-                    valor_final,
-                    estado: descuento > 0 ? "En Promoción" : "Normal",
-                    fecha_inicio: (data as any).fecha_inicio || new Date().toISOString().substring(0,10),
-                    fecha_fin: (data as any).fecha_fin ?? null,
-                    producto: producto,
-                } as PrecioConProducto;
             },
             deleteItem: deletePrecio,
         },

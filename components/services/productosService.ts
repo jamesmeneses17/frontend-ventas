@@ -223,17 +223,37 @@ export const getProductos = async (
  * Obtener un producto por ID.
  */
 export const getProductoById = async (id: number): Promise<Producto> => {
-    const res = await axios.get(`${ENDPOINT_BASE}/${id}/with-relations`);
-    // Asegurarse de que el precio y stock sean números para RHF
-    const data = res.data;
-    // Preferir precio_costo cuando exista y sea > 0, sino usar precio
-    const precioCostoNum = Number(data.precio_costo ?? 0);
-    const precioNum = Number(data.precio ?? 0);
-    data.precio = precioCostoNum > 0 ? precioCostoNum : precioNum;
-    data.stock = Number(data.stock) || 0;
-    data.stockMinimo = Number(data.stockMinimo) || 5;
-
-    return data as Producto;
+    // Primero intentamos la ruta con-relations que algunos backends exponen.
+    // Si falla (por ejemplo, el backend no la tiene), intentamos la ruta simple /productos/:id
+    let lastError: any = null;
+    try {
+        const res = await axios.get(`${ENDPOINT_BASE}/${id}/with-relations`);
+        const data = res.data;
+        // Normalizar campos numéricos
+        const precioCostoNum = Number(data.precio_costo ?? 0);
+        const precioNum = Number(data.precio ?? 0);
+        data.precio = precioCostoNum > 0 ? precioCostoNum : precioNum;
+        data.stock = Number(data.stock) || 0;
+        data.stockMinimo = Number(data.stockMinimo) || 5;
+        return data as Producto;
+    } catch (err: any) {
+        lastError = err;
+        console.debug(`[getProductoById] Endpoint /with-relations no disponible para id=${id}, intentando /productos/:id — error:`, err?.message ?? err);
+        try {
+            const res2 = await axios.get(`${ENDPOINT_BASE}/${id}`);
+            const data = res2.data;
+            const precioCostoNum = Number(data.precio_costo ?? 0);
+            const precioNum = Number(data.precio ?? 0);
+            data.precio = precioCostoNum > 0 ? precioCostoNum : precioNum;
+            data.stock = Number(data.stock) || 0;
+            data.stockMinimo = Number(data.stockMinimo) || 5;
+            return data as Producto;
+        } catch (err2: any) {
+            console.error(`[getProductoById] Falló obtener producto id=${id} en ambos endpoints:`, lastError?.message ?? lastError, err2?.message ?? err2);
+            // Relanzar el primer error para que la capa superior lo muestre como antes
+            throw lastError || err2;
+        }
+    }
 };
 
 // --------------------------------------------------
