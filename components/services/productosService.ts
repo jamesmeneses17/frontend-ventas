@@ -146,6 +146,19 @@ export const getProductos = async (
 
     try {
         const res = await axios.get(endpoint);
+        // Si el servidor responde con un código HTTP de error, registrar y devolver vacío
+        if (res.status >= 400) {
+            console.error('[getProductos] HTTP error', res.status, res.data);
+            return { data: [], total: 0 };
+        }
+        // Algunos backends devuelven { statusCode: 500, message: '...' } dentro del body
+        if (res.data && typeof res.data === 'object' && (res.data.statusCode || res.data.status)) {
+            const code = res.data.statusCode ?? res.data.status;
+            if (code >= 400) {
+                console.error('[getProductos] API error body', code, res.data);
+                return { data: [], total: 0 };
+            }
+        }
         let items: any = res.data;
         let productos: Producto[] = [];
         let total = 0;
@@ -159,13 +172,17 @@ export const getProductos = async (
             total = productos.length;
         }
 
-        // Normalizar los campos numéricos
+        // Normalizar los campos numéricos y mapear 'precio' al nuevo campo 'precio_costo'
         const normalized = productos.map((it: any) => {
-            const finalPrice = Number(it.precio) || 0;
+            // El backend ahora envía `precio_costo` como el valor de costo del producto.
+            // Si no existe, caemos a `it.precio` por compatibilidad.
+            const finalPrice = Number(it.precio_costo ?? it.precio ?? 0);
             const finalStock = Number(it.stock) || 0;
             const finalStockMinimo = Number(it.stockMinimo) || 5;
             return {
                 ...it,
+                // 🛑 CAMBIO CRÍTICO: la columna 'precio' que muestra la tabla
+                // debe tomar el valor de 'precio_costo' proporcionado por el backend.
                 precio: finalPrice,
                 stock: finalStock,
                 stockMinimo: finalStockMinimo,
@@ -174,8 +191,11 @@ export const getProductos = async (
 
         return { data: normalized, total };
     } catch (err: any) {
-        console.error("Error al obtener productos:", err);
-        return { data: [], total: 0 };
+        // Mostrar detalles del error para el desarrollador y relanzarlo para que
+        // el hook useCrudCatalog pueda mostrar la notificación en la UI.
+        console.error("Error al obtener productos:", err?.message ?? err, err?.response?.data ?? err);
+        // Lanzamos el error para que la capa superior (useCrudCatalog) lo capture y muestre notificación
+        throw err;
     }
 };
 
@@ -191,6 +211,41 @@ export const getProductoById = async (id: number): Promise<Producto> => {
     data.stockMinimo = Number(data.stockMinimo) || 5;
 
     return data as Producto;
+};
+
+// --------------------------------------------------
+// Helpers: calcular estado de stock y normalizar lista
+// --------------------------------------------------
+const calcularEstadoStock = (stock: number, stockMinimo: number) => {
+    const s = Number(stock || 0);
+    const min = Number(stockMinimo || 0);
+    if (s <= 0) return 'Agotado';
+    if (s <= min) return 'Stock Bajo';
+    return 'Disponible';
+};
+
+/**
+ * Normaliza un array simple de productos que vienen del backend.
+ * Mapea `precio` al nuevo campo `precio_costo` y normaliza stock.
+ */
+export const getProductosSimple = async (productosArray: any[]): Promise<Producto[]> => {
+    const normalized = productosArray.map((p: any) => {
+        const finalStockMinimo = Number(p.stockMinimo ?? 0);
+        const calculated_estado_stock = calcularEstadoStock(Number(p.stock ?? 0), finalStockMinimo);
+
+        return {
+            ...p,
+            // CAMBIO: Usar precio_costo para mostrar en la tabla
+            precio: Number(p.precio_costo ?? p.precio ?? 0),
+            stock: Number(p.stock ?? 0),
+            stockMinimo: finalStockMinimo,
+            estado_stock: calculated_estado_stock,
+        } as Producto;
+    });
+
+    // Ordenar por nombre por defecto
+    const ordenado = normalized.sort((a, b) => String(a.nombre).localeCompare(String(b.nombre)));
+    return ordenado as Producto[];
 };
 
 // ... (createProducto, updateProducto, deleteProducto se mantienen)

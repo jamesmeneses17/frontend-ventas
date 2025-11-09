@@ -166,19 +166,19 @@ export default function ListaProductosPage() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <CardStat 
             title="Total Productos" 
-            value={productSummary.totalProductos.toString()} 
+            value={String(productSummary.totalProductos ?? 0)} 
             color="text-indigo-600" 
             icon={<Box className="h-4 w-4" />} 
           />
           <CardStat 
             title="Stock Bajo" 
-            value={productSummary.stockBajo.toString()} 
+            value={String(productSummary.stockBajo ?? 0)} 
             color="text-yellow-600" 
             icon={<AlertTriangle className="h-4 w-4" />} 
           />
           <CardStat 
             title="Sin Stock" 
-            value={productSummary.sinStock.toString()} 
+            value={String(productSummary.sinStock ?? 0)} 
             color="text-red-600" 
             icon={<Package className="h-4 w-4" />} 
           />
