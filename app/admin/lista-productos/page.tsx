@@ -121,6 +121,27 @@ export default function ListaProductosPage() {
     updateStats();
   }, [updateStats]);
 
+  // Listener para eventos cuando otro lugar (p.ej. página de Precios) actualice un producto
+  React.useEffect(() => {
+    const handler = (e: any) => {
+      console.log('[ListaProductos] Recibido evento producto:updated, recargando lista', e?.detail);
+      // Forzar recarga de la página actual
+      handlePageChange(1);
+      // también actualizar stats
+      updateStats();
+    };
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('producto:updated', handler as EventListener);
+    }
+
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('producto:updated', handler as EventListener);
+      }
+    };
+  }, [handlePageChange, updateStats]);
+
   // Handlers locales para actualizar stats después de operaciones CRUD
   const handleFormSubmitWithStats = async (data: CreateProductoData | UpdateProductoData) => {
     setFormError("");

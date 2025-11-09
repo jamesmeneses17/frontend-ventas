@@ -63,9 +63,13 @@ export default function PreciosTable({
         render: (row: PrecioConProducto) => row.producto?.nombre || "N/A",
     },
     { 
-        key: "producto.nombre", 
+        key: "producto.precio", 
         label: "Costo",
-        render: (row: PrecioConProducto) => row.producto?.nombre || "N/A",
+        render: (row: PrecioConProducto) => (
+            <span className="font-semibold text-gray-700">
+                {formatCurrency(Number(((row.producto as any)?.precio) ?? row.valor_unitario ?? 0))}
+            </span>
+        ),
     },
     { 
         key: "valor_unitario", 

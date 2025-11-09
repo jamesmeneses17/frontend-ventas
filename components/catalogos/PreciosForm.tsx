@@ -139,11 +139,15 @@ export default function PreciosForm({ initialData, onSubmit, onCancel, formError
     const descuento = Number(formValues.descuento_porcentaje || 0);
     const precioFinal = valorUnitario * (1 - descuento / 100);
 
+    // Precio/costo del producto seleccionado (readonly)
+    const selectedProducto = productos.find(p => Number(p.id) === Number(formValues.productoId));
+    const costoProducto = Number(selectedProducto?.precio ?? 0);
+
     return (
         <form onSubmit={handleSubmit(submitForm)} className="space-y-4">
             
-            {/* Fila 1: Selector de Producto y Precio Base */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Fila 1: Selector de Producto, Costo (readonly) y Precio Base */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {/* 🔑 Selector de Producto: Solo si es Creación o si se permite cambiar la asignación */}
                 <FormSelect
                     label="Producto a Asignar"
@@ -153,6 +157,14 @@ export default function PreciosForm({ initialData, onSubmit, onCancel, formError
                     options={productoOptions}
                     disabled={loadingLookups || Boolean(initialData?.id)} // 🛑 Deshabilitar en Edición
                     required
+                />
+                {/* Costo del producto (readonly) */}
+                <FormInput
+                    label="Costo (producto)"
+                    name="costo_producto"
+                    type="text"
+                    value={formatCurrency(costoProducto)}
+                    disabled
                 />
                 
                 <FormInput

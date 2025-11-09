@@ -22,14 +22,15 @@ import PreciosTable from "../../../components/catalogos/PreciosTable";
 // Servicios y Tipos
 import {
     getPrecios,
-    createPrecio,
-    updatePrecio,
     deletePrecio,
     PrecioConProducto, // Tipo para el ítem de la tabla (precio + detalles de producto)
     CreatePrecioData, // Tipo para la creación (normalmente requiere productId, valor)
     UpdatePrecioData, // Tipo para la actualización
     PrecioStats, // Tipo para los datos estadísticos
-} from "../../../components/services/preciosService"; 
+} from "@/components/services/preciosService"; 
+
+// Importamos funciones de productos para aplicar el precio directamente
+import { updateProducto, getProductoById } from "@/components/services/productosService";
 
 // -------------------- COMPONENTE PRINCIPAL --------------------
 export default function PreciosPage() {
@@ -64,14 +65,69 @@ export default function PreciosPage() {
         setNotification,
     } = useCrudCatalog<PrecioConProducto, CreatePrecioData, UpdatePrecioData>(
         {
-            // loadItems adaptado para el servicio de Precios
-            // En este caso, no usamos filtros custom, solo paginación y búsqueda
+            // loadItems: seguimos usando getPrecios para listado (si tu backend mantiene tabla precios)
             loadItems: async (all, page, size, searchTerm) => {
-                // El servicio getPrecios DEBE aceptar page, size y searchTerm
                 return await getPrecios(page, size, searchTerm);
             },
-            createItem: createPrecio,
-            updateItem: updatePrecio,
+            // Al crear/editar desde este UI queremos que el valor se guarde en la entidad `productos`
+            createItem: async (data: CreatePrecioData) => {
+                // LOG: depuración - desde UI de Precios
+                console.log('[PreciosPage.createItem] datos recibidos del formulario:', data);
+                // Actualiza el producto con el nuevo precio (mapeado a precio_costo por productosService)
+                console.log(`[PreciosPage.createItem] actualizando producto id=${data.productoId} con precio_costo=${data.valor_unitario}`);
+                // Enviar explícitamente `precio_costo` al backend para asegurar que se guarde
+                await updateProducto(Number(data.productoId), { precio_costo: Number(data.valor_unitario) } as any);
+                // Obtener el producto actualizado para devolver un objeto compatible con la tabla
+                const producto = await getProductoById(Number(data.productoId));
+                // Emitir evento global para notificar a otras páginas que un producto fue actualizado
+                try {
+                    if (typeof window !== 'undefined') {
+                        window.dispatchEvent(new CustomEvent('producto:updated', { detail: { id: producto.id } }));
+                    }
+                } catch (e) {
+                    console.debug('No se pudo emitir evento producto:updated', e);
+                }
+                const descuento = Number(data.descuento_porcentaje ?? 0);
+                const valor_unitario = Number(data.valor_unitario ?? 0);
+                const valor_final = Number((data as any).valor_final ?? (valor_unitario * (1 - descuento / 100)));
+                return {
+                    id: 0,
+                    productoId: Number(data.productoId),
+                    valor_unitario,
+                    descuento_porcentaje: descuento,
+                    valor_final,
+                    estado: descuento > 0 ? "En Promoción" : "Normal",
+                    fecha_inicio: data.fecha_inicio || new Date().toISOString().substring(0,10),
+                    fecha_fin: data.fecha_fin ?? null,
+                    producto,
+                } as PrecioConProducto;
+            },
+            updateItem: async (id: number, data: UpdatePrecioData) => {
+                // LOG: depuración - desde UI de Precios
+                console.log('[PreciosPage.updateItem] editar precio id=', id, 'data=', data);
+                // Si se edita un precio, aplicamos el cambio al producto asociado
+                const pid = Number((data as any).productoId ?? 0);
+                if (pid > 0 && typeof (data as any).valor_unitario !== "undefined") {
+                    console.log(`[PreciosPage.updateItem] actualizando producto id=${pid} con precio_costo=${(data as any).valor_unitario}`);
+                    // Enviar `precio_costo` explícito para forzar la escritura en la columna correcta
+                    await updateProducto(pid, { precio_costo: Number((data as any).valor_unitario) } as any);
+                }
+                const producto = pid > 0 ? await getProductoById(pid) : null;
+                const descuento = Number((data as any).descuento_porcentaje ?? 0);
+                const valor_unitario = Number((data as any).valor_unitario ?? 0);
+                const valor_final = Number((data as any).valor_final ?? (valor_unitario * (1 - descuento / 100)));
+                return {
+                    id: id,
+                    productoId: pid,
+                    valor_unitario,
+                    descuento_porcentaje: descuento,
+                    valor_final,
+                    estado: descuento > 0 ? "En Promoción" : "Normal",
+                    fecha_inicio: (data as any).fecha_inicio || new Date().toISOString().substring(0,10),
+                    fecha_fin: (data as any).fecha_fin ?? null,
+                    producto: producto,
+                } as PrecioConProducto;
+            },
             deleteItem: deletePrecio,
         },
         "Precio", // itemKey
@@ -81,7 +137,7 @@ export default function PreciosPage() {
     // Función para obtener las estadísticas del dashboard de precios
     const updateStats = React.useCallback(() => {
         // Asumiendo que has creado la función getPreciosStats en preciosService
-        import("../../../components/services/preciosService").then(mod => {
+        import("@/components/services/preciosService").then(mod => {
             if (mod.getPreciosStats) {
                 mod.getPreciosStats()
                     .then(setStats)
@@ -190,8 +246,9 @@ export default function PreciosPage() {
                         <FilterBar
                             searchTerm={searchTerm}
                             onSearchChange={setSearchTerm}
-                            searchPlaceholder="Buscar producto por nombre o código..."
-                            // Si implementamos filtro por estado de promoción:
+                            searchPlaceholder="Buscar producto por nombre o código..." selectOptions={[]} selectFilterValue={""} onSelectFilterChange={function (value: string): void {
+                                throw new Error("Function not implemented.");
+                            } }                            // Si implementamos filtro por estado de promoción:
                             // selectOptions={ESTADO_PROMOCION_FILTRO}
                             // selectFilterValue={""}
                             // onSelectFilterChange={() => {}}

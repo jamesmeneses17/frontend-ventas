@@ -21,7 +21,9 @@ type CrudService<T, C, U> = {
 // Tipo para el ítem, debe tener 'id' y 'nombre'
 interface CrudItem {
   id: number;
-  nombre: string;
+  // 'nombre' es útil en muchos catálogos, pero no todos los ítems lo tienen (por ejemplo PrecioConProducto).
+  // Lo dejamos opcional para soportar tipos que no exponen 'nombre'.
+  nombre?: string;
   [key: string]: any; // Permite propiedades adicionales como estadoId, categoria, etc.
 }
 

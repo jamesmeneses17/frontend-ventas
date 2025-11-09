@@ -21,7 +21,15 @@ export const getProductosStats = async (): Promise<{ total: number; stockBajo: n
  * Crea un nuevo producto.
  */
 export const createProducto = async (data: CreateProductoData): Promise<Producto> => {
-    const res = await axios.post(ENDPOINT_BASE, data);
+    // Algunos backends esperan el campo 'precio_costo' en lugar de 'precio'.
+    const payload: any = { ...data };
+    if (typeof payload.precio !== 'undefined') {
+        payload.precio_costo = payload.precio;
+        // mantener 'precio' por compatibilidad no debería hacer daño, pero
+        // si prefieres enviarlo solo como 'precio_costo' descomenta la siguiente línea:
+        // delete payload.precio;
+    }
+    const res = await axios.post(ENDPOINT_BASE, payload);
     return res.data as Producto;
 };
 
@@ -29,7 +37,17 @@ export const createProducto = async (data: CreateProductoData): Promise<Producto
  * Actualiza un producto existente.
  */
 export const updateProducto = async (id: number, data: UpdateProductoData): Promise<Producto> => {
-    const res = await axios.patch(`${ENDPOINT_BASE}/${id}`, data);
+    const payload: any = { ...data };
+    if (typeof payload.precio !== 'undefined') {
+        payload.precio_costo = payload.precio;
+            // Enviar SOLO `precio_costo` para evitar ambigüedad en el backend.
+            // Algunos backends pueden ignorar `precio` y solo aceptar `precio_costo`.
+            delete payload.precio;
+    }
+    const endpoint = `${ENDPOINT_BASE}/${id}`;
+        console.log('[updateProducto] PATCH', endpoint, 'payload (enviando precio_costo):', payload);
+    const res = await axios.patch(endpoint, payload);
+    console.log('[updateProducto] respuesta:', res?.data);
     return res.data as Producto;
 };
 
@@ -174,9 +192,11 @@ export const getProductos = async (
 
         // Normalizar los campos numéricos y mapear 'precio' al nuevo campo 'precio_costo'
         const normalized = productos.map((it: any) => {
-            // El backend ahora envía `precio_costo` como el valor de costo del producto.
-            // Si no existe, caemos a `it.precio` por compatibilidad.
-            const finalPrice = Number(it.precio_costo ?? it.precio ?? 0);
+            // El backend puede enviar `precio_costo` o `precio`. Preferimos usar
+            // `precio_costo` cuando es mayor a 0. Si es 0 o nulo, usamos `precio`.
+            const precioCostoNum = Number(it.precio_costo ?? 0);
+            const precioNum = Number(it.precio ?? 0);
+            const finalPrice = precioCostoNum > 0 ? precioCostoNum : precioNum;
             const finalStock = Number(it.stock) || 0;
             const finalStockMinimo = Number(it.stockMinimo) || 5;
             return {
@@ -203,14 +223,17 @@ export const getProductos = async (
  * Obtener un producto por ID.
  */
 export const getProductoById = async (id: number): Promise<Producto> => {
-    const res = await axios.get(`${ENDPOINT_BASE}/${id}/with-relations`); 
+    const res = await axios.get(`${ENDPOINT_BASE}/${id}/with-relations`);
     // Asegurarse de que el precio y stock sean números para RHF
     const data = res.data;
-    data.precio = Number(data.precio) || 0;
+    // Preferir precio_costo cuando exista y sea > 0, sino usar precio
+    const precioCostoNum = Number(data.precio_costo ?? 0);
+    const precioNum = Number(data.precio ?? 0);
+    data.precio = precioCostoNum > 0 ? precioCostoNum : precioNum;
     data.stock = Number(data.stock) || 0;
     data.stockMinimo = Number(data.stockMinimo) || 5;
 
-    return data as Producto;
+    return data as Producto;
 };
 
 // --------------------------------------------------
@@ -232,11 +255,12 @@ export const getProductosSimple = async (productosArray: any[]): Promise<Product
     const normalized = productosArray.map((p: any) => {
         const finalStockMinimo = Number(p.stockMinimo ?? 0);
         const calculated_estado_stock = calcularEstadoStock(Number(p.stock ?? 0), finalStockMinimo);
-
+        const precioCostoNum = Number(p.precio_costo ?? 0);
+        const precioNum = Number(p.precio ?? 0);
         return {
             ...p,
-            // CAMBIO: Usar precio_costo para mostrar en la tabla
-            precio: Number(p.precio_costo ?? p.precio ?? 0),
+            // Preferir precio_costo cuando esté disponible (>0)
+            precio: precioCostoNum > 0 ? precioCostoNum : precioNum,
             stock: Number(p.stock ?? 0),
             stockMinimo: finalStockMinimo,
             estado_stock: calculated_estado_stock,

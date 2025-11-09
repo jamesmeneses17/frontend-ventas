@@ -2,7 +2,7 @@
 
 import axios from "axios";
 // Asumiendo que tienes tu Producto interface importable o definida.
-import { Producto, Categoria, getProductos } from "./productosService"; 
+import { Producto, Categoria, getProductos, updateProducto } from "./productosService"; 
 
 const API_URL = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000").replace(/\/+$/g, "");
 const ENDPOINT_BASE = `${API_URL}/precios`;
@@ -150,8 +150,28 @@ export const getPreciosStats = async (): Promise<PrecioStats> => {
 // --- CRUD BÁSICO ---
 
 export const createPrecio = async (data: CreatePrecioData): Promise<any> => {
+    console.log('[createPrecio] Enviando a /precios payload:', data);
     const res = await axios.post(ENDPOINT_BASE, data);
-    return res.data;
+    const created = res.data;
+    console.log('[createPrecio] Respuesta creación precio:', created);
+
+    // Si la creación del precio fue exitosa y viene un productoId,
+    // intentamos también actualizar el producto para reflejar el precio
+    // en el campo `precio_costo` (mappeado por productosService.updateProducto).
+    try {
+        if (data && typeof data.productoId !== "undefined" && data.productoId > 0) {
+            console.log(`[createPrecio] Intentando actualizar producto id=${data.productoId} con precio_costo=${data.valor_unitario}`);
+            // Llamamos a updateProducto para que el campo 'precio' se mapee a 'precio_costo'
+            await updateProducto(Number(data.productoId), { precio: Number(data.valor_unitario) });
+            console.log(`[createPrecio] updateProducto ok para producto id=${data.productoId}`);
+        }
+    } catch (err) {
+        // No hacemos fallar la creación del precio si la actualización del producto falla,
+        // pero dejamos un log para ayudar al debugging.
+        console.error("Precio creado pero falló al actualizar el producto con precio_costo:", err);
+    }
+
+    return created;
 };
 
 export const updatePrecio = async (id: number, data: UpdatePrecioData): Promise<any> => {
