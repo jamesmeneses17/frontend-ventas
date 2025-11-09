@@ -30,7 +30,7 @@ import {
 } from "@/components/services/preciosService"; 
 
 // Importamos funciones de productos para aplicar el precio directamente
-import { updateProducto, getProductoById } from "@/components/services/productosService";
+import { updateProducto, getProductoById, getProductos } from "@/components/services/productosService";
 
 // -------------------- COMPONENTE PRINCIPAL --------------------
 export default function PreciosPage() {
@@ -43,7 +43,6 @@ export default function PreciosPage() {
         precioPromedio: 0,
     });
 
-    // 📌 Usaremos el 'searchTerm' para buscar productos por nombre/código
     const {
         currentItems,
         loading,
@@ -65,9 +64,64 @@ export default function PreciosPage() {
         setNotification,
     } = useCrudCatalog<PrecioConProducto, CreatePrecioData, UpdatePrecioData>(
         {
-            // loadItems: seguimos usando getPrecios para listado (si tu backend mantiene tabla precios)
+            // loadItems: listar TODOS los productos (usar la misma lógica de lista de productos)
+            // para mostrar en la sección de Precios & Ofertas. Mapeamos Producto -> PrecioConProducto
             loadItems: async (all, page, size, searchTerm) => {
-                return await getPrecios(page, size, searchTerm);
+                // Obtenemos productos con la paginación y filtro proporcionados
+                const prodsResp = await getProductos(page, size, "", searchTerm);
+                const productos = prodsResp.data || [];
+                const total = (prodsResp as any).total ?? productos.length;
+
+                // También traemos los precios existentes para poder mezclar la info
+                // y mostrar el descuento/valor_final cuando exista un precio para el producto.
+                let preciosList: any[] = [];
+                try {
+                    const preciosResp = await getPrecios(1, 1000, "");
+                    preciosList = Array.isArray(preciosResp) ? preciosResp : (preciosResp as any).data || [];
+                } catch (e) {
+                    preciosList = [];
+                }
+
+                const precioMap = new Map<number, any>();
+                preciosList.forEach((pr: any) => {
+                    const pid = Number(pr.productoId ?? pr.producto?.id ?? 0);
+                    if (pid > 0) precioMap.set(pid, pr);
+                });
+
+                const enriched = productos.map((p: any) => {
+                    const productoId = Number(p.id);
+                    const precioObj = precioMap.get(productoId);
+                    if (precioObj) {
+                        // Si existe precio, mostrar los valores del precio (base, descuento, final) y usar id del precio
+                        return {
+                            id: Number(precioObj.id ?? 0),
+                            productoId: productoId,
+                            valor_unitario: Number(precioObj.valor_unitario ?? precioObj.valor ?? p.precio ?? 0),
+                            descuento_porcentaje: Number(precioObj.descuento_porcentaje ?? 0),
+                            valor_final: Number(precioObj.valor_final ?? (Number(precioObj.valor_unitario ?? 0) * (1 - Number(precioObj.descuento_porcentaje ?? 0) / 100)) ),
+                            estado: precioObj.estado || (Number(precioObj.descuento_porcentaje ?? 0) > 0 ? "En Promoción" : "Normal"),
+                            fecha_inicio: precioObj.fecha_inicio ?? "",
+                            fecha_fin: precioObj.fecha_fin ?? "",
+                            producto: p,
+                        } as unknown as PrecioConProducto;
+                    }
+
+                    // Si no hay precio, mostramos datos base del producto
+                    const valor = Number(p.precio ?? 0);
+                    return {
+                        id: 0, // Sin precio creado aún; las filas representan producto
+                        productoId: productoId,
+                        valor_unitario: valor,
+                        descuento_porcentaje: 0,
+                        valor_final: valor,
+                        estado: "Normal",
+                        fecha_inicio: p.fecha_inicio ?? "",
+                        fecha_fin: p.fecha_fin ?? "",
+                        producto: p,
+                    } as unknown as PrecioConProducto;
+                });
+
+                return { data: enriched, total };
             },
             // Al crear/editar desde este UI queremos crear/actualizar el registro en la tabla `precios`
             // y dejar que el servicio de precios (createPrecio) se encargue de sincronizar el producto
@@ -144,15 +198,50 @@ export default function PreciosPage() {
     );
 
     // Función para obtener las estadísticas del dashboard de precios
-    const updateStats = React.useCallback(() => {
-        // Asumiendo que has creado la función getPreciosStats en preciosService
-        import("@/components/services/preciosService").then(mod => {
-            if (mod.getPreciosStats) {
-                mod.getPreciosStats()
-                    .then(setStats)
-                    .catch(() => console.error("Error cargando estadísticas de precios"));
+    const updateStats = React.useCallback(async () => {
+        try {
+            // Obtener conteo total de productos usando el servicio de productos
+            const prodsResp = await getProductos(1, 1, "", "");
+            // `getProductos` puede devolver { data, total } o array; preferimos el total si viene
+            const totalProductos = (prodsResp as any).total ?? (Array.isArray(prodsResp) ? prodsResp.length : 0);
+
+            // Obtener precios para calcular cuantos productos están en promoción
+            let preciosList: any[] = [];
+            try {
+                const preciosResp = await getPrecios(1, 1000, "");
+                preciosList = Array.isArray(preciosResp) ? preciosResp : (preciosResp as any).data || [];
+            } catch (e) {
+                preciosList = [];
             }
-        });
+
+            // Contar productos únicos con descuento > 0
+            const productosConDescuento = new Set<number>();
+            preciosList.forEach(p => {
+                const descuento = Number(p.descuento_porcentaje ?? p.descuento ?? 0);
+                const pid = Number(p.productoId ?? p.producto?.id ?? 0);
+                if (pid > 0 && descuento > 0) productosConDescuento.add(pid);
+            });
+
+            // Precio promedio: calculado a partir de la lista de productos (campo precio normalizado)
+            // Intentamos obtener una página amplia de productos para calcular el promedio
+            let productosForAvg: any[] = [];
+            try {
+                const prodsAll = await getProductos(1, 1000, "", "");
+                productosForAvg = (prodsAll as any).data || (Array.isArray(prodsAll) ? prodsAll : []);
+            } catch (e) {
+                productosForAvg = [];
+            }
+            const preciosNums = productosForAvg.map(p => Number(p.precio ?? 0)).filter(v => !isNaN(v));
+            const precioPromedio = preciosNums.length > 0 ? preciosNums.reduce((a,b) => a+b, 0)/preciosNums.length : 0;
+
+            setStats({
+                totalProductos: Number(totalProductos ?? 0),
+                productosEnPromocion: productosConDescuento.size,
+                precioPromedio: Number(precioPromedio ?? 0),
+            });
+        } catch (err) {
+            console.error('Error calculando estadísticas de precios:', err);
+        }
     }, []);
 
     // Cargar estadísticas al montar el componente
