@@ -83,11 +83,17 @@ export default function PreciosTable({
     { 
         key: "descuento_porcentaje", 
         label: "Desc. (%)",
-        render: (row: PrecioConProducto) => (
-            <span className={row.descuento_porcentaje > 0 ? "font-bold text-red-600" : "text-gray-500"}>
-                {row.descuento_porcentaje}%
-            </span>
-        ),
+        render: (row: PrecioConProducto) => {
+            // Algunos registros pueden venir sin `descuento_porcentaje` pero con valor_unitario/valor_final
+            const descuentoNum = Number(row.descuento_porcentaje ?? 0) ||
+                (row.valor_unitario ? Math.round((1 - (Number(row.valor_final || 0) / Number(row.valor_unitario || 1))) * 100) : 0);
+            const clase = descuentoNum > 0 ? "font-bold text-red-600" : "text-gray-500";
+            return (
+                <span className={clase}>
+                    {descuentoNum}%
+                </span>
+            );
+        }
     },
     { 
         key: "valor_final", 
@@ -98,19 +104,21 @@ export default function PreciosTable({
             </span>
         ),
     },
-    {
-      key: "estado",
-      label: "Estado",
-      render: (row: PrecioConProducto) => (
-        <span
-          className={`inline-flex items-center ${getEstadoPrecioClasses(
-            row.estado || "Normal"
-          )}`}
-        >
-          {row.estado || "Normal"}
-        </span>
-      ),
-    },
+        {
+            key: "estado",
+            label: "Estado",
+            render: (row: PrecioConProducto) => {
+                // Derivar estado a partir del descuento calculado para garantizar consistencia
+                const descuentoNum = Number(row.descuento_porcentaje ?? 0) ||
+                        (row.valor_unitario ? Math.round((1 - (Number(row.valor_final || 0) / Number(row.valor_unitario || 1))) * 100) : 0);
+                const estadoLabel = descuentoNum > 0 ? "En Promoción" : "Normal";
+                return (
+                    <span className={`inline-flex items-center ${getEstadoPrecioClasses(estadoLabel)}`}>
+                        {estadoLabel}
+                    </span>
+                );
+            }
+        },
    
   ];
 
