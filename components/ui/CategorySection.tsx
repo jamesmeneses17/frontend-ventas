@@ -3,10 +3,11 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { getCategorias, Categoria } from "../services/categoriasService";
-// Importar la utilidad de slugging (Ajusta la ruta si es necesario)
+// Asegúrate de que la ruta a los servicios sea correcta
+import { getCategorias, Categoria } from "@/components/services/categoriasService"; 
+// Asegúrate de que la ruta a la utilidad sea correcta
 import { createSlug } from "@/utils/slug";
-import ImageLinkCard from "./ImageLinkCard";
+import ImageLinkCard from "./ImageLinkCard"; 
 
 // --- Tipos ---
 
@@ -37,7 +38,7 @@ const mapCategoryToImage = (nombre: string): string => {
     case "alumbrado-solar":
       return "/images/iluminacion-solar.webp";
     case "sistemas-de-bombeo":
-      return "/images/imagen.webp";
+      return "/images/bombeo.webp"; // Cambié a una imagen más específica
     default:
       return "/images/imagen.webp";
   }
@@ -47,15 +48,18 @@ const mapCategoryToImage = (nombre: string): string => {
 
 const CategoryCard: React.FC<CategoryCardDisplayProps> = ({ nombre, descripcion, imageSrc, href }) => (
     <ImageLinkCard 
-        href={href} 
-        imageSrc={imageSrc} 
-        altText={nombre}
+      href={href} 
+      imageSrc={imageSrc} 
+      altText={nombre}
     >
-        <div className="flex items-center space-x-2 text-white mb-2">
-            <svg className="w-5 h-5 text-amber-400" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a8 8 0 100 16A8 8 0 0010 2zM5.5 10a.5.5 0 01.5-.5h8a.5.5 0 010 1h-8a.5.5 0 01-.5-.5z"/></svg>
-            <h3 className="text-xl font-bold">{nombre}</h3> 
-        </div>
-        <p className="text-sm text-gray-300">{descripcion || "Soluciones y productos de energía solar."}</p>
+      <div className="flex items-center space-x-2 text-white mb-2">
+        {/* Usamos un ícono más neutro o representativo de categoría */}
+        <svg className="w-5 h-5 text-amber-400" fill="currentColor" viewBox="0 0 20 20">
+          <path d="M11 17a1 1 0 001.447.894l4-2A1 1 0 0017 15V9.213a1.002 1.002 0 00-.399-.785L13.5 6l-2.401-1.849a1 1 0 00-1.2 0L6.5 6 3.399 8.428a1.002 1.002 0 00-.399.785V15a1 1 0 00.553.894l4 2A1 1 0 009 17v-5h2v5z" />
+        </svg>
+        <h3 className="text-xl font-bold">{nombre}</h3> 
+      </div>
+      <p className="text-sm text-gray-300">{descripcion || "Soluciones y productos de energía solar."}</p>
     </ImageLinkCard>
 );
 
@@ -70,8 +74,10 @@ const CategorySection: React.FC = () => {
     const fetchCategories = async () => {
       try {
         setLoading(true);
+        // Ajusta la llamada si el servicio devuelve un objeto con 'data'
+        // const response = await getCategorias();
+        // setCategories(response.data); 
         const data = await getCategorias();
-
         setCategories(data);
         setLoading(false);
       } catch (err) {
@@ -84,13 +90,15 @@ const CategorySection: React.FC = () => {
   }, []);
 
   const displayedCategories: CategoryCardDisplayProps[] = categories
-    .slice(0, 4)
+    .slice(0, 4) // Mostrar solo 4 categorías
     .map((cat) => ({
       ...cat,
       imageSrc: mapCategoryToImage(cat.nombre),
       // Usa la función centralizada para crear el href
       href: `/productos?categoria=${createSlug(cat.nombre)}`,
     }));
+
+  // --- Manejo de Estados (Carga y Error) ---
 
   if (loading) {
     return (
@@ -110,19 +118,24 @@ const CategorySection: React.FC = () => {
     );
   }
 
+  // --- Renderizado Principal (Con Header y Footer) ---
+
   return (
     <section className="py-16 bg-white">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        
+        {/* HEADER: Título y Subtítulo */}
         <div className="text-center mb-12">
           <h2 className="text-4xl font-extrabold text-gray-900">
-            Nuestras Categorías
+            Explora Nuestras Categorías
           </h2>
           <p className="mt-4 text-xl text-gray-600 max-w-2xl mx-auto">
-            Explora nuestra amplia gama de productos solares para encontrar la
-            solución perfecta para tus necesidades.
+            Descubre nuestra amplia gama de productos solares y encuentra la 
+            solución perfecta para tus proyectos.
           </p>
         </div>
 
+        {/* CUERPO: Tarjetas de Categoría */}
         {displayedCategories.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {displayedCategories.map((category) => (
@@ -136,6 +149,7 @@ const CategorySection: React.FC = () => {
           </p>
         )}
 
+        {/* FOOTER: Botón de "Ver Más" (Solo si hay más de 4 categorías) */}
         {categories.length > 4 && (
           <div className="mt-12 text-center">
             <a

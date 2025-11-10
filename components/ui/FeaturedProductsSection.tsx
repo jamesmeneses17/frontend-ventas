@@ -48,7 +48,7 @@ const formatPrice = (priceStr: string | number | undefined): string => {
 
   // 2. Si es 0 o NaN, retorna un mensaje
   if (isNaN(priceNum) || priceNum === 0) {
-    return "Consultar Precio";
+    return "Precio no disponible";
   }
 
   // 3. Formato de moneda
@@ -123,7 +123,7 @@ const FeaturedProductsSection: React.FC = () => {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-12">
           <h2 className="text-4xl font-extrabold text-gray-900">
-            Productos Destacados
+            Nuestros Productos
           </h2>
           <p className="mt-4 text-xl text-gray-600 max-w-2xl mx-auto">
             Descubre nuestros productos más vendidos y recomendados.
@@ -145,7 +145,7 @@ const FeaturedProductsSection: React.FC = () => {
         {productos.length > 4 && (
           <div className="mt-12 text-center">
             <a
-              href="/users/productos"
+              href="users/categorias"
               className="inline-flex items-center px-8 py-3 border border-transparent text-base font-medium rounded-lg shadow-md text-white bg-amber-600 hover:bg-amber-700 transition duration-150"
             >
               Ver todos los productos →
