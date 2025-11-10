@@ -16,10 +16,6 @@ const brands = [
             { name: 'Marca 4', src: '/images/marca1.png' },
               { name: 'Marca 6', src: '/images/marca3.png' },
 
-
-
-
-
   // Añade más marcas aquí
 ];
 
