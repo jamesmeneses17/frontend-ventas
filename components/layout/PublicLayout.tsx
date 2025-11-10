@@ -4,6 +4,7 @@ import React, { ReactNode } from 'react';
 import HeaderPublic from './HeaderPublic'; 
 // 👈 Importa el nuevo componente Footer
 import FooterPublic from './FooterPublic'; 
+import AlliedBrandsSection from '../ui/AlliedBrandsSection';
 
 interface PublicLayoutProps {
   children: ReactNode;
@@ -19,8 +20,10 @@ const PublicLayout: React.FC<PublicLayoutProps> = ({ children }) => {
 			{/* 2. Contenido principal de la página */}
 			{/* Añadimos padding-top igual a la altura del header (h-24) para compensar el header fixed */}
 			<main className="pt-24"> 
-				{children}
-			</main>
+                {/* 🚀 ¡NUEVA SECCIÓN DE MARCAS AQUÍ! */}
+                <AlliedBrandsSection /> 
+                {children}
+            </main>
 
       {/* 🛑 3. Footer Completo (Reemplazado) */}
       <FooterPublic />
