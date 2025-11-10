@@ -79,16 +79,16 @@ export const useProductListLogic = (initialSort: SortOption = 'relevancia') => {
         let mappedProducts: ProductCardData[] = productos.map((p) => {
             const priceValue = p.precios?.[0]?.valor_unitario;
             
-            return {
+                return {
                 id: p.id,
                 nombre: p.nombre,
                 displayPrice: formatPrice(priceValue), // Desde utils
                 numericPrice: getNumericPrice(priceValue), // Desde utils
-                imageSrc: mapProductToImage(p.nombre), // Desde utils
+                    imageSrc: mapProductToImage(p.nombre, p.id), // Desde utils (ahora variamos por id si hace falta)
                 href: `/producto/${p.id}`,
                 brand: "DISEM SAS", // Valor fijo (mockeado)
                 rating: 4.5, // Valor fijo (mockeado)
-                stock: p.inventario?.[0]?.stock || 0,
+                stock: Number(p.inventario?.[0]?.stock) || 0,
             } as ProductCardData;
         });
 

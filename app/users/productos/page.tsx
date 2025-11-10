@@ -2,7 +2,7 @@
 
 "use client";
 
-import React, { useState, Suspense } from "react";
+import React, { useState, Suspense, useMemo } from "react";
 import PublicLayout from "../../../components/layout/PublicLayout";
 import ProductCard from "@/components/ui/ProductCard";
 import { ChevronDown, List, Grid } from "lucide-react";
@@ -13,7 +13,24 @@ import {
 import { ProductCardData } from "@/utils/ProductUtils";
 
 // ----------------------------------------------------------------------
-// 1. Componente de Controles (Separación de UI)
+// 1. Imágenes aleatorias de respaldo
+// ----------------------------------------------------------------------
+
+const fallbackImages = [
+  "/images/panel.webp",
+  "/images/bateria.webp",
+  "/images/controladores.webp",
+  "/images/iluminacion-solar.webp",
+];
+
+// 👉 función para asignar una imagen aleatoria
+const mapProductToImage = (id: number): string => {
+  const randomIndex = id % fallbackImages.length;
+  return fallbackImages[randomIndex];
+};
+
+// ----------------------------------------------------------------------
+// 2. Controles de catálogo
 // ----------------------------------------------------------------------
 
 interface ControlsProps {
@@ -24,9 +41,6 @@ interface ControlsProps {
   setViewMode: (mode: "grid" | "list") => void;
 }
 
-/**
- * Muestra la barra de controles de la lista de productos: contador, selector de orden y selector de vista.
- */
 const ProductControls: React.FC<ControlsProps> = ({
   count,
   sortOption,
@@ -40,16 +54,15 @@ const ProductControls: React.FC<ControlsProps> = ({
 
   return (
     <div className="flex justify-between items-center border-b border-gray-200 pb-4 mb-8">
-      {/* Contador de Productos */}
       <p className="text-md font-medium text-gray-600">
         Mostrando {count} productos
       </p>
 
       <div className="flex items-center space-x-4">
-        {/* Selector de Orden */}
+        {/* Selector de orden */}
         <div className="relative">
           <select
-            className="appearance-none block w-full rounded-md border-gray-300 py-2 pl-3 pr-10 text-sm focus:border-amber-500 focus:ring-amber-500"
+            className="appearance-none block w-full rounded-md border-gray-300 py-2 pl-3 pr-10 text-sm focus:border-[#2e9fdb] focus:ring-[#2e9fdb]"
             value={sortOption}
             onChange={handleSortChange}
           >
@@ -62,28 +75,26 @@ const ProductControls: React.FC<ControlsProps> = ({
           </div>
         </div>
 
-        {/* Selector de Vista (Grid/List) */}
+        {/* Botones de vista */}
         <div className="flex rounded-md shadow-sm">
           <button
             onClick={() => setViewMode("grid")}
-            className={`p-2 border border-gray-300 rounded-l-md transition-colors 
-                            ${
-                              viewMode === "grid"
-                                ? "bg-amber-500 text-white"
-                                : "bg-white text-gray-700 hover:bg-gray-100"
-                            }`}
+            className={`p-2 border border-gray-300 rounded-l-md transition-colors ${
+              viewMode === "grid"
+                ? "bg-[#2e9fdb] text-white"
+                : "bg-white text-gray-700 hover:bg-gray-100"
+            }`}
             aria-label="Vista de cuadrícula"
           >
             <Grid className="h-5 w-5" />
           </button>
           <button
             onClick={() => setViewMode("list")}
-            className={`p-2 border border-gray-300 rounded-r-md transition-colors 
-                            ${
-                              viewMode === "list"
-                                ? "bg-amber-500 text-white"
-                                : "bg-white text-gray-700 hover:bg-gray-100"
-                            }`}
+            className={`p-2 border border-gray-300 rounded-r-md transition-colors ${
+              viewMode === "list"
+                ? "bg-[#2e9fdb] text-white"
+                : "bg-white text-gray-700 hover:bg-gray-100"
+            }`}
             aria-label="Vista de lista"
           >
             <List className="h-5 w-5" />
@@ -95,15 +106,24 @@ const ProductControls: React.FC<ControlsProps> = ({
 };
 
 // ----------------------------------------------------------------------
-// 2. Componente de Contenido (Lógica y Renderizado)
+// 3. Contenido principal
 // ----------------------------------------------------------------------
 
 function ProductosClientePageContent() {
   const { displayedProducts, loading, sortOption, setSortOption } =
     useProductListLogic();
-  const [viewMode, setViewMode] = useState<"grid" | "list">("list");
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 
-  // Clase CSS dinámica para el contenedor de la lista
+  // Asignar imagen aleatoria a cada producto
+  const displayedProductsWithImages = useMemo(
+    () =>
+      displayedProducts.map((product: ProductCardData) => ({
+        ...product,
+        imageSrc: product.imageSrc || mapProductToImage(product.id),
+      })),
+    [displayedProducts]
+  );
+
   const listClassName =
     viewMode === "grid"
       ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
@@ -111,86 +131,67 @@ function ProductosClientePageContent() {
 
   return (
     <PublicLayout>
-                  {/* Contenedor Principal con fondo ambar-50 */}           
-      <div className="bg-amber-50">
-                       
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-16">
-                                                 
-          {/* SECCIÓN SUPERIOR: Título y Descripción */}                   
-          <div className="mb-12">
-                                   
-            <h1 className="text-5xl font-extrabold tracking-tight text-gray-900">
-                                          Nuestros Productos                    
-                 
+      <div className="bg-white min-h-screen">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-10">
+          {/* Encabezado */}
+          <div className="mb-10 text-center">
+            <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight text-gray-900">
+              Catálogo de Productos
             </h1>
-                                   
-            <p className="mt-3 text-xl text-gray-600 max-w-3xl">
-                                          Explora nuestra amplia gama de
-              productos solares para encontrar la solución                      
-                    perfecta para tus necesidades.                        
+            <p className="mt-3 text-lg sm:text-xl text-gray-600 max-w-3xl mx-auto">
+              Explora nuestra amplia selección de productos solares y accesorios
+              energéticos.
             </p>
-                               
           </div>
-                                                 
-          {/* --- INICIO DEL CATÁLOGO --- */}                   
-          <main id="catalog" className="mt-16">
-                                                               
-            {/* Barra de Controles (Componente separado) */}
-                                   
-            <ProductControls
-              count={displayedProducts.length}
-              sortOption={sortOption}
-              setSortOption={setSortOption}
-              viewMode={viewMode}
-              setViewMode={setViewMode}
-            />
-                                   
-            {/* Contenedor de Productos: Manejo de estados de Carga/Vacío */}   
-                               
+
+          {/* Controles */}
+          <ProductControls
+            count={displayedProductsWithImages.length}
+            sortOption={sortOption}
+            setSortOption={setSortOption}
+            viewMode={viewMode}
+            setViewMode={setViewMode}
+          />
+
+          {/* Catálogo */}
+          <main id="catalog" className="mt-5">
             {loading ? (
               <div className="text-center py-12 text-gray-500">
                 Cargando catálogo...
               </div>
-            ) : displayedProducts.length === 0 ? (
+            ) : displayedProductsWithImages.length === 0 ? (
               <div className="text-center py-12 text-gray-500">
                 No se encontraron productos con estos filtros.
               </div>
             ) : (
               <div className={listClassName}>
-                                               
-                {displayedProducts.map((product: ProductCardData) => (
+                {displayedProductsWithImages.map((product) => (
                   <ProductCard
                     key={product.id}
-                    // Pasamos todas las props necesarias desde el objeto mapeado
                     id={product.id}
                     nombre={product.nombre}
                     displayPrice={product.displayPrice}
                     imageSrc={product.imageSrc}
                     href={product.href}
                     viewMode={viewMode}
+                    stock={product.stock}
                   />
                 ))}
-                                           
               </div>
             )}
-                               
           </main>
-                         
         </div>
-                   
       </div>
-             
     </PublicLayout>
   );
 }
 
 // ----------------------------------------------------------------------
-// 3. Componente Raíz (Manejo de Suspense de Next.js)
+// 4. Suspense
 // ----------------------------------------------------------------------
 
 export default function ProductosClientePage() {
   return (
-    // Necesario porque useProductListLogic utiliza useSearchParams (Next.js)
     <Suspense
       fallback={
         <div className="text-center py-12 text-gray-500">
@@ -198,7 +199,7 @@ export default function ProductosClientePage() {
         </div>
       }
     >
-            <ProductosClientePageContent />   
+      <ProductosClientePageContent />
     </Suspense>
   );
 }

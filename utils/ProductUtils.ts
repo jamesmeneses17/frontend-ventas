@@ -26,16 +26,35 @@ export interface ProductCardData {
 // --- 2. Utilidades de Formato y Mapeo ---
 
 
-export const mapProductToImage = (nombre: string): string => {
-    // Utilizamos createSlug para una comparación más robusta (insensible a mayúsculas/espacios)
-    const slug = createSlug(nombre); 
-    switch (true) {
-        case slug.includes("panel"): return "/images/panel.webp";
-        case slug.includes("bateria"): return "/images/bateria.webp";
-        case slug.includes("controlador"): return "/images/controladores.webp";
-        case slug.includes("inversor"): return "/images/inversor.webp";
-        default: return "/images/imagen.webp";
-    }
+// Imágenes de respaldo para asignar cuando no hay coincidencias por nombre
+const fallbackImages = [
+	"/images/panel.webp",
+	"/images/bateria.webp",
+	"/images/controladores.webp",
+	"/images/iluminacion-solar.webp",
+];
+
+/**
+ * Mapear un producto a una imagen.
+ * - Si el nombre contiene palabras clave (panel, bateria, controlador, inversor) usa imágenes específicas.
+ * - Si no coincide, usa la imagen del array `fallbackImages` elegido por el `id` (si se proporciona) para variar las miniaturas.
+ */
+export const mapProductToImage = (nombre: string, id?: number): string => {
+	// Utilizamos createSlug para una comparación más robusta (insensible a mayúsculas/espacios)
+	const slug = createSlug(nombre);
+	if (slug.includes("panel")) return "/images/panel.webp";
+	if (slug.includes("bateria")) return "/images/bateria.webp";
+	if (slug.includes("controlador")) return "/images/controladores.webp";
+	if (slug.includes("inversor")) return "/images/inversor.webp";
+
+	// Si no hay coincidencias por nombre, asignar una imagen de fallback basada en el id
+	if (typeof id === "number" && !isNaN(id)) {
+		const idx = Math.abs(id) % fallbackImages.length;
+		return fallbackImages[idx];
+	}
+
+	// Valor por defecto
+	return "/images/imagen.webp";
 };
 
 

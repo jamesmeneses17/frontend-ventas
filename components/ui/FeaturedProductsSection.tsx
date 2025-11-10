@@ -8,6 +8,7 @@ import {
   Producto as ProductoType,
 } from "@/components/services/productosService";
 import { createSlug } from "@/utils/slug"; // Importamos la utilidad
+import { mapProductToImage } from '@/utils/ProductUtils';
 import ImageLinkCard from "./ImageLinkCard";
 import ProductCard from "./ProductCard";
 
@@ -22,23 +23,7 @@ type ProductCardProps = ProductoType & {
 
 // --- Utilidad de Mapeo de Imagenes (Usa el Slug) ---
 
-const mapProductToImage = (nombre: string): string => {
-  // 🛑 Usamos la función centralizada
-  const slug = createSlug(nombre);
-
-  switch (true) {
-    case slug.includes("panel"):
-      return "/images/panel.webp";
-    case slug.includes("bateria"):
-      return "/images/bateria.webp";
-    case slug.includes("controlador"):
-      return "/images/controladores.webp";
-    case slug.includes("inversor"):
-      return "/images/inversor.webp";
-    default:
-      return "/images/imagen.webp";
-  }
-};
+// Usaremos la función centralizada `mapProductToImage` importada desde utils
 
 // --- Formato de Precio (para usar dentro de ProductCard) ---
 
@@ -93,7 +78,7 @@ const FeaturedProductsSection: React.FC = () => {
 
     return {
       ...p,
-      imageSrc: mapProductToImage(p.nombre),
+      imageSrc: mapProductToImage(p.nombre, p.id),
       // 🛑 La URL de producto es por ID, no requiere slugging del nombre
       href: `/producto/${p.id}`,
       displayPrice: displayPrice,

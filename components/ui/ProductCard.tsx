@@ -8,6 +8,8 @@ interface ProductCardProps {
   nombre: string;
   /** Precio del producto ya formateado (ej: "$245.000" o "Consultar Precio"). */
   displayPrice: string;
+  /** Cantidad en stock (opcional). */
+  stock?: number;
   /** URL de la imagen. */
   imageSrc: string;
   /** URL a la que navegará el usuario al hacer clic. */
@@ -24,6 +26,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
   id,
   nombre,
   displayPrice,
+  stock,
   imageSrc,
   href,
   viewMode = "grid",
@@ -45,24 +48,19 @@ const ProductCard: React.FC<ProductCardProps> = ({
 
         {/* Contenido */}
         <div className="p-4 flex flex-col items-center text-center">
-          <div className="flex text-amber-500 mb-2">
-            {Array(5)
-              .fill(0)
-              .map((_, i) => (
-                <svg
-                  key={i}
-                  className="w-5 h-5"
-                  fill="currentColor"
-                  viewBox="0 0 20 20"
-                >
-                  <path d="M10 15l-5.878 3.09 1.122-6.545-4.745-4.636 6.571-.955L10 2l2.87 5.954 6.571.955-4.745 4.636 1.122 6.545L10 15z" />
-                </svg>
-              ))}
-          </div>
+         
 
           <h3 className="text-lg font-semibold text-gray-800 line-clamp-2 mb-1">
             {nombre}
           </h3>
+
+          {typeof stock === 'number' && (
+            (stock > 0) ? (
+              <p className="text-sm text-gray-500 mb-1">Stock: {stock}</p>
+            ) : (
+              <p className="text-sm text-red-600 mb-1 font-medium">Sin stock</p>
+            )
+          )}
 
           <p className="text-2xl font-bold text-amber-600 mb-3">
             {displayPrice}
@@ -99,26 +97,20 @@ const ProductCard: React.FC<ProductCardProps> = ({
       {/* Contenido */}
       <div className="flex flex-col justify-between p-4 flex-1 text-center sm:text-left">
         <div>
-          <div className="flex justify-center sm:justify-start text-amber-500 mb-2">
-            {Array(5)
-              .fill(0)
-              .map((_, i) => (
-                <svg
-                  key={i}
-                  className="w-5 h-5"
-                  fill="currentColor"
-                  viewBox="0 0 20 20"
-                >
-                  <path d="M10 15l-5.878 3.09 1.122-6.545-4.745-4.636 6.571-.955L10 2l2.87 5.954 6.571.955-4.745 4.636 1.122 6.545L10 15z" />
-                </svg>
-              ))}
-          </div>
+         
 
           <h3 className="text-xl font-semibold text-gray-800 mb-2">
             {nombre}
           </h3>
 
-          <p className="text-gray-500 mb-1">DISEM SAS</p>
+          {typeof stock === 'number' && (
+            (stock > 0) ? (
+              <p className="text-sm text-gray-500 mb-2">Stock: {stock}</p>
+            ) : (
+              <p className="text-sm text-red-600 mb-2 font-medium">Sin stock</p>
+            )
+          )}
+
           <p className="text-amber-600 text-2xl font-bold">{displayPrice}</p>
         </div>
 

@@ -27,6 +27,12 @@ const fallbackImages = [
   "/images/iluminacion-solar.webp",
 ];
 
+const mapProductToImage = (id: number): string => {
+  // Alternar imágenes según el ID para que no se repita siempre la misma
+  const index = id % fallbackImages.length;
+  return fallbackImages[index];
+};
+
 const mapCategoryToImage = (nombre: string, id: number): string => {
   const slug = createSlug(nombre);
 
