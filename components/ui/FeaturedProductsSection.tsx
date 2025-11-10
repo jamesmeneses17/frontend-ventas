@@ -145,7 +145,7 @@ const FeaturedProductsSection: React.FC = () => {
         {productos.length > 4 && (
           <div className="mt-12 text-center">
             <a
-              href="/productos"
+              href="/users/productos"
               className="inline-flex items-center px-8 py-3 border border-transparent text-base font-medium rounded-lg shadow-md text-white bg-amber-600 hover:bg-amber-700 transition duration-150"
             >
               Ver todos los productos →

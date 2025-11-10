@@ -16,11 +16,12 @@ export default function HomePage() {
       {/* 1. SECCIÓN PRINCIPAL (HERO) */}
       <HeroSection />
       {/* 2. SECCIÓN DE CATEGORÍAS */}
-      <CategorySection /> 
+       <FeaturedProductsSection />  
+     {/* <CategorySection /> */}
       {/* 3. SECCIÓN DE VALOR/PROPUESTA DE VENTA (NUEVO) */}
             <WhyChooseUsSection />
       {/* 4. SECCIÓN DE PRODUCTOS DESTACADOS (usando el nuevo archivo) */}
-      <FeaturedProductsSection />    {/* 5. SECCIÓN DE CONTACTO (NUEVO) */}
+       {/* 5. SECCIÓN DE CONTACTO (NUEVO) */}
             <ContactSection />     
     </PublicLayout>
   );

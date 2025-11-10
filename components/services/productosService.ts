@@ -144,13 +144,17 @@ export const getProductos = async (
     page: number = 1,
     size: number = 5,
     stockFiltro: string = "",
-    searchTerm: string = ""
+    searchTerm: string = "",
+    subcategoriaId?: number,
+    categoriaId?: number
 ): Promise<PaginacionResponse<Producto>> => {
     const params = new URLSearchParams();
     params.append("page", page.toString());
     params.append("limit", size.toString());
     if (stockFiltro) params.append("estado_stock", stockFiltro);
     if (searchTerm) params.append("search", searchTerm);
+    if (typeof subcategoriaId !== 'undefined') params.append('subcategoriaId', String(subcategoriaId));
+    if (typeof categoriaId !== 'undefined') params.append('categoriaId', String(categoriaId));
 
     const endpoint = `${ENDPOINT_BASE}?${params.toString()}`;
     // Log para depuración del filtro de estado

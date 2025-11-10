@@ -40,7 +40,9 @@ export const useProductListLogic = (initialSort: SortOption = 'relevancia') => {
                 const catId = categoriaIdParam ? parseInt(categoriaIdParam, 10) : undefined;
                 
                 // Llamada al servicio de productos
-                const response = await getProductos(subId, catId);
+                // Pasamos subcategoriaId y categoriaId en los parámetros opcionales del servicio
+                // y solicitamos un size amplio para el catálogo público (traer 'todos')
+                const response = await getProductos(1, 1000, "", "", subId, catId);
                 setProductos(response.data);
                 setLoading(false);
             } catch (err) {
