@@ -21,6 +21,10 @@ interface FilterBarProps {
   selectOptions: FilterOption[];
   selectFilterValue: string;
   onSelectFilterChange: (value: string) => void;
+  // Opcional: segundo select (por ejemplo, filtro de promoción)
+  selectOptions2?: FilterOption[];
+  selectFilterValue2?: string;
+  onSelectFilterChange2?: (value: string) => void;
 
   // Propiedades para el botón de acción (e.g., Importar)
   onActionButtonClick?: () => void;
@@ -34,6 +38,9 @@ export default function FilterBar({
   selectOptions = [],
   selectFilterValue,
   onSelectFilterChange,
+  selectOptions2 = [],
+  selectFilterValue2 = "",
+  onSelectFilterChange2,
   onActionButtonClick,
   actionButtonLabel,
 }: FilterBarProps) {
@@ -48,19 +55,37 @@ export default function FilterBar({
         />
       </div>
 
-      {/* 2. Filtro Select (Estado de Stock) */}
-      <div className="flex-shrink-0">
-        <select
-          value={selectFilterValue}
-          onChange={(e) => onSelectFilterChange(e.target.value)}
-          className="p-2 border border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500 text-sm"
-        >
-          {(selectOptions || []).map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
+      {/* 2. Filtros Select (Estado de Stock y opcionalmente filtro de Promoción) */}
+      <div className="flex items-center gap-3">
+        <div className="flex-shrink-0">
+          <select
+            value={selectFilterValue}
+            onChange={(e) => onSelectFilterChange(e.target.value)}
+            className="p-2 border border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500 text-sm"
+          >
+            {(selectOptions || []).map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {selectOptions2 && selectOptions2.length > 0 && onSelectFilterChange2 && (
+          <div className="flex-shrink-0">
+            <select
+              value={selectFilterValue2}
+              onChange={(e) => onSelectFilterChange2 && onSelectFilterChange2(e.target.value)}
+              className="p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm"
+            >
+              {(selectOptions2 || []).map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
       </div>
 
       {/* 3. Botón de Acción Opcional (e.g., Importar Datos) */}

@@ -43,7 +43,7 @@ export default function PreciosPage() {
         precioPromedio: 0,
     });
 
-    const [estadoStockFiltro, setEstadoStockFiltro] = React.useState<string>("");
+    const [estadoPromocionFiltro, setEstadoPromocionFiltro] = React.useState<string>("");
 
     const {
         currentItems,
@@ -68,10 +68,92 @@ export default function PreciosPage() {
         {
             // loadItems: listar TODOS los productos (usar la misma lógica de lista de productos)
             // para mostrar en la sección de Precios & Ofertas. Mapeamos Producto -> PrecioConProducto
-            loadItems: async (all, page, size, searchTerm, stockFiltro) => {
-                // Obtenemos productos con la paginación y filtro proporcionados
-                // Ahora respetamos el filtro de estado de stock (stockFiltro)
-                const prodsResp = await getProductos(page, size, stockFiltro ?? "", searchTerm);
+            loadItems: async (all, page, size, searchTerm, promocionFiltro) => {
+                // Si se solicita filtrar por estado de promoción, traemos una lista amplia
+                // de productos y de precios para asegurar que el filtro incluya todos los items
+                // y no dependa de la paginación del backend.
+                if (promocionFiltro && String(promocionFiltro).trim() !== "") {
+                    const prodsRespAll = await getProductos(1, Math.max(1000, size), "", searchTerm);
+                    const allProductos = (prodsRespAll as any).data || (Array.isArray(prodsRespAll) ? prodsRespAll : []);
+
+                    // Traemos precios para enriquecer
+                    let preciosListAll: any[] = [];
+                    try {
+                        const preciosResp = await getPrecios(1, 1000, "");
+                        preciosListAll = Array.isArray(preciosResp) ? preciosResp : (preciosResp as any).data || [];
+                    } catch (e) {
+                        preciosListAll = [];
+                    }
+
+                    const precioMapAll = new Map<number, any>();
+                    preciosListAll.forEach((pr: any) => {
+                        const pid = Number(pr.productoId ?? pr.producto?.id ?? 0);
+                        if (pid > 0) precioMapAll.set(pid, pr);
+                    });
+
+                    const enrichedAll = allProductos.map((p: any) => {
+                        const productoId = Number(p.id);
+                        const precioObj = precioMapAll.get(productoId);
+                        if (precioObj) {
+                            return {
+                                id: Number(precioObj.id ?? 0),
+                                productoId,
+                                valor_unitario: Number(precioObj.valor_unitario ?? precioObj.valor ?? p.precio ?? 0),
+                                descuento_porcentaje: Number(precioObj.descuento_porcentaje ?? 0),
+                                valor_final: Number(precioObj.valor_final ?? (Number(precioObj.valor_unitario ?? 0) * (1 - Number(precioObj.descuento_porcentaje ?? 0) / 100)) ),
+                                estado: precioObj.estado || (Number(precioObj.descuento_porcentaje ?? 0) > 0 ? "En Promoción" : "Normal"),
+                                fecha_inicio: precioObj.fecha_inicio ?? "",
+                                fecha_fin: precioObj.fecha_fin ?? "",
+                                producto: p,
+                            } as unknown as PrecioConProducto;
+                        }
+
+                        const valor = Number(p.precio ?? 0);
+                        return {
+                            id: 0,
+                            productoId,
+                            valor_unitario: valor,
+                            descuento_porcentaje: 0,
+                            valor_final: valor,
+                            estado: "Normal",
+                            fecha_inicio: p.fecha_inicio ?? "",
+                            fecha_fin: p.fecha_fin ?? "",
+                            producto: p,
+                        } as unknown as PrecioConProducto;
+                    });
+
+                    const computeDescuentoNum = (it: any) => {
+                        const descuentoPorc = Number(it.descuento_porcentaje ?? 0);
+                        if (descuentoPorc) return descuentoPorc;
+                        const vu = Number(it.valor_unitario ?? 0) || 0;
+                        const vf = Number(it.valor_final ?? vu) || vu;
+                        return vu ? Math.round((1 - vf / vu) * 100) : 0;
+                    };
+                    const isInPromotion = (it: any) => computeDescuentoNum(it) > 0;
+
+                    // Filtrar según la selección del usuario
+                    const desired = String(promocionFiltro);
+                    const finalList = enrichedAll.filter((it: any) => {
+                        if (desired === "En Promoción") return isInPromotion(it);
+                        if (desired === "Normal") return !isInPromotion(it);
+                        return String(it.estado ?? "") === desired;
+                    });
+
+                    // Debug: imprimir conteos para diagnóstico (ver en consola del servidor/cliente)
+                    try {
+                        // eslint-disable-next-line no-console
+                        console.debug('[PreciosPage.loadItems] promocionFiltro=', promocionFiltro, 'allProductos=', allProductos.length, 'preciosListAll=', preciosListAll.length, 'finalList=', finalList.length);
+                    } catch (e) {}
+
+                    const totalFiltered = finalList.length;
+                    const start = (page - 1) * size;
+                    const end = start + size;
+                    const pageItems = finalList.slice(start, end);
+                    return { data: pageItems, total: totalFiltered };
+                }
+
+                // Si no se filtra por promoción, cargamos productos paginados (sin filtro de stock)
+                const prodsResp = await getProductos(page, size, "", searchTerm);
                 const productos = prodsResp.data || [];
                 const total = (prodsResp as any).total ?? productos.length;
 
@@ -123,6 +205,27 @@ export default function PreciosPage() {
                         producto: p,
                     } as unknown as PrecioConProducto;
                 });
+
+                // Si se solicita filtrar por estado de promoción, aplicarlo aquí.
+                if (promocionFiltro && String(promocionFiltro).trim() !== "") {
+                    const desired = String(promocionFiltro);
+                    const computeDescuentoNum = (it: any) => {
+                        const descuentoPorc = Number(it.descuento_porcentaje ?? 0);
+                        if (descuentoPorc) return descuentoPorc;
+                        const vu = Number(it.valor_unitario ?? 0) || 0;
+                        const vf = Number(it.valor_final ?? vu) || vu;
+                        return vu ? Math.round((1 - vf / vu) * 100) : 0;
+                    };
+                    const isInPromotion = (it: any) => computeDescuentoNum(it) > 0;
+
+                    const filtered = enriched.filter((it: any) => {
+                        if (desired === "En Promoción") return isInPromotion(it);
+                        if (desired === "Normal") return !isInPromotion(it);
+                        return String(it.estado ?? "") === desired;
+                    });
+
+                    return { data: filtered, total: filtered.length };
+                }
 
                 return { data: enriched, total };
             },
@@ -197,7 +300,7 @@ export default function PreciosPage() {
             deleteItem: deletePrecio,
         },
         "Precio", // itemKey
-        { customDependencies: [estadoStockFiltro] }
+        { customDependencies: [estadoPromocionFiltro] }
     );
 
     // Función para obtener las estadísticas del dashboard de precios
@@ -278,21 +381,13 @@ export default function PreciosPage() {
     
     // Opciones del filtro (si se usa un filtro de estado de promoción)
     const ESTADO_PROMOCION_FILTRO = [
-        { label: "Filtrar por: Todos los Estados", value: "" },
+        { label: "Todos", value: "" },
         { label: "Normal", value: "Normal" },
-        { label: "En Promoción", value: "Promocion" },
+        { label: "En Promoción", value: "En Promoción" },
     ];
 
-    const ESTADOS_STOCK_FILTRO = [
-        { label: "Filtrar por: Todos los Estados", value: "" },
-        { label: "Disponible", value: "Disponible" },
-        { label: "Stock Bajo", value: "Stock Bajo" },
-        { label: "Agotado", value: "Agotado" },
-    ];
-
-    const handleStockFilterChange = (value: string) => {
-        setEstadoStockFiltro(value);
-        // Resetear a la primera página cuando el filtro cambia
+    const handlePromocionFilterChange = (value: string) => {
+        setEstadoPromocionFiltro(value);
         handlePageChange(1);
     };
 
@@ -361,9 +456,9 @@ export default function PreciosPage() {
                             searchTerm={searchTerm}
                             onSearchChange={setSearchTerm}
                             searchPlaceholder="Buscar producto por nombre o código..."
-                            selectOptions={ESTADOS_STOCK_FILTRO}
-                            selectFilterValue={estadoStockFiltro}
-                            onSelectFilterChange={handleStockFilterChange}
+                            selectOptions={ESTADO_PROMOCION_FILTRO}
+                            selectFilterValue={estadoPromocionFiltro}
+                            onSelectFilterChange={handlePromocionFilterChange}
                         />
                     </div>
 
