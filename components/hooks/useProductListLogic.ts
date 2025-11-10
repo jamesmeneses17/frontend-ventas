@@ -41,9 +41,29 @@ export const useProductListLogic = (initialSort: SortOption = 'relevancia') => {
                 
                 // Llamada al servicio de productos
                 // Pasamos subcategoriaId y categoriaId en los parámetros opcionales del servicio
-                // y solicitamos un size amplio para el catálogo público (traer 'todos')
+                // y solicitamos un size amplio para la vista pública (traer muchos elementos)
                 const response = await getProductos(1, 1000, "", "", subId, catId);
-                setProductos(response.data);
+
+                // Nota: Algunos backends no aplican correctamente el filtro por categoría en el endpoint.
+                // Para asegurar que la UI muestre únicamente los productos de la categoría seleccionada,
+                // aplicamos un filtro en el cliente si `catId` o `subId` están presentes.
+                let fetched = response.data || [];
+                if (typeof catId !== 'undefined') {
+                    const cid = Number(catId);
+                    fetched = fetched.filter((p: any) => {
+                        // El backend puede devolver `categoriaId` directo o un objeto `categoria`.
+                        if (typeof p.categoriaId !== 'undefined') return Number(p.categoriaId) === cid;
+                        if (p.categoria && typeof p.categoria.id !== 'undefined') return Number(p.categoria.id) === cid;
+                        // fallback: algunos modelos usan `categoria` como nombre o slug
+                        return String(p.categoria)?.toLowerCase() === String(cid).toLowerCase();
+                    });
+                }
+                if (typeof subId !== 'undefined') {
+                    const sid = Number(subId);
+                    fetched = fetched.filter((p: any) => Number(p.subcategoriaId || p.subCategoriaId || 0) === sid);
+                }
+
+                setProductos(fetched);
                 setLoading(false);
             } catch (err) {
                 console.error("Error al cargar productos:", err);

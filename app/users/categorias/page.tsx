@@ -121,10 +121,10 @@ function CategoriasClientePageContent() {
   }, [categories, searchTerm]);
 
   const displayedCategories: CategoryCardDisplayProps[] = filteredCategories.map(
-    (cat) => ({
+      (cat) => ({ // Ahora mapeamos el array filtrado
       ...cat,
       imageSrc: mapCategoryToImage(cat.nombre, cat.id),
-      href: `/productos?categoria=${createSlug(cat.nombre)}`,
+    href: `/users/productos?categoriaId=${cat.id}`,
     })
   );
 
