@@ -6,7 +6,9 @@ export interface BaseProductType {
     id: number;
     nombre: string;
     precios?: { valor_unitario: string | number }[]; 
-    inventario?: { stock: number }[];
+	inventario?: { stock: number }[];
+	// La API puede devolver `categoria` como objeto o string
+	categoria?: any;
 }
 
 
@@ -19,7 +21,8 @@ export interface ProductCardData {
     href: string; // El enlace al detalle del producto
     brand: string;
     rating: number;
-    stock: number; 
+	stock: number;
+	categoria?: string;
 }
 
 

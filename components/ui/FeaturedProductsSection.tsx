@@ -118,7 +118,16 @@ const FeaturedProductsSection: React.FC = () => {
         {displayedProducts.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {displayedProducts.map((product) => (
-              <ProductCard key={product.id} {...product} />
+              <ProductCard
+                key={product.id}
+                id={product.id}
+                nombre={product.nombre}
+                displayPrice={product.displayPrice}
+                imageSrc={product.imageSrc}
+                href={product.href}
+                stock={Number((product as any).stock) || 0}
+                categoria={(product as any).categoria?.nombre || (product as any).categoria || undefined}
+              />
             ))}
           </div>
         ) : (

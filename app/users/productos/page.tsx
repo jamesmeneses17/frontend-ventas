@@ -175,6 +175,7 @@ function ProductosClientePageContent() {
                     href={product.href}
                     viewMode={viewMode}
                     stock={product.stock}
+                    categoria={product.categoria}
                   />
                 ))}
               </div>

@@ -10,6 +10,8 @@ interface ProductCardProps {
   displayPrice: string;
   /** Cantidad en stock (opcional). */
   stock?: number;
+  /** Categoría a la que pertenece el producto (opcional). */
+  categoria?: string;
   /** URL de la imagen. */
   imageSrc: string;
   /** URL a la que navegará el usuario al hacer clic. */
@@ -27,6 +29,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
   nombre,
   displayPrice,
   stock,
+  categoria,
   imageSrc,
   href,
   viewMode = "grid",
@@ -53,6 +56,10 @@ const ProductCard: React.FC<ProductCardProps> = ({
           <h3 className="text-lg font-semibold text-gray-800 line-clamp-2 mb-1">
             {nombre}
           </h3>
+
+          {categoria && (
+            <p className="text-sm text-gray-600 mb-1">{categoria}</p>
+          )}
 
           {typeof stock === 'number' && (
             (stock > 0) ? (
@@ -102,6 +109,10 @@ const ProductCard: React.FC<ProductCardProps> = ({
           <h3 className="text-xl font-semibold text-gray-800 mb-2">
             {nombre}
           </h3>
+
+          {categoria && (
+            <p className="text-sm text-gray-600 mb-2">{categoria}</p>
+          )}
 
           {typeof stock === 'number' && (
             (stock > 0) ? (

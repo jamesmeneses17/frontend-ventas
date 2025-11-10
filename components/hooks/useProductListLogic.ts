@@ -89,6 +89,7 @@ export const useProductListLogic = (initialSort: SortOption = 'relevancia') => {
                 brand: "DISEM SAS", // Valor fijo (mockeado)
                 rating: 4.5, // Valor fijo (mockeado)
                 stock: Number(p.inventario?.[0]?.stock) || 0,
+                categoria: p.categoria?.nombre || p.categoria || undefined,
             } as ProductCardData;
         });
 
