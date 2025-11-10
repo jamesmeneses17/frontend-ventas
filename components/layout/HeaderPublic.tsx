@@ -12,23 +12,19 @@ const HeaderPublic: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isProductsOpenMobile, setIsProductsOpenMobile] = useState(false);
 
-  // Función para abrir/cerrar el menú principal de hamburguesa.
-  // Cierra el submenú de Productos si se cierra el menú principal.
   const toggleMenu = () => {
     setIsOpen(!isOpen);
     if (isOpen) setIsProductsOpenMobile(false);
   };
 
-  // Función para abrir/cerrar el desplegable de Productos dentro del menú móvil.
   const toggleProductsMobile = () =>
     setIsProductsOpenMobile(!isProductsOpenMobile);
 
   const pathname = usePathname();
 
-  // DEFINICIÓN DEL ORDEN DE NAVEGACIÓN PRINCIPAL
   const navigationItems = [
     { name: "Inicio", href: "/", isDropdown: false },
-    { name: "Productos", href: "/productos", isDropdown: true }, 
+    { name: "Productos", href: "/productos", isDropdown: true },
     { name: "Nosotros", href: "/nosotros", isDropdown: false },
     { name: "Contacto", href: "/contacto", isDropdown: false },
   ];
@@ -47,90 +43,100 @@ const HeaderPublic: React.FC = () => {
     <nav className="bg-white shadow-md sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
-          {/* LADO IZQUIERDO: LOGO y Navegación Principal (Escritorio) */}
+
+          {/* ========================================================== */}
+          {/* LADO IZQUIERDO: SOLO LOGO */}
+          {/* ========================================================== */}
           <div className="flex items-center">
-            {/* Logo */}
             <div className="flex-shrink-0">
               <Link href="/" className="flex items-center space-x-3">
-                <img src="/images/logo-disem.jpeg" alt="DISEM SAS"  width= {200} height ={60} className="object-contain"  />
+                <img
+                  src="/images/logo-disem.jpeg"
+                  alt="DISEM SAS"
+                  width={200}
+                  height={60}
+                  className="object-contain"
+                />
               </Link>
             </div>
+          </div>
 
+          {/* ========================================================== */}
+          {/* LADO DERECHO: NAVEGACIÓN + BOTÓN ADMIN */}
+          {/* ========================================================== */}
+          <div className="flex items-center">
             {/* Links de Navegación (Escritorio) */}
-            <div className="hidden sm:ml-6 sm:flex sm:space-x-8 h-full">
+            <div className="hidden sm:flex sm:space-x-8 h-full items-center">
               {navigationItems.map((item) =>
                 item.isDropdown ? (
                   <HeaderProductsDropdown key={item.name} />
                 ) : (
-                  // Enlaces normales
                   <Link
                     key={item.name}
                     href={item.href}
-                    className={desktopLinkClasses(item.href)}
+                    className={`${desktopLinkClasses(item.href)} flex items-center`}
                   >
                     {item.name}
                   </Link>
                 )
               )}
             </div>
-          </div>
 
-          {/* LADO DERECHO: BOTÓN ADMIN (Escritorio) */}
-          <div className="hidden sm:ml-6 sm:flex sm:items-center">
-            <Link
-              href="/login"
-              className="px-4 py-2 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-black hover:bg-gray-800"
-            >
-              Admin
-            </Link>
-          </div>
+            {/* BOTÓN ADMIN (Escritorio) */}
+            <div className="hidden sm:ml-6 sm:flex sm:items-center">
+              <Link
+                href="/login"
+                className="px-4 py-2 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-black hover:bg-gray-800"
+              >
+                Admin
+              </Link>
+            </div>
 
-          {/* Botón de Menú Móvil (Hamburguesa) */}
-          <div className="-mr-2 flex items-center sm:hidden">
-            <button
-              onClick={toggleMenu}
-              type="button"
-              className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-amber-500"
-              aria-controls="mobile-menu"
-              aria-expanded={isOpen}
-            >
-              <span className="sr-only">Abrir menú principal</span>
-              {isOpen ? (
-                // Icono de Cerrar (X)
-                <svg
-                  className="block h-6 w-6"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  aria-hidden="true"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                </svg>
-              ) : (
-                // Icono de Hamburguesa
-                <svg
-                  className="block h-6 w-6"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  aria-hidden="true"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M4 6h16M4 12h16M4 18h16"
-                  />
-                </svg>
-              )}
-            </button>
+            {/* Botón de Menú Móvil (Hamburguesa) */}
+            <div className="-mr-2 flex items-center sm:hidden">
+              <button
+                onClick={toggleMenu}
+                type="button"
+                className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-amber-500"
+                aria-controls="mobile-menu"
+                aria-expanded={isOpen}
+              >
+                <span className="sr-only">Abrir menú principal</span>
+                {isOpen ? (
+                  <svg
+                    className="block h-6 w-6"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    aria-hidden="true"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  </svg>
+                ) : (
+                  <svg
+                    className="block h-6 w-6"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    aria-hidden="true"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M4 6h16M4 12h16M4 18h16"
+                    />
+                  </svg>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -138,18 +144,15 @@ const HeaderPublic: React.FC = () => {
       {/* ========================================================== */}
       {/* MENÚ MÓVIL DESPLEGABLE COMPLETO */}
       {/* ========================================================== */}
-
       <div
         className={`${
           isOpen ? "block" : "hidden"
         } sm:hidden absolute w-full bg-white shadow-xl border-t border-gray-100`}
       >
         <div className="pt-2 pb-3 space-y-1 px-4">
-          {/* Mapeamos todos los elementos de navegación */}
           {navigationItems.map((item) => (
             <div key={item.name}>
               {item.isDropdown ? (
-                // Lógica del Desplegable de Productos en Móvil
                 <div>
                   <button
                     onClick={toggleProductsMobile}
@@ -178,15 +181,14 @@ const HeaderPublic: React.FC = () => {
                     </svg>
                   </button>
 
-                  {isProductsOpenMobile && ( // Aquí pasamos onNavigate, lo cual es correcto si MobileCategoryList tiene la interfaz
+                  {isProductsOpenMobile && (
                     <MobileCategoryList onNavigate={toggleMenu} />
                   )}
                 </div>
               ) : (
-                // Enlaces de navegación normales (Inicio, Nosotros, Contacto)
                 <Link
                   href={item.href}
-                  onClick={toggleMenu} // Cierra el menú de hamburguesa al navegar
+                  onClick={toggleMenu}
                   className={`block px-3 py-2 text-base font-medium rounded-md 
                     ${
                       pathname === item.href
