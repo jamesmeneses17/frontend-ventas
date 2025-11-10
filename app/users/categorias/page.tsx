@@ -2,14 +2,16 @@
 
 "use client";
 
-import React, { useState, useEffect, Suspense } from "react";
+import React, { useState, useEffect, Suspense, useMemo } from "react";
 import PublicLayout from "../../../components/layout/PublicLayout";
 import ImageLinkCard from "@/components/ui/ImageLinkCard";
 import { getCategorias, Categoria } from "@/components/services/categoriasService";
-import { createSlug } from "@/utils/slug"; // Asume que esta ruta es correcta
+import { createSlug } from "@/utils/slug";
+import SearchInput from "../../../components/common/form/SearchInput";
+import Link from "next/link";
 
 // ----------------------------------------------------------------------
-// 1. Tipos y Mapeo de Imagenes (Reutilizamos la lógica del componente CategorySection)
+// 1. Tipos, Mapeo y Fallback de Imágenes
 // ----------------------------------------------------------------------
 
 interface CategoryCardDisplayProps extends Categoria {
@@ -18,8 +20,15 @@ interface CategoryCardDisplayProps extends Categoria {
   href: string;
 }
 
-const mapCategoryToImage = (nombre: string): string => {
-  const slug = createSlug(nombre); 
+const fallbackImages = [
+  "/images/panel.webp",
+  "/images/bateria.webp",
+  "/images/controladores.webp",
+  "/images/iluminacion-solar.webp",
+];
+
+const mapCategoryToImage = (nombre: string, id: number): string => {
+  const slug = createSlug(nombre);
 
   switch (slug) {
     case "paneles-solares":
@@ -39,127 +48,151 @@ const mapCategoryToImage = (nombre: string): string => {
     case "sistemas-de-bombeo":
       return "/images/bombeo.webp";
     default:
-      return "/images/imagen.webp";
+      const index = id % fallbackImages.length;
+      return fallbackImages[index];
   }
 };
 
-
 // ----------------------------------------------------------------------
-// 2. Componente de Tarjeta (CategoryCard) - Adaptado para la lista de Catálogo
+// 2. Tarjeta de Categoría (con botón azul "VER TODOS")
 // ----------------------------------------------------------------------
 
-const CategoryCard: React.FC<CategoryCardDisplayProps> = ({ nombre, descripcion, imageSrc, href }) => (
-    // Reutilizamos ImageLinkCard para la vista de cuadrícula
-    <ImageLinkCard 
-        href={href} 
-        imageSrc={imageSrc} 
-        altText={nombre}
-    >
-        <div className="flex items-center space-x-2 text-white mb-2">
-            <svg className="w-5 h-5 text-amber-400" fill="currentColor" viewBox="0 0 20 20">
-                <path d="M11 17a1 1 0 001.447.894l4-2A1 1 0 0017 15V9.213a1.002 1.002 0 00-.399-.785L13.5 6l-2.401-1.849a1 1 0 00-1.2 0L6.5 6 3.399 8.428a1.002 1.002 0 00-.399.785V15a1 1 0 00.553.894l4 2A1 1 0 009 17v-5h2v5z" />
-            </svg>
-            <h3 className="text-xl font-bold">{nombre}</h3> 
-        </div>
-        <p className="text-sm text-gray-300">{descripcion || "Soluciones y productos de energía solar."}</p>
-    </ImageLinkCard>
+const CategoryCard: React.FC<CategoryCardDisplayProps> = ({
+  nombre,
+  descripcion,
+  imageSrc,
+  href,
+}) => (
+  <ImageLinkCard href={href} imageSrc={imageSrc} altText={nombre}>
+    <div className="flex flex-col justify-end h-full">
+      {/* Título e ícono */}
+      <div className="flex items-center space-x-2 text-white mb-3">
+      
+        <h3 className="text-xl font-bold">{nombre}</h3>
+      </div>
+
+      {/* Botón azul */}
+      <Link
+        href={href}
+        onClick={(e) => e.stopPropagation()}
+        className="w-full inline-flex justify-center items-center px-4 py-2 border border-transparent shadow-sm 
+          text-sm font-medium rounded-md text-white 
+          bg-[#2e9fdb] hover:bg-[#238ac1] focus:outline-none 
+          focus:ring-2 focus:ring-offset-2 focus:ring-[#2e9fdb] 
+          transition duration-150 ease-in-out"
+      >
+        VER TODOS
+      </Link>
+    </div>
+  </ImageLinkCard>
 );
 
 // ----------------------------------------------------------------------
-// 3. Componente de Contenido (Lógica y Renderizado)
+// 3. Contenido principal
 // ----------------------------------------------------------------------
 
 function CategoriasClientePageContent() {
-    const [categories, setCategories] = useState<Categoria[]>([]);
-    const [loading, setLoading] = useState(true);
+  const [categories, setCategories] = useState<Categoria[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
 
-    useEffect(() => {
-        const fetchCategories = async () => {
-            try {
-                setLoading(true);
-                const data = await getCategorias();
-                setCategories(data);
-                setLoading(false);
-            } catch (err) {
-                console.error("Error al cargar categorías:", err);
-                setLoading(false); // Mantener el estado de carga
-            }
-        };
-        fetchCategories();
-    }, []);
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        setLoading(true);
+        const data = await getCategorias();
+        setCategories(data);
+      } catch (err) {
+        console.error("Error al cargar categorías:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchCategories();
+  }, []);
 
-    const displayedCategories: CategoryCardDisplayProps[] = categories.map((cat) => ({
-        ...cat,
-        imageSrc: mapCategoryToImage(cat.nombre),
-        // La URL dirige a la página de productos con el filtro de categoría
-        href: `/productos?categoria=${createSlug(cat.nombre)}`,
-    }));
-
-
-    return (
-        <PublicLayout>
-            {/* Contenedor Principal con fondo ambar-50 */}
-            <div className="bg-amber-50 min-h-screen"> 
-                <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-16">
-                        
-                    {/* SECCIÓN SUPERIOR: Título y Descripción */}
-                    <div className="mb-12 text-center">
-                        <h1 className="text-5xl font-extrabold tracking-tight text-gray-900">
-                            Catálogo de Categorías
-                        </h1>
-                        <p className="mt-3 text-xl text-gray-600 max-w-3xl mx-auto">
-                            Explora todas nuestras categorías de productos solares y encuentra la sección que necesitas.
-                        </p>
-                    </div>
-
-                    {/* --- INICIO DEL CATÁLOGO --- */}
-                    <main id="catalog" className="mt-16">
-                        
-                        {/* NO SE REQUIERE BARRA DE CONTROLES para categorías */}
-
-                        {/* Contenedor de Categorías: Manejo de estados de Carga/Vacío */}
-                        {loading ? (
-                            <div className="text-center py-12 text-gray-500">
-                                Cargando catálogo de categorías...
-                            </div>
-                        ) : displayedCategories.length === 0 ? (
-                            <div className="text-center py-12 text-gray-500">
-                                No hay categorías disponibles en este momento.
-                            </div>
-                        ) : (
-                            // Vista de cuadrícula fija para categorías
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                                {displayedCategories.map((category: CategoryCardDisplayProps) => (
-                                    <CategoryCard
-                                        key={category.id}
-                                        {...category}
-                                    />
-                                ))}
-                            </div>
-                        )}
-                        
-                    </main>
-                </div>
-            </div>
-        </PublicLayout>
+  // Filtro optimizado
+  const filteredCategories = useMemo(() => {
+    if (!searchTerm) return categories;
+    const lower = searchTerm.toLowerCase();
+    return categories.filter((cat) =>
+      cat.nombre.toLowerCase().includes(lower)
     );
+  }, [categories, searchTerm]);
+
+  const displayedCategories: CategoryCardDisplayProps[] = filteredCategories.map(
+    (cat) => ({
+      ...cat,
+      imageSrc: mapCategoryToImage(cat.nombre, cat.id),
+      href: `/productos?categoria=${createSlug(cat.nombre)}`,
+    })
+  );
+
+  return (
+    <PublicLayout>
+      {/* Fondo blanco */}
+      <div className="bg-white min-h-screen">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-10">
+          {/* Título principal */}
+          <div className="mb-10 text-center">
+            <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight text-gray-900">
+              Catálogo de Categorías
+            </h1>
+            <p className="mt-3 text-lg sm:text-xl text-gray-600 max-w-3xl mx-auto">
+              Explora todas nuestras categorías de productos solares y encuentra
+              la sección que necesitas.
+            </p>
+          </div>
+
+          {/* Buscador */}
+          <div className="mb-8 max-w-lg mx-auto">
+            <SearchInput
+              searchTerm={searchTerm}
+              onSearchChange={(v: string) => setSearchTerm(v)}
+              placeholder="Buscar categoría por nombre..."
+            />
+          </div>
+
+          {/* Catálogo */}
+          <main id="catalog" className="mt-5">
+            {loading ? (
+              <div className="text-center py-12 text-gray-500">
+                Cargando catálogo de categorías...
+              </div>
+            ) : displayedCategories.length === 0 ? (
+              <div className="text-center py-12 text-gray-500">
+                {searchTerm
+                  ? `No se encontraron categorías para "${searchTerm}".`
+                  : "No hay categorías disponibles en este momento."}
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                {displayedCategories.map((category) => (
+                  <CategoryCard key={category.id} {...category} />
+                ))}
+              </div>
+            )}
+          </main>
+        </div>
+      </div>
+    </PublicLayout>
+  );
 }
 
 // ----------------------------------------------------------------------
-// 4. Componente Raíz (Manejo de Suspense de Next.js)
+// 4. Suspense
 // ----------------------------------------------------------------------
 
 export default function CategoriasClientePage() {
-    return (
-        // Se mantiene Suspense aunque no haya searchParams, por si se añade lógica futura
-        <Suspense
-            fallback={
-                <div className="text-center py-12 text-gray-500">
-                    Cargando página de categorías...
-                </div>
-            }
-        >
-            <CategoriasClientePageContent />
-        </Suspense>
-    );
+  return (
+    <Suspense
+      fallback={
+        <div className="text-center py-12 text-gray-500">
+          Cargando página de categorías...
+        </div>
+      }
+    >
+      <CategoriasClientePageContent />
+    </Suspense>
+  );
 }
