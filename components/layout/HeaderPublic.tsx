@@ -51,12 +51,8 @@ const HeaderPublic: React.FC = () => {
           <div className="flex items-center">
             {/* Logo */}
             <div className="flex-shrink-0">
-              <Link
-                href="/"
-                className="text-xl font-bold text-amber-600 flex items-center space-x-2"
-              >
-                <span className="text-2xl">☀️</span>
-                <span>DISEM SAS</span>
+              <Link href="/" className="flex items-center space-x-3">
+                <img src="/images/logo-disem.jpeg" alt="DISEM SAS"  width= {200} height ={60} className="object-contain"  />
               </Link>
             </div>
 
