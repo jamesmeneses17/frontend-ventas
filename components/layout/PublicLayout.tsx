@@ -11,15 +11,16 @@ interface PublicLayoutProps {
 
 const PublicLayout: React.FC<PublicLayoutProps> = ({ children }) => {
   return (
-    <div className="min-h-screen bg-white"> 
-      
-      {/* 1. Navbar público */}
-      <HeaderPublic /> 
-      
-      {/* 2. Contenido principal de la página */}
-      <main> 
-        {children}
-      </main>
+		<div className="min-h-screen bg-white"> 
+      
+			{/* 1. Navbar público */}
+			<HeaderPublic /> 
+      
+			{/* 2. Contenido principal de la página */}
+			{/* Añadimos padding-top igual a la altura del header (h-24) para compensar el header fixed */}
+			<main className="pt-24"> 
+				{children}
+			</main>
 
       {/* 🛑 3. Footer Completo (Reemplazado) */}
       <FooterPublic />
