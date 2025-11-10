@@ -127,6 +127,8 @@ const FeaturedProductsSection: React.FC = () => {
                 href={product.href}
                 stock={Number((product as any).stock) || 0}
                 categoria={(product as any).categoria?.nombre || (product as any).categoria || undefined}
+                discountPercent={Number((product as any).precios?.[0]?.descuento_porcentaje ?? (product as any).precios?.[0]?.descuento ?? 0) || undefined}
+                salesCount={Number((product as any).ventas ?? (product as any).sales ?? 0) || undefined}
               />
             ))}
           </div>

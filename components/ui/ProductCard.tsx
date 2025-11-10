@@ -12,6 +12,10 @@ interface ProductCardProps {
   stock?: number;
   /** Categoría a la que pertenece el producto (opcional). */
   categoria?: string;
+  /** Porcentaje de descuento/promoción (opcional). Ej: 10 => 10% */
+  discountPercent?: number;
+  /** Cantidad de ventas (opcional). */
+  salesCount?: number;
   /** URL de la imagen. */
   imageSrc: string;
   /** URL a la que navegará el usuario al hacer clic. */
@@ -30,6 +34,8 @@ const ProductCard: React.FC<ProductCardProps> = ({
   displayPrice,
   stock,
   categoria,
+  discountPercent,
+  salesCount,
   imageSrc,
   href,
   viewMode = "grid",
@@ -61,12 +67,22 @@ const ProductCard: React.FC<ProductCardProps> = ({
             <p className="text-sm text-gray-600 mb-1">{categoria}</p>
           )}
 
+          {typeof discountPercent === 'number' && discountPercent > 0 ? (
+            <p className="text-sm text-amber-600 font-medium mb-1">-{discountPercent}%</p>
+          ) : (
+            <p className="text-sm text-gray-500 mb-1">No tiene</p>
+          )}
+
           {typeof stock === 'number' && (
             (stock > 0) ? (
               <p className="text-sm text-gray-500 mb-1">Stock: {stock}</p>
             ) : (
               <p className="text-sm text-red-600 mb-1 font-medium">Sin stock</p>
             )
+          )}
+
+          {typeof salesCount === 'number' && (
+            <p className="text-sm text-gray-500 mt-1">Ventas: {salesCount}</p>
           )}
 
           <p className="text-2xl font-bold text-amber-600 mb-3">
@@ -114,12 +130,22 @@ const ProductCard: React.FC<ProductCardProps> = ({
             <p className="text-sm text-gray-600 mb-2">{categoria}</p>
           )}
 
+          {typeof discountPercent === 'number' && discountPercent > 0 ? (
+            <p className="text-sm text-amber-600 font-medium mb-2">-{discountPercent}%</p>
+          ) : (
+            <p className="text-sm text-gray-500 mb-2">No tiene</p>
+          )}
+
           {typeof stock === 'number' && (
             (stock > 0) ? (
               <p className="text-sm text-gray-500 mb-2">Stock: {stock}</p>
             ) : (
               <p className="text-sm text-red-600 mb-2 font-medium">Sin stock</p>
             )
+          )}
+
+          {typeof salesCount === 'number' && (
+            <p className="text-sm text-gray-500">Ventas: {salesCount}</p>
           )}
 
           <p className="text-amber-600 text-2xl font-bold">{displayPrice}</p>

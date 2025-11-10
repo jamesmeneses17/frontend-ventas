@@ -5,10 +5,13 @@ import { createSlug } from './slug';
 export interface BaseProductType {
     id: number;
     nombre: string;
-    precios?: { valor_unitario: string | number }[]; 
+	precios?: { valor_unitario: string | number; descuento_porcentaje?: number; descuento?: number; valor_final?: number }[];
 	inventario?: { stock: number }[];
 	// La API puede devolver `categoria` como objeto o string
 	categoria?: any;
+	// Posible campo de ventas si el backend lo entrega
+	ventas?: number;
+	sales?: number;
 }
 
 
@@ -23,6 +26,8 @@ export interface ProductCardData {
     rating: number;
 	stock: number;
 	categoria?: string;
+	discountPercent?: number;
+	salesCount?: number;
 }
 
 

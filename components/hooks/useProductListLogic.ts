@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { getProductos } from '@/components/services/productosService'; 
+import { getPrecios } from '@/components/services/preciosService';
 import {
     BaseProductType,
     ProductCardData,
@@ -27,6 +28,7 @@ export const useProductListLogic = (initialSort: SortOption = 'relevancia') => {
 
     // 2. Estados Locales
     const [productos, setProductos] = useState<BaseProductType[]>([]);
+    const [preciosList, setPreciosList] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [sortOption, setSortOption] = useState<SortOption>(initialSort);
 
@@ -64,6 +66,20 @@ export const useProductListLogic = (initialSort: SortOption = 'relevancia') => {
                 }
 
                 setProductos(fetched);
+                // Obtener precios/promociones para enriquecer los productos (si el endpoint está disponible)
+                try {
+                    const preciosRes = await getPrecios(1, 1000, "");
+                    let preciosArray: any[] = [];
+                    if (Array.isArray(preciosRes)) {
+                        preciosArray = preciosRes as any[];
+                    } else if (preciosRes && Array.isArray((preciosRes as any).data)) {
+                        preciosArray = (preciosRes as any).data;
+                    }
+                    setPreciosList(preciosArray);
+                } catch (e) {
+                    // Si falla obtener precios, seguimos sin promociones
+                    setPreciosList([]);
+                }
                 setLoading(false);
             } catch (err) {
                 console.error("Error al cargar productos:", err);
@@ -77,20 +93,26 @@ export const useProductListLogic = (initialSort: SortOption = 'relevancia') => {
     const displayedProducts = useMemo(() => {
         // Mapeo: Transformar datos de la API a formato de tarjeta
         let mappedProducts: ProductCardData[] = productos.map((p) => {
-            const priceValue = p.precios?.[0]?.valor_unitario;
-            
-                return {
+            // Preferir precio activo/proyecto desde el servicio de `precios` si existe
+            const precioEntry = preciosList.find(pr => Number(pr.productoId ?? pr.producto?.id) === Number(p.id));
+            const priceValue = precioEntry?.valor_unitario ?? p.precios?.[0]?.valor_unitario ?? (p as any).precio ?? (p as any).precio_costo;
+            const discountFromPrecios = precioEntry?.descuento_porcentaje ?? precioEntry?.descuento ?? undefined;
+            const discountFromProducto = p.precios?.[0]?.descuento_porcentaje ?? p.precios?.[0]?.descuento ?? undefined;
+
+            return {
                 id: p.id,
                 nombre: p.nombre,
                 displayPrice: formatPrice(priceValue), // Desde utils
                 numericPrice: getNumericPrice(priceValue), // Desde utils
-                    imageSrc: mapProductToImage(p.nombre, p.id), // Desde utils (ahora variamos por id si hace falta)
+                imageSrc: mapProductToImage(p.nombre, p.id), // Desde utils (ahora variamos por id si hace falta)
                 href: `/producto/${p.id}`,
                 brand: "DISEM SAS", // Valor fijo (mockeado)
                 rating: 4.5, // Valor fijo (mockeado)
-                stock: Number(p.inventario?.[0]?.stock) || 0,
+                stock: Number(p.inventario?.[0]?.stock) || Number((p as any).stock) || 0,
                 categoria: p.categoria?.nombre || p.categoria || undefined,
-            } as ProductCardData;
+                discountPercent: discountFromPrecios !== undefined ? Number(discountFromPrecios) : (discountFromProducto !== undefined ? Number(discountFromProducto) : undefined),
+                salesCount: Number(p.ventas ?? p.sales ?? 0) || undefined,
+        } as ProductCardData;
         });
 
         let sortedProducts = mappedProducts.slice(); // Clonar para ordenar
@@ -117,7 +139,7 @@ export const useProductListLogic = (initialSort: SortOption = 'relevancia') => {
         }
 
         return sortedProducts;
-    }, [productos, sortOption]); // Recalcular solo si cambian los productos o la opción de orden
+    }, [productos, sortOption, preciosList]); // Recalcular solo si cambian los productos, precios o la opción de orden
 
     // 5. Devolver la interfaz pública del hook
     return {

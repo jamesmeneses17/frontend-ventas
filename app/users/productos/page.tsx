@@ -176,6 +176,8 @@ function ProductosClientePageContent() {
                     viewMode={viewMode}
                     stock={product.stock}
                     categoria={product.categoria}
+                    discountPercent={product.discountPercent}
+                    salesCount={product.salesCount}
                   />
                 ))}
               </div>
