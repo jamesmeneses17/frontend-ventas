@@ -28,6 +28,8 @@ export interface ProductCardData {
 	categoria?: string;
 	discountPercent?: number;
 	salesCount?: number;
+    /** Estado calculado de stock: 'Disponible' | 'Stock Bajo' | 'Agotado' */
+    stockStatus?: string;
 }
 
 

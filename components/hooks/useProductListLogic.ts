@@ -101,6 +101,12 @@ export const useProductListLogic = (initialSort: SortOption = 'relevancia') => {
             const discountFromPrecios = precioEntry?.descuento_porcentaje ?? precioEntry?.descuento ?? undefined;
             const discountFromProducto = p.precios?.[0]?.descuento_porcentaje ?? p.precios?.[0]?.descuento ?? undefined;
 
+            const stockNum = Number(p.inventario?.[0]?.stock) || Number((p as any).stock) || 0;
+            const stockMin = Number((p as any).stockMinimo ?? (p as any).stockMin ?? 5);
+            let stockStatus = 'Disponible';
+            if (stockNum <= 0) stockStatus = 'Agotado';
+            else if (stockNum <= stockMin) stockStatus = 'Stock Bajo';
+
             return {
                 id: p.id,
                 nombre: p.nombre,
@@ -110,10 +116,11 @@ export const useProductListLogic = (initialSort: SortOption = 'relevancia') => {
                 href: `/producto/${p.id}`,
                 brand: "DISEM SAS", // Valor fijo (mockeado)
                 rating: 4.5, // Valor fijo (mockeado)
-                stock: Number(p.inventario?.[0]?.stock) || Number((p as any).stock) || 0,
+                stock: stockNum,
                 categoria: p.categoria?.nombre || p.categoria || undefined,
                 discountPercent: discountFromPrecios !== undefined ? Number(discountFromPrecios) : (discountFromProducto !== undefined ? Number(discountFromProducto) : undefined),
                 salesCount: Number(p.ventas ?? p.sales ?? 0) || undefined,
+                stockStatus,
         } as ProductCardData;
         });
 
