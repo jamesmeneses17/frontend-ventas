@@ -1,5 +1,6 @@
 // /components/ProductCard.tsx
 import React from "react";
+import Link from "next/link";
 
 interface ProductCardProps {
   id: number;
@@ -10,7 +11,7 @@ interface ProductCardProps {
   discountPercent?: number;
   salesCount?: number;
   imageSrc: string;
-  href: string;
+  href?: string;
   viewMode?: "grid" | "list";
   /** umbral para considerar "stock bajo" (por defecto 5) */
   lowStockThreshold?: number;
@@ -29,6 +30,8 @@ const ProductCard: React.FC<ProductCardProps> = ({
   viewMode = "grid",
   lowStockThreshold = 5,
 }) => {
+  // href objetivo: si se pasa 'href' usarlo, si no construir la ruta por id
+  const targetHref = href ?? `/users/especificaciones/${id}`;
   // 🔹 Determina el estado del stock (solo bajo o agotado)
   const getStockState = (s?: number) => {
     if (typeof s !== "number") return null;
@@ -69,7 +72,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
     return (
       <div className="group relative block bg-white rounded-xl overflow-hidden shadow-xl hover:shadow-2xl transition duration-300 transform hover:-translate-y-1">
         {/* Imagen con etiquetas */}
-        <a href={href} className="block relative h-48 sm:h-56 overflow-hidden">
+        <Link href={targetHref} className="block relative h-48 sm:h-56 overflow-hidden">
           <DiscountBadge />
           <StockBadge />
           <img
@@ -77,7 +80,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
             src={imageSrc}
             alt={nombre}
           />
-        </a>
+        </Link>
 
         {/* Contenido */}
         <div className="p-4 flex flex-col items-center text-center">
@@ -111,12 +114,12 @@ const ProductCard: React.FC<ProductCardProps> = ({
           </p>
 
           {/* Botón azul tipo DISEM */}
-          <a
-            href={href}
+          <Link
+            href={targetHref}
             className="inline-flex items-center px-6 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-[#2e9fdb] hover:bg-[#238ac1] transition duration-150"
           >
             Ver más
-          </a>
+          </Link>
         </div>
       </div>
     );
@@ -126,8 +129,8 @@ const ProductCard: React.FC<ProductCardProps> = ({
   return (
     <div className="bg-white rounded-xl shadow-md hover:shadow-lg transition duration-300 flex flex-col sm:flex-row items-center sm:items-stretch overflow-hidden">
       {/* Imagen con etiquetas */}
-      <a
-        href={href}
+      <Link
+        href={targetHref}
         className="w-full sm:w-56 h-56 flex-shrink-0 relative overflow-hidden"
       >
         <DiscountBadge />
@@ -137,7 +140,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
           alt={nombre}
           className="h-full w-full object-cover transition-transform duration-300 hover:scale-105 z-10 relative"
         />
-      </a>
+      </Link>
 
       {/* Contenido */}
       <div className="flex flex-col justify-between p-4 flex-1 text-center sm:text-left">
@@ -170,12 +173,12 @@ const ProductCard: React.FC<ProductCardProps> = ({
 
         {/* Botón */}
         <div className="mt-4 sm:mt-0 sm:self-end">
-          <a
-            href={href}
+          <Link
+            href={targetHref}
             className="inline-flex items-center px-6 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-[#2e9fdb] hover:bg-[#238ac1] transition duration-150"
           >
             Cotizar
-          </a>
+          </Link>
         </div>
       </div>
     </div>

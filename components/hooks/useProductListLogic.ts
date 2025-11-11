@@ -113,7 +113,8 @@ export const useProductListLogic = (initialSort: SortOption = 'relevancia') => {
                 displayPrice: formatPrice(priceValue), // Desde utils
                 numericPrice: getNumericPrice(priceValue), // Desde utils
                 imageSrc: mapProductToImage(p.nombre, p.id), // Desde utils (ahora variamos por id si hace falta)
-                href: `/producto/${p.id}`,
+                // Navegar a la página de especificaciones en la app de usuarios
+                href: `/users/especificaciones/${p.id}`,
                 brand: "DISEM SAS", // Valor fijo (mockeado)
                 rating: 4.5, // Valor fijo (mockeado)
                 stock: stockNum,
