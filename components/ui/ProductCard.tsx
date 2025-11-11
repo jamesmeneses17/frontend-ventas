@@ -1,3 +1,4 @@
+// /components/ProductCard.tsx
 import React from "react";
 
 interface ProductCardProps {
@@ -38,7 +39,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
     return null; // ✅ No mostrar “Disponible”
   };
 
-  // 🟥 Etiqueta de descuento (izquierda)
+  // 🟥 Etiqueta de descuento
   const DiscountBadge = () => {
     if (typeof discountPercent === "number" && discountPercent > 0) {
       return (
@@ -50,13 +51,13 @@ const ProductCard: React.FC<ProductCardProps> = ({
     return null;
   };
 
-  // 🟨 Etiqueta de stock (derecha) — solo si está bajo o agotado
+  // 🟨 Etiqueta de stock (derecha)
   const StockBadge = () => {
     const state = getStockState(stock);
     if (!state) return null;
     return (
       <div
-        className={`absolute top-2 right-2 text-xs font-semibold px-2 py-1 rounded-full shadow-md z-20 ${state.className}`}
+        className={`absolute top-2 right-2 text-xs font-semibold px-2 py-1 rounded-full shadow-md z-30 pointer-events-none ${state.className}`}
       >
         {state.label}
       </div>
@@ -68,10 +69,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
     return (
       <div className="group relative block bg-white rounded-xl overflow-hidden shadow-xl hover:shadow-2xl transition duration-300 transform hover:-translate-y-1">
         {/* Imagen con etiquetas */}
-        <a
-          href={href}
-          className="block relative h-48 sm:h-56 overflow-hidden"
-        >
+        <a href={href} className="block relative h-48 sm:h-56 overflow-hidden">
           <DiscountBadge />
           <StockBadge />
           <img
@@ -83,22 +81,31 @@ const ProductCard: React.FC<ProductCardProps> = ({
 
         {/* Contenido */}
         <div className="p-4 flex flex-col items-center text-center">
-          <h3 className="text-lg font-semibold text-gray-800 line-clamp-2 mb-1">
+          {/* Nombre más destacado */}
+          <h3 className="text-lg font-extrabold text-gray-900 line-clamp-2 mb-1">
             {nombre}
           </h3>
 
+          {/* Categoría más suave */}
           {categoria && (
-            <p className="text-sm text-gray-600 mb-1">{categoria}</p>
+            <p className="text-sm font-medium text-gray-500 mb-1">
+              {categoria}
+            </p>
           )}
 
+          {/* Stock (solo informativo, no etiqueta principal) */}
           {typeof stock === "number" && (
-            <p className="text-sm text-gray-500 mb-1">Stock: {stock}</p>
+            <p className="text-xs text-gray-400 mb-1">
+              Disponible: {stock}
+            </p>
           )}
 
+          {/* Ventas (opcional) */}
           {typeof salesCount === "number" && (
             <p className="text-sm text-gray-500 mt-1">Ventas: {salesCount}</p>
           )}
 
+          {/* Precio principal */}
           <p className="text-2xl font-bold text-[#e75e55] mb-3">
             {displayPrice}
           </p>
@@ -135,24 +142,33 @@ const ProductCard: React.FC<ProductCardProps> = ({
       {/* Contenido */}
       <div className="flex flex-col justify-between p-4 flex-1 text-center sm:text-left">
         <div>
-          <h3 className="text-xl font-semibold text-gray-800 mb-2">{nombre}</h3>
+          {/* Nombre principal */}
+          <h3 className="text-xl font-extrabold text-gray-900 mb-2">
+            {nombre}
+          </h3>
 
+          {/* Categoría */}
           {categoria && (
-            <p className="text-sm text-gray-600 mb-2">{categoria}</p>
+            <p className="text-sm font-medium text-gray-500 mb-2">
+              {categoria}
+            </p>
           )}
 
+          {/* Stock informativo */}
           {typeof stock === "number" && (
-            <p className="text-sm text-gray-500 mb-2">Stock: {stock}</p>
+            <p className="text-xs text-gray-400 mb-2">Disponible: {stock}</p>
           )}
 
+          {/* Ventas */}
           {typeof salesCount === "number" && (
             <p className="text-sm text-gray-500">Ventas: {salesCount}</p>
           )}
 
+          {/* Precio */}
           <p className="text-[#e75e55] text-2xl font-bold">{displayPrice}</p>
         </div>
 
-        {/* Botón azul tipo DISEM */}
+        {/* Botón */}
         <div className="mt-4 sm:mt-0 sm:self-end">
           <a
             href={href}
