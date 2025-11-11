@@ -72,8 +72,9 @@ const FeaturedProductsSection: React.FC = () => {
 
   // Mostrar solo 4 productos
   const displayedProducts = productos.slice(0, 4).map((p) => {
-    // Obtenemos el precio y lo formateamos
-    const priceValue = p.precios?.[0]?.valor_unitario;
+    // Preferir valor_final (precio final) si viene en la relación `precios`,
+    // luego valor_unitario y por último campos en el producto mismo.
+  const priceValue = (p as any).precios?.[0]?.valor_final ?? (p as any).precios?.[0]?.valor_unitario ?? (p as any).precio ?? (p as any).precio_costo;
     const displayPrice = formatPrice(priceValue);
 
     return {

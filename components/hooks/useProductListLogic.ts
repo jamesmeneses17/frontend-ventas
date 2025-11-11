@@ -95,7 +95,9 @@ export const useProductListLogic = (initialSort: SortOption = 'relevancia') => {
         let mappedProducts: ProductCardData[] = productos.map((p) => {
             // Preferir precio activo/proyecto desde el servicio de `precios` si existe
             const precioEntry = preciosList.find(pr => Number(pr.productoId ?? pr.producto?.id) === Number(p.id));
-            const priceValue = precioEntry?.valor_unitario ?? p.precios?.[0]?.valor_unitario ?? (p as any).precio ?? (p as any).precio_costo;
+            // Preferir el precio final de la tabla `precios` (valor_final) cuando exista,
+            // luego valor_unitario y finalmente los campos del producto.
+            const priceValue = precioEntry?.valor_final ?? precioEntry?.valor_unitario ?? p.precios?.[0]?.valor_final ?? p.precios?.[0]?.valor_unitario ?? (p as any).precio ?? (p as any).precio_costo;
             const discountFromPrecios = precioEntry?.descuento_porcentaje ?? precioEntry?.descuento ?? undefined;
             const discountFromProducto = p.precios?.[0]?.descuento_porcentaje ?? p.precios?.[0]?.descuento ?? undefined;
 
