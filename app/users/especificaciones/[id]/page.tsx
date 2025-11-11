@@ -4,25 +4,23 @@ import React, { useEffect, useState, Suspense } from "react";
 import PublicLayout from "../../../../components/layout/PublicLayout";
 import Link from "next/link";
 import {
-  Zap,
   Tag,
   Clock,
   Package,
   CheckCircle,
   XCircle,
   ChevronRight,
-  Calculator,
   MapPin,
-  Phone,
+  ShoppingCart,
 } from "lucide-react";
 import { getProductoById, Producto } from "@/components/services/productosService";
-import { mapProductToImage } from '@/utils/ProductUtils'; // Asumo que esta función existe
+import { mapProductToImage } from "@/utils/ProductUtils";
 
 // ----------------------------------------------------------------------
 // COMPONENTES AUXILIARES
 // ----------------------------------------------------------------------
 
-// 1. Cabecera de Migas de Pan (Breadcrumb)
+// 🧭 1. Breadcrumb
 const Breadcrumb = ({
   productName,
   categoryName,
@@ -53,7 +51,7 @@ const Breadcrumb = ({
   </nav>
 );
 
-// 2. Información Rápida (Stock, Referencia, etc.)
+// 📦 2. Información rápida
 const QuickInfo = ({
   stock,
   referencia,
@@ -98,9 +96,12 @@ const QuickInfo = ({
         <div className="flex items-center space-x-2">
           <MapPin className="w-5 h-5 text-gray-400" />
           <span>
-            Categoría: {" "}
+            Categoría:{" "}
             {categoryId ? (
-              <Link href={`/users/productos?categoriaId=${categoryId}`} className="font-semibold text-gray-800 hover:text-[#2e9fdb]">
+              <Link
+                href={`/users/productos?categoriaId=${categoryId}`}
+                className="font-semibold text-gray-800 hover:text-[#2e9fdb]"
+              >
                 {categoryName}
               </Link>
             ) : (
@@ -121,34 +122,35 @@ const QuickInfo = ({
   );
 };
 
-
-
-// 4. Especificaciones Técnicas (Extraído para reutilizar en columna derecha)
-const SpecificationsTable = ({ fichaTecnica }: { fichaTecnica: Record<string, any> }) => (
-    <section className="mb-6">
-        <h2 className="text-xl font-bold text-gray-800 mb-3 border-b pb-2">
-            Ficha Técnica
-        </h2>
-        <div className="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm">
-            <dl className="divide-y divide-gray-200">
-            {Object.entries(fichaTecnica).map(([key, value], index) => (
-                <div
-                key={index}
-                className="px-4 py-2 sm:grid sm:grid-cols-2 sm:gap-4 text-sm"
-                >
-                <dt className="font-medium text-gray-700 capitalize">
-                    {key.replace(/_/g, " ")}
-                </dt>
-                <dd className="mt-1 text-gray-900 sm:col-span-1 sm:mt-0 font-semibold">
-                    {String(value)}
-                </dd>
-                </div>
-            ))}
-            </dl>
-        </div>
-    </section>
+// ⚙️ 3. Especificaciones Técnicas
+const SpecificationsTable = ({
+  fichaTecnica,
+}: {
+  fichaTecnica: Record<string, any>;
+}) => (
+  <section className="mb-6">
+    <h2 className="text-xl font-bold text-gray-800 mb-3 border-b pb-2">
+      Ficha Técnica
+    </h2>
+    <div className="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm">
+      <dl className="divide-y divide-gray-200">
+        {Object.entries(fichaTecnica).map(([key, value], index) => (
+          <div
+            key={index}
+            className="px-4 py-2 sm:grid sm:grid-cols-2 sm:gap-4 text-sm"
+          >
+            <dt className="font-medium text-gray-700 capitalize">
+              {key.replace(/_/g, " ")}
+            </dt>
+            <dd className="mt-1 text-gray-900 sm:col-span-1 sm:mt-0 font-semibold">
+              {String(value)}
+            </dd>
+          </div>
+        ))}
+      </dl>
+    </div>
+  </section>
 );
-
 
 // ----------------------------------------------------------------------
 // CONTENIDO PRINCIPAL
@@ -158,19 +160,28 @@ function ProductDetailPageContent({ productId }: { productId: string }) {
   const [product, setProduct] = useState<Producto | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [quantity, setQuantity] = useState(1);
   const id = parseInt(productId, 10);
 
-  // NOTE: Se recomienda que usemos un hook personalizado para manejar la carga de datos
   useEffect(() => {
     const load = async () => {
       try {
         setLoading(true);
-        // Usamos el servicio de productos real (asumido)
-        const p = await getProductoById(id); 
+        // Validar id antes de llamar al servicio
+        if (Number.isNaN(id) || id <= 0) {
+          throw new Error(`ID de producto inválido: ${String(id)}`);
+        }
+
+        const p = await getProductoById(id);
         setProduct(p);
       } catch (err) {
         console.error("Error al cargar producto id=", id, err);
-        setError("No fue posible cargar el producto.");
+        // Mostrar mensaje más específico si el id es inválido
+        if (err instanceof Error && /ID de producto inválido/.test(err.message)) {
+          setError(err.message);
+        } else {
+          setError("No fue posible cargar el producto. Revisa la conexión al backend o la existencia del producto.");
+        }
       } finally {
         setLoading(false);
       }
@@ -198,83 +209,172 @@ function ProductDetailPageContent({ productId }: { productId: string }) {
     );
   }
 
-  // Lógica para obtener la URL de la imagen
   const imageUrl =
-    (product as any).ficha_tecnica_url ||
     (product as any).image ||
     (product as any).imagen ||
     (product as any).imagenes?.[0]?.url ||
-    (product as any).images?.[0]?.url ||
     mapProductToImage(product.nombre, product.id) ||
     "/images/placeholder.webp";
 
-  // Desestructuración de campos
   const { nombre, precio, stock, codigo, categoria } = product;
-  const descripcion = (product as any).descripcion_larga ?? (product as any).descripcion ?? "Sin descripción disponible.";
+  const descripcion =
+    (product as any).descripcion_larga ??
+    (product as any).descripcion ??
+    "Sin descripción disponible.";
   const descuento = (product as any).descuento ?? 0;
   const fichaTecnica = (product as any).ficha_tecnica;
+  // Asegurarnos de trabajar con valores numéricos
+  const precioNum = Number(precio) || 0;
+  const descuentoNum = Number(descuento) || 0;
+  const precioFinal = descuentoNum > 0 ? precioNum * (1 - descuentoNum / 100) : precioNum;
+  const subtotalNum = precioFinal * Number(quantity || 0);
+  const subtotalDisplay = subtotalNum.toLocaleString("es-CO", {
+    style: "currency",
+    currency: "COP",
+    minimumFractionDigits: 0,
+  });
 
+  const handleAddToCart = () => {
+    alert(`🛒 ${quantity} unidad(es) de "${nombre}" agregadas al carrito.`);
+  };
 
   return (
     <PublicLayout>
       <div className="bg-white min-h-screen">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-10">
-          
           <Breadcrumb productName={nombre} categoryName={categoria?.nombre} />
 
-          {/* AJUSTE CLAVE: Cambiamos de lg:grid-cols-3 a lg:grid-cols-2 */}
           <div className="lg:grid lg:grid-cols-2 lg:gap-x-12">
-            
-            {/* Columna 1 (1/2): Imagen Principal */}
+            {/* 🖼️ Imagen */}
             <div className="lg:col-span-1 mb-8 lg:mb-0">
-                <div className="rounded-xl overflow-hidden shadow-2xl sticky top-4">
-                    <img
-                        src={imageUrl}
-                        alt={nombre}
-                        className="w-full h-auto object-cover max-h-[600px] lg:max-h-full" // Ajuste de altura máxima
-                        onError={(e) => {
-                            const img = e.currentTarget as HTMLImageElement;
-                            img.onerror = null;
-                            img.src = "/images/placeholder.webp";
-                        }}
-                    />
-                </div>
-            </div>
-
-            {/* Columna 2 (1/2): Título, Info, Descripción y Especificaciones */}
-            <div className="lg:col-span-1 mt-8 lg:mt-0">
-                <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-gray-900 mb-2">
-                    {nombre}
-                </h1>
-                <p className="text-xl text-[#e75e55] font-bold mb-4">
-                    {precio ? `$ ${precio}` : "Consultar Precio"}
-                </p>
-
-                <QuickInfo
-                    stock={stock ?? 0}
-          referencia={codigo ?? "N/A"}
-          descuento={descuento}
-          categoryName={categoria?.nombre}
-          categoryId={categoria?.id}
+              <div className="rounded-xl overflow-hidden shadow-2xl sticky top-4">
+                <img
+                  src={imageUrl}
+                  alt={nombre}
+                  className="w-full h-auto object-cover max-h-[600px]"
+                  onError={(e) => {
+                    const img = e.currentTarget as HTMLImageElement;
+                    img.onerror = null;
+                    img.src = "/images/placeholder.webp";
+                  }}
                 />
-
-                {/* Sección de Descripción General */}
-                <section className="mt-8 mb-10">
-                    <h2 className="text-2xl font-bold text-gray-800 mb-3 border-b pb-2">
-                        Descripción General
-                    </h2>
-                    <p className="text-gray-700 leading-relaxed whitespace-pre-line">
-                        {descripcion}
-                    </p>
-                </section>
-
-                {/* Especificaciones Técnicas (ahora agrupadas con el resto de detalles) */}
-                {fichaTecnica && Object.keys(fichaTecnica).length > 0 && (
-                    <SpecificationsTable fichaTecnica={fichaTecnica} />
-                )}
-                
+              </div>
             </div>
 
+            {/* 📄 Detalles */}
+            <div className="lg:col-span-1 mt-8 lg:mt-0">
+              <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-gray-900 mb-2">
+                {nombre}
+              </h1>
+              <p className="text-xl text-[#e75e55] font-bold mb-4">
+                {precio ? `$ ${precioFinal.toLocaleString()}` : "Consultar Precio"}
+                {descuento > 0 && (
+                  <span className="text-sm text-gray-500 line-through ml-2">
+                    ${precio.toLocaleString()}
+                  </span>
+                )}
+              </p>
+
+              <QuickInfo
+                stock={stock ?? 0}
+                referencia={codigo ?? "N/A"}
+                descuento={descuento}
+                categoryName={categoria?.nombre}
+                categoryId={categoria?.id}
+              />
+
+              {/* 🧮 Selector de Cantidad + Subtotal + Botón */}
+              <div className="mt-6 border-t pt-4">
+                <div className="flex items-center space-x-4 mb-4">
+                  <label htmlFor="quantity" className="text-sm font-semibold text-gray-700">
+                    Cantidad:
+                  </label>
+                  <div className="flex items-center border rounded-lg overflow-hidden">
+                    <button
+                      type="button"
+                      aria-label="Disminuir cantidad"
+                      onClick={() => {
+                        setQuantity((prev) => {
+                          const next = Number(prev || 1) - 1;
+                          return Math.max(1, next);
+                        });
+                      }}
+                      disabled={quantity <= 1}
+                      className="px-3 py-2 bg-white hover:bg-gray-100 disabled:opacity-50"
+                    >
+                      −
+                    </button>
+                    <input
+                      id="quantity"
+                      type="number"
+                      step={1}
+                      min={1}
+                      max={stock ?? 99}
+                      value={quantity}
+                      onChange={(e) => {
+                        const v = parseInt(e.target.value as string, 10);
+                        const sanitized = Number.isNaN(v) ? 1 : v;
+                        // Respetar rango entre 1 y stock (si stock definido)
+                        if (typeof stock === "number") {
+                          setQuantity(Math.max(1, Math.min(sanitized, stock)));
+                        } else {
+                          setQuantity(Math.max(1, sanitized));
+                        }
+                      }}
+                      className="w-20 text-center border-l border-r p-2 focus:ring-[#2e9fdb] focus:border-[#2e9fdb]"
+                    />
+                    <button
+                      type="button"
+                      aria-label="Aumentar cantidad"
+                      onClick={() => {
+                        setQuantity((prev) => {
+                          const next = Number(prev || 1) + 1;
+                          if (typeof stock === "number") return Math.min(next, stock);
+                          return next;
+                        });
+                      }}
+                      disabled={typeof stock === "number" && quantity >= stock}
+                      className="px-3 py-2 bg-white hover:bg-gray-100 disabled:opacity-50"
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+
+                <div className="text-lg font-bold text-gray-800 mb-4">
+                  Subtotal: {" "}
+                  <span className="text-[#2e9fdb]">{subtotalDisplay}</span>
+                </div>
+
+                <button
+                  onClick={handleAddToCart}
+                  disabled={stock === 0}
+                  className={`w-full flex items-center justify-center space-x-2 px-6 py-3 rounded-lg text-white font-semibold transition-colors duration-300 ${
+                    stock === 0
+                      ? "bg-gray-400 cursor-not-allowed"
+                      : "bg-[#2e9fdb] hover:bg-[#2388c5]"
+                  }`}
+                >
+                  <ShoppingCart className="w-5 h-5" />
+                  <span>Agregar al Carrito</span>
+                </button>
+              </div>
+
+              {/* 🧾 Descripción */}
+              <section className="mt-10 mb-10">
+                <h2 className="text-2xl font-bold text-gray-800 mb-3 border-b pb-2">
+                  Descripción General
+                </h2>
+                <p className="text-gray-700 leading-relaxed whitespace-pre-line">
+                  {descripcion}
+                </p>
+              </section>
+
+              {/* ⚙️ Ficha técnica */}
+              {fichaTecnica && Object.keys(fichaTecnica).length > 0 && (
+                <SpecificationsTable fichaTecnica={fichaTecnica} />
+              )}
+            </div>
           </div>
         </div>
       </div>
