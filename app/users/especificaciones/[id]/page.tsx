@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { getProductoById, Producto } from "@/components/services/productosService";
 import { mapProductToImage } from "@/utils/ProductUtils";
+import { useCart } from "../../../../components/hooks/CartContext";
 
 // ----------------------------------------------------------------------
 // COMPONENTES AUXILIARES
@@ -163,6 +164,7 @@ function ProductDetailPageContent({ productId }: { productId: string }) {
   const [quantity, setQuantity] = useState(1);
   const id = parseInt(productId, 10);
 
+
   useEffect(() => {
     const load = async () => {
       try {
@@ -209,7 +211,7 @@ function ProductDetailPageContent({ productId }: { productId: string }) {
     );
   }
 
-  const imageUrl =
+   const imageUrl =
     (product as any).image ||
     (product as any).imagen ||
     (product as any).imagenes?.[0]?.url ||
@@ -234,8 +236,42 @@ function ProductDetailPageContent({ productId }: { productId: string }) {
     minimumFractionDigits: 0,
   });
 
-  const handleAddToCart = () => {
-    alert(`🛒 ${quantity} unidad(es) de "${nombre}" agregadas al carrito.`);
+  // Producto mapeado listo para agregar al carrito (sin quantity)
+  const productToAddBase = product ? {
+    id: product.id,
+    nombre: product.nombre,
+    precio: precioNum,
+    descuento: descuentoNum,
+    imageUrl: imageUrl,
+    stock: stock || 0,
+    moneda: 'COP',
+  } : null;
+
+  // Botón que usa el contexto del carrito. Debe renderizarse DENTRO del CartProvider.
+  const AddToCartButton = ({ disabled }: { disabled: boolean }) => {
+    const { addToCart } = useCart();
+    const handle = () => {
+      if (!productToAddBase) return;
+      if (quantity > 0 && productToAddBase.stock > 0) {
+        addToCart(productToAddBase, quantity);
+        console.log(`🛒 ${quantity} unidad(es) de "${productToAddBase.nombre}" agregadas al carrito.`);
+        setQuantity(1);
+      } else {
+        console.warn('No se puede agregar al carrito: producto agotado o cantidad inválida.');
+      }
+    };
+    return (
+      <button
+        onClick={handle}
+        disabled={disabled}
+        className={`w-full flex items-center justify-center space-x-2 px-6 py-3 rounded-lg text-white font-semibold transition-colors duration-300 ${
+          disabled ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#2e9fdb] hover:bg-[#2388c5]'
+        }`}
+      >
+        <ShoppingCart className="w-5 h-5" />
+        <span>Agregar al Carrito</span>
+      </button>
+    );
   };
 
   return (
@@ -346,18 +382,7 @@ function ProductDetailPageContent({ productId }: { productId: string }) {
                   <span className="text-[#2e9fdb]">{subtotalDisplay}</span>
                 </div>
 
-                <button
-                  onClick={handleAddToCart}
-                  disabled={stock === 0}
-                  className={`w-full flex items-center justify-center space-x-2 px-6 py-3 rounded-lg text-white font-semibold transition-colors duration-300 ${
-                    stock === 0
-                      ? "bg-gray-400 cursor-not-allowed"
-                      : "bg-[#2e9fdb] hover:bg-[#2388c5]"
-                  }`}
-                >
-                  <ShoppingCart className="w-5 h-5" />
-                  <span>Agregar al Carrito</span>
-                </button>
+                <AddToCartButton disabled={stock === 0} />
               </div>
 
               {/* 🧾 Descripción */}

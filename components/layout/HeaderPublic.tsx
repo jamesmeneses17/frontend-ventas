@@ -7,10 +7,13 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import HeaderProductsDropdown from "../ui/HeaderProductsDropdown";
 import MobileCategoryList from "../ui/MobileCategoryList";
+import { useCart } from '../hooks/CartContext';
+import { ShoppingCart } from 'lucide-react';
 
 const HeaderPublic: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isProductsOpenMobile, setIsProductsOpenMobile] = useState(false);
+  const { items } = useCart();
 
   const toggleMenu = () => {
     setIsOpen(!isOpen);
@@ -84,12 +87,25 @@ const HeaderPublic: React.FC = () => {
 
             {/* BOTÓN ADMIN (Escritorio) */}
             <div className="hidden sm:ml-6 sm:flex sm:items-center">
-              <Link
-                href="/login"
-                className="px-4 py-2 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-black hover:bg-gray-800"
-              >
-                Admin
-              </Link>
+                <Link
+                  href="/users/cart"
+                  className="mr-4 relative flex items-center space-x-2 px-3 py-2 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-[#2e9fdb] hover:bg-[#2388c5]"
+                >
+                  <ShoppingCart className="w-4 h-4" />
+                  <span>Carrito</span>
+                  {items && items.length > 0 && (
+                    <span className="ml-2 inline-flex items-center justify-center px-2 py-0.5 text-xs font-bold leading-none text-white bg-red-600 rounded-full">
+                      {items.length}
+                    </span>
+                  )}
+                </Link>
+
+                <Link
+                  href="/login"
+                  className="px-4 py-2 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-black hover:bg-gray-800"
+                >
+                  Admin
+                </Link>
             </div>
 
             {/* Botón de Menú Móvil (Hamburguesa) */}
