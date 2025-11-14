@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { getProductoById, Producto } from "@/components/services/productosService";
 import { mapProductToImage } from "@/utils/ProductUtils";
+import { formatCurrency } from '@/utils/formatters';
 import { useCart } from "../../../../components/hooks/CartContext";
 
 // ----------------------------------------------------------------------
@@ -230,11 +231,7 @@ function ProductDetailPageContent({ productId }: { productId: string }) {
   const descuentoNum = Number(descuento) || 0;
   const precioFinal = descuentoNum > 0 ? precioNum * (1 - descuentoNum / 100) : precioNum;
   const subtotalNum = precioFinal * Number(quantity || 0);
-  const subtotalDisplay = subtotalNum.toLocaleString("es-CO", {
-    style: "currency",
-    currency: "COP",
-    minimumFractionDigits: 0,
-  });
+  const subtotalDisplay = formatCurrency(subtotalNum, 'COP');
 
   // Producto mapeado listo para agregar al carrito (sin quantity)
   const productToAddBase = product ? {
@@ -303,10 +300,10 @@ function ProductDetailPageContent({ productId }: { productId: string }) {
                 {nombre}
               </h1>
               <p className="text-xl text-[#e75e55] font-bold mb-4">
-                {precio ? `$ ${precioFinal.toLocaleString()}` : "Consultar Precio"}
+                {precio ? formatCurrency(precioFinal, 'COP') : "Consultar Precio"}
                 {descuento > 0 && (
                   <span className="text-sm text-gray-500 line-through ml-2">
-                    ${precio.toLocaleString()}
+                    {formatCurrency(Number(precio), 'COP')}
                   </span>
                 )}
               </p>

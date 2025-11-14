@@ -9,6 +9,7 @@ import {
 } from "@/components/services/productosService";
 import { createSlug } from "@/utils/slug"; // Importamos la utilidad
 import { mapProductToImage } from '@/utils/ProductUtils';
+import { formatPrice } from '@/utils/ProductUtils';
 import ImageLinkCard from "./ImageLinkCard";
 import ProductCard from "./ProductCard";
 
@@ -27,22 +28,7 @@ type ProductCardProps = ProductoType & {
 
 // --- Formato de Precio (para usar dentro de ProductCard) ---
 
-const formatPrice = (priceStr: string | number | undefined): string => {
-  // 1. Convertir a número, usando 0 como fallback
-  const priceNum = parseFloat(String(priceStr || 0));
-
-  // 2. Si es 0 o NaN, retorna un mensaje
-  if (isNaN(priceNum) || priceNum === 0) {
-    return "Precio no disponible";
-  }
-
-  // 3. Formato de moneda
-  return priceNum.toLocaleString("es-CO", {
-    style: "currency",
-    currency: "COP",
-    minimumFractionDigits: 0,
-  });
-};
+  // ahora usamos formatPrice importado desde utils/ProductUtils
 
 // --- Componente de Tarjeta (ProductCard) ---
 

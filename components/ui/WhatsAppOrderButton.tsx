@@ -1,4 +1,5 @@
 import React from 'react';
+import { formatCurrency } from '../../utils/formatters';
 import { Send, Smartphone } from 'lucide-react';
 
 interface WhatsAppButtonProps {
@@ -23,7 +24,7 @@ export const WhatsAppOrderButton: React.FC<WhatsAppButtonProps> = ({ items, fina
         
         const lineItems = items.map(item => {
             const finalPrice = item.precio * (1 - (item.descuento / 100));
-            return `* ${item.nombre} (x${item.quantity}) - ${currency} ${(finalPrice * item.quantity).toFixed(2)}`;
+            return `* ${item.nombre} (x${item.quantity}) - ${formatCurrency(finalPrice * item.quantity, currency)}`;
         }).join('\n');
         
         return `
@@ -32,7 +33,7 @@ export const WhatsAppOrderButton: React.FC<WhatsAppButtonProps> = ({ items, fina
 ---
 ${lineItems}
 ---
-Total a pagar: ${currency} ${finalTotal.toFixed(2)}
+Total a pagar: ${formatCurrency(finalTotal, currency)}
 
 Por favor, ayúdame a finalizar la compra.
         `.trim();

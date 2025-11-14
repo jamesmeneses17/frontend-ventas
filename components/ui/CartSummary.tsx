@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { useCart } from './../hooks/CartContext'; // Asegúrate de la ruta correcta
 import { WhatsAppOrderButton } from './../../components/ui/WhatsAppOrderButton'; // Creamos este componente aparte
+import { formatCurrency } from '../../utils/formatters';
 
 // Asume un costo de envío, puedes hacerlo dinámico
 const SHIPPING_COST = 5.00; 
@@ -19,7 +20,7 @@ export const CartSummary: React.FC = () => {
     
     // Total final real (Subtotal con descuentos + Envío)
     const finalTotal = totalAmount + SHIPPING_COST;
-    const currency = items.length > 0 ? items[0].moneda : '$';
+    const currency = items.length > 0 ? items[0].moneda : 'COP';
 
     return (
         <div className="bg-gray-50 p-6 rounded-xl shadow-lg lg:sticky lg:top-8">
@@ -30,25 +31,25 @@ export const CartSummary: React.FC = () => {
                 {/* 1. Subtotal (Precio sin descuento) */}
                 <div className="flex justify-between">
                     <dt className="text-gray-600">Subtotal de Productos</dt>
-                    <dd className="font-medium text-gray-900">{currency} {subtotal.toFixed(2)}</dd>
+                    <dd className="font-medium text-gray-900">{formatCurrency(subtotal, currency)}</dd>
                 </div>
 
                 {/* 2. Descuento Aplicado */}
                 <div className="flex justify-between">
                     <dt className="text-red-500">Descuento aplicado</dt>
-                    <dd className="font-semibold text-red-500">- {currency} {totalDiscount.toFixed(2)}</dd>
+                    <dd className="font-semibold text-red-500">- {formatCurrency(totalDiscount, currency)}</dd>
                 </div>
                 
                 {/* 3. Costo de Envío */}
                 <div className="flex justify-between">
                     <dt className="text-gray-600">Costo de Envío</dt>
-                    <dd className="font-medium text-gray-900">{SHIPPING_COST > 0 ? `${currency} ${SHIPPING_COST.toFixed(2)}` : 'Gratis'}</dd>
+                    <dd className="font-medium text-gray-900">{SHIPPING_COST > 0 ? formatCurrency(SHIPPING_COST, currency) : 'Gratis'}</dd>
                 </div>
                 
                 {/* 4. Separador y Total */}
                 <div className="flex justify-between border-t border-gray-300 pt-4 text-lg font-bold">
                     <dt className="text-gray-900">Total a Pagar</dt>
-                    <dd className="text-indigo-600">{currency} {finalTotal.toFixed(2)}</dd>
+                    <dd className="text-indigo-600">{formatCurrency(finalTotal, currency)}</dd>
                 </div>
                 
             </dl>

@@ -68,14 +68,12 @@ export const mapProductToImage = (nombre: string, id?: number): string => {
 };
 
 
+import { formatCurrency } from './formatters';
+
 export const formatPrice = (priceStr: string | number | undefined): string => {
     const priceNum = parseFloat(String(priceStr || 0));
     if (isNaN(priceNum) || priceNum === 0) { return "Consultar Precio"; }
-    return priceNum.toLocaleString("es-CO", {
-        style: "currency",
-        currency: "COP",
-        minimumFractionDigits: 0,
-    });
+    return formatCurrency(priceNum, 'COP');
 };
 
 

@@ -1,5 +1,7 @@
 "use client";
 
+import { formatCurrency } from '@/utils/formatters';
+
 interface Sale {
   id: number;
   cliente: string;
@@ -32,7 +34,7 @@ export default function RecentSales({ sales }: RecentSalesProps) {
                 </p>
               </div>
               <p className="text-sm font-semibold text-green-600">
-                ${sale.total.toLocaleString()}
+                {formatCurrency(sale.total, 'COP')}
               </p>
             </div>
           ))

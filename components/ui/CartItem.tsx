@@ -1,6 +1,7 @@
 import React from 'react';
 import { Minus, Plus, X } from 'lucide-react';
 import { useCart } from './../hooks/CartContext'; // Asegúrate de la ruta correcta
+import { formatCurrency } from '../../utils/formatters';
 
 interface CartItemProps {
     item: {
@@ -36,8 +37,8 @@ export const CartItem: React.FC<CartItemProps> = ({ item }) => {
             <div className="flex-1 min-w-0">
                 <h3 className="text-lg font-semibold text-gray-800 truncate">{item.nombre}</h3>
                 <p className="text-sm text-gray-500">
-                    {item.descuento > 0 && <span className="line-through mr-2">{item.moneda} {item.precio.toFixed(2)}</span>}
-                    <span className="font-bold text-indigo-600">{item.moneda} {finalPrice.toFixed(2)}</span>
+                    {item.descuento > 0 && <span className="line-through mr-2">{formatCurrency(item.precio, item.moneda)}</span>}
+                    <span className="font-bold text-indigo-600">{formatCurrency(finalPrice, item.moneda)}</span>
                 </p>
             </div>
 
@@ -62,7 +63,7 @@ export const CartItem: React.FC<CartItemProps> = ({ item }) => {
 
             {/* 4. Total de Línea */}
             <div className="w-20 text-right">
-                <p className="text-md font-bold text-gray-900">{item.moneda} {lineTotal.toFixed(2)}</p>
+                <p className="text-md font-bold text-gray-900">{formatCurrency(lineTotal, item.moneda)}</p>
             </div>
             
             {/* 5. Botón de Eliminar */}
