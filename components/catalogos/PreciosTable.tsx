@@ -40,8 +40,37 @@ return "bg-gray-200 text-gray-700 px-3 py-1 rounded-full text-sm font-semibold";
             render: (row: PrecioConProducto) => row.producto?.nombre || "N/A",
         },
         {
+            key: "producto.categoria",
+            label: "Categoría",
+            render: (row: PrecioConProducto) => row.producto?.categoria?.nombre || "N/A",
+        },
+       
+        {
+            key: "compra",
+            label: "Compra",
+            render: (row: PrecioConProducto) => (
+                <span className="font-semibold text-gray-700">
+                    {formatCurrency(Number((row.producto as any)?.precio ?? row.valor_unitario ?? 0))}
+                </span>
+            ),
+        },
+        {
+            key: "venta",
+            label: "Venta",
+            render: (row: PrecioConProducto) => (
+                <span className="font-bold text-gray-800">{formatCurrency(row.valor_final)}</span>
+            ),
+        },
+         {
+            key: "producto.stock",
+            label: "Stock",
+            render: (row: PrecioConProducto) => (
+                <span className="text-sm text-gray-700">{typeof (row.producto as any)?.stock !== 'undefined' ? (row.producto as any).stock : 'N/A'}</span>
+            ),
+        },
+        {
             key: "producto.precio",
-            label: "Costo",
+            label: "Costo Unitario",
             render: (row: PrecioConProducto) => (
                 <span className="font-semibold text-gray-700">
                     {formatCurrency(Number(((row.producto as any)?.precio) ?? row.valor_unitario ?? 0))}
@@ -50,7 +79,7 @@ return "bg-gray-200 text-gray-700 px-3 py-1 rounded-full text-sm font-semibold";
         },
         {
             key: "valor_unitario",
-            label: "Precio Base",
+            label: "Precio Venta",
             render: (row: PrecioConProducto) => (
                 <span className="font-semibold text-gray-700">{formatCurrency(row.valor_unitario)}</span>
             ),
