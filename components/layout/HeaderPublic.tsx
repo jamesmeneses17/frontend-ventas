@@ -2,7 +2,7 @@
 
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import HeaderProductsDropdown from "../ui/HeaderProductsDropdown";
@@ -14,6 +14,11 @@ const HeaderPublic: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isProductsOpenMobile, setIsProductsOpenMobile] = useState(false);
   const { items } = useCart();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const toggleMenu = () => {
     setIsOpen(!isOpen);
@@ -43,7 +48,7 @@ const HeaderPublic: React.FC = () => {
   `;
 
   return (
-  <nav className="bg-[#d1f177] shadow-md fixed top-0 left-0 right-0 z-50">
+  <nav className="bg-[#ebebeb] shadow-md fixed top-0 left-0 right-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-24">
 
@@ -93,7 +98,7 @@ const HeaderPublic: React.FC = () => {
                 >
                   <ShoppingCart className="w-4 h-4" />
                   <span>Carrito</span>
-                  {items && items.length > 0 && (
+                  {mounted && items && items.length > 0 && (
                     <span className="ml-2 inline-flex items-center justify-center px-2 py-0.5 text-xs font-bold leading-none text-white bg-red-600 rounded-full">
                       {items.length}
                     </span>

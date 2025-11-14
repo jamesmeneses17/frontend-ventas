@@ -37,7 +37,20 @@ export const useCart = () => {
 
 // 3. Proveedor del Contexto (Lógica del Carrito)
 export const CartProvider = ({ children }: { children: React.ReactNode }) => {
-    const [items, setItems] = useState<CartProduct[]>([]);
+    const [items, setItems] = useState<CartProduct[]>(() => {
+        try {
+            if (typeof window !== 'undefined') {
+                const raw = localStorage.getItem('cart_v1');
+                if (raw) {
+                    const parsed = JSON.parse(raw) as CartProduct[];
+                    return parsed;
+                }
+            }
+        } catch (err) {
+            console.warn('[CartProvider] error reading localStorage', err);
+        }
+        return [];
+    });
 
     // Debug: indicar que el provider se montó
     useEffect(() => {
@@ -47,6 +60,17 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
     // Debug: loguear cambios en items
     useEffect(() => {
         console.log('[CartProvider] items changed', items);
+    }, [items]);
+
+    // Persistir en localStorage para que el carrito sobreviva a remounts/navegaciones
+    useEffect(() => {
+        try {
+            if (typeof window !== 'undefined') {
+                localStorage.setItem('cart_v1', JSON.stringify(items));
+            }
+        } catch (err) {
+            console.warn('[CartProvider] error saving to localStorage', err);
+        }
     }, [items]);
 
     // Función para calcular el precio final con descuento
