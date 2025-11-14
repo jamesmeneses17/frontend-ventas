@@ -103,6 +103,10 @@ export interface Producto {
     caracteristicas?: any[];
     precios?: Precio[]; 
     inventario?: any[]; // La entidad inventario completa
+    // Campos copiados desde la relación inventario (opcional, el backend puede exponerlos en la raíz)
+    compras?: number;
+    ventas?: number;
+    ubicacion?: string;
 
     // Campos obligatorios/de relación
     estadoId: number;
@@ -194,14 +198,19 @@ export const getProductos = async (
             total = productos.length;
         }
 
-        // Normalizar los campos numéricos y mapear 'precio' al nuevo campo 'precio_costo'
+        // Normalizar los campos numéricos y mapear 'precio' al nuevo campo 'precio_costo'.
+        // El backend ya expone `stock` en la raíz del producto (proviene de la entidad inventario).
+        // Usar product.stock como primera opción; fallback a product.inventario?.stock si existe.
+
         const normalized = productos.map((it: any) => {
             // El backend puede enviar `precio_costo` o `precio`. Preferimos usar
             // `precio_costo` cuando es mayor a 0. Si es 0 o nulo, usamos `precio`.
             const precioCostoNum = Number(it.precio_costo ?? 0);
             const precioNum = Number(it.precio ?? 0);
             const finalPrice = precioCostoNum > 0 ? precioCostoNum : precioNum;
-            const finalStock = Number(it.stock) || 0;
+            // Priorizar el campo `stock` en la raíz del producto (setiado por el backend).
+            // Si no existe, intentar leer `it.inventario?.stock` o `it.inventario?.[0]?.stock`.
+            const finalStock = Number(it.stock ?? it.inventario?.[0]?.stock) || 0;
             const finalStockMinimo = Number(it.stockMinimo) || 5;
             return {
                 ...it,

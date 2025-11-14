@@ -50,16 +50,30 @@ export default function ProductosTable({
         return categoria?.nombre || "N/A";
       },
     },
+    {
+      key: "compras",
+      label: "Compras",
+      render: (row: Producto) => <span className="text-sm text-gray-700">{typeof row.compras !== 'undefined' ? row.compras : 0}</span>
+    },
+    {
+      key: "ventas",
+      label: "Ventas",
+      render: (row: Producto) => <span className="text-sm text-gray-700">{typeof row.ventas !== 'undefined' ? row.ventas : 0}</span>
+    },
     { key: "stock", label: "Stock" },
+    
     {
       key: "precio",
-      label: "Precio",
+      label: "COSTO UNITARIO",
       render: (row: Producto) => (
         <span className="font-semibold">
           {row.precio !== undefined ? formatCurrency(row.precio) : "N/A"}
         </span>
       ),
     },
+       { key: "precio_venta", label: "PRECIO VENTA" },
+          { key: "Utilidad", label: "UTILIDAD PRO PRODUCTO" },
+             { key: "Valor ", label: "VALOR INVENTARIO" },
 
     // ✅ SOLO una columna para el estado dinámico del producto
     {

@@ -240,8 +240,6 @@ export default function ListaProductosPage() {
 
           {/* BUSCADOR */}
           <div className="w-full max-w-md mb-6">
-            
-
           <FilterBar
             searchTerm={searchTerm}
             onSearchChange={setSearchTerm}
@@ -250,7 +248,6 @@ export default function ListaProductosPage() {
             selectOptions={ESTADOS_STOCK_FILTRO}
             selectFilterValue={estadoStockFiltro}
             onSelectFilterChange={handleStockFilterChange} // Usar el handler que resetea la página
-       
           />
           </div>
 

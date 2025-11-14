@@ -101,7 +101,7 @@ export const useProductListLogic = (initialSort: SortOption = 'relevancia') => {
             const discountFromPrecios = precioEntry?.descuento_porcentaje ?? precioEntry?.descuento ?? undefined;
             const discountFromProducto = p.precios?.[0]?.descuento_porcentaje ?? p.precios?.[0]?.descuento ?? undefined;
 
-            const stockNum = Number(p.inventario?.[0]?.stock) || Number((p as any).stock) || 0;
+            const stockNum = Number((p as any).stock ?? p.inventario?.[0]?.stock) || 0;
             const stockMin = Number((p as any).stockMinimo ?? (p as any).stockMin ?? 5);
             let stockStatus = 'Disponible';
             if (stockNum <= 0) stockStatus = 'Agotado';
