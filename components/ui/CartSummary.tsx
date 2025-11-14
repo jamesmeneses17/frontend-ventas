@@ -3,9 +3,6 @@ import { useCart } from './../hooks/CartContext'; // Asegúrate de la ruta corre
 import { WhatsAppOrderButton } from './../../components/ui/WhatsAppOrderButton'; // Creamos este componente aparte
 import { formatCurrency } from '../../utils/formatters';
 
-// Asume un costo de envío, puedes hacerlo dinámico
-const SHIPPING_COST = 5.00; 
-
 export const CartSummary: React.FC = () => {
     const { items, subtotal, totalAmount } = useCart();
     
@@ -18,8 +15,8 @@ export const CartSummary: React.FC = () => {
         }, 0);
     }, [items]);
     
-    // Total final real (Subtotal con descuentos + Envío)
-    const finalTotal = totalAmount + SHIPPING_COST;
+    // Total final real (Subtotal con descuentos). No se aplica cargo de envío
+    const finalTotal = totalAmount;
     const currency = items.length > 0 ? items[0].moneda : 'COP';
 
     return (
@@ -40,11 +37,7 @@ export const CartSummary: React.FC = () => {
                     <dd className="font-semibold text-red-500">- {formatCurrency(totalDiscount, currency)}</dd>
                 </div>
                 
-                {/* 3. Costo de Envío */}
-                <div className="flex justify-between">
-                    <dt className="text-gray-600">Costo de Envío</dt>
-                    <dd className="font-medium text-gray-900">{SHIPPING_COST > 0 ? formatCurrency(SHIPPING_COST, currency) : 'Gratis'}</dd>
-                </div>
+                {/* Nota: se removió el cargo de envío */}
                 
                 {/* 4. Separador y Total */}
                 <div className="flex justify-between border-t border-gray-300 pt-4 text-lg font-bold">
