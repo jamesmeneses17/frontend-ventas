@@ -8,6 +8,9 @@ interface Column {
   label: string;
   // optional custom renderer for the whole row
   render?: (row: any) => React.ReactNode;
+  // optional class names for header and cell
+  headerClass?: string;
+  cellClass?: string;
 }
 
 interface CrudTableProps {
@@ -17,9 +20,13 @@ interface CrudTableProps {
   onDelete?: (row: any) => void;
   renderRowActions?: (row: any) => React.ReactNode;
   loading?: boolean;
+  // optional class overrides
+  tableClass?: string;
+  headerClass?: string;
+  rowClass?: string;
 }
 
-const CrudTable: React.FC<CrudTableProps> = ({ columns = [], data = [], onEdit, onDelete, renderRowActions, loading = false }) => {
+const CrudTable: React.FC<CrudTableProps> = ({ columns = [], data = [], onEdit, onDelete, renderRowActions, loading = false, tableClass, headerClass, rowClass }) => {
   if (loading) {
     return (
       <div className="flex justify-center items-center py-8">
@@ -31,13 +38,13 @@ const CrudTable: React.FC<CrudTableProps> = ({ columns = [], data = [], onEdit, 
 
   return (
     <div className="overflow-x-auto">
-      <table className="min-w-full divide-y divide-gray-200">
-        <thead className="bg-gray-50">
+      <table className={tableClass ?? "min-w-full divide-y divide-gray-200"}>
+        <thead className={headerClass ?? "bg-gray-50"}>
           <tr>
             {columns.map((col) => (
               <th
                 key={col.key}
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                className={col.headerClass ?? "px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"}
               >
                 {col.label}
               </th>
@@ -57,13 +64,13 @@ const CrudTable: React.FC<CrudTableProps> = ({ columns = [], data = [], onEdit, 
           ) : (
             data.map((row, idx) => {
               return (
-              <tr key={row?.id ?? idx}>
+              <tr key={row?.id ?? idx} className={rowClass ?? undefined}>
               {columns.map((col) => {
                 if (col.render) {
                   return (
                     <td
                       key={col.key}
-                      className="px-6 py-4 whitespace-nowrap text-sm text-gray-900"
+                      className={col.cellClass ?? "px-6 py-4 whitespace-nowrap text-sm text-gray-900"}
                     >
                       {col.render(row)}
                     </td>
@@ -82,7 +89,7 @@ const CrudTable: React.FC<CrudTableProps> = ({ columns = [], data = [], onEdit, 
                 return (
                   <td
                     key={col.key}
-                    className="px-6 py-4 whitespace-nowrap text-sm text-gray-900"
+                    className={col.cellClass ?? "px-6 py-4 whitespace-nowrap text-sm text-gray-900"}
                   >
                     {display}
                   </td>

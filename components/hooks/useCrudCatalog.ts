@@ -77,6 +77,7 @@ export const useCrudCatalog = <T extends CrudItem, C extends ItemForm, U extends
   const loadItems = async () => {
     setLoading(true);
   try {
+            console.debug("useCrudCatalog: loadItems called", { currentPage, pageSize, searchTerm, customDeps: options.customDependencies });
             // 🔑 Llamamos a loadItems con todos los parámetros de paginación/búsqueda/filtros
       const response = await service.loadItems(
         false,
@@ -85,6 +86,8 @@ export const useCrudCatalog = <T extends CrudItem, C extends ItemForm, U extends
         searchTerm,
         ...(options.customDependencies || []) // Pasamos los filtros custom (ej: estadoStockFiltro)
       );
+
+      console.debug("useCrudCatalog: service.loadItems response:", response && (Array.isArray(response) ? `array(${(response as any).length})` : `object(data:${(response as any)?.data?.length ?? 'na'}, total:${(response as any)?.total ?? 'na'})`));
 
       // Aceptamos dos formatos de respuesta del servicio:
       // 1) { data: T[], total: number }  (paginación desde backend)
@@ -119,7 +122,7 @@ export const useCrudCatalog = <T extends CrudItem, C extends ItemForm, U extends
           }
         }
 
-        setTotalItems(total);
+  setTotalItems(total);
 
         // Si la página solicitada excede el total disponible, ajustarla y salir
         const totalPages = Math.max(1, Math.ceil(total / pageSize));
@@ -132,25 +135,37 @@ export const useCrudCatalog = <T extends CrudItem, C extends ItemForm, U extends
         // Calcular la porción paginada para mostrar en la tabla
         const start = (currentPage - 1) * pageSize;
         const end = start + pageSize;
-        setCurrentItems(items.slice(start, end));
+        const paged = items.slice(start, end);
+        console.debug("useCrudCatalog: using array response; items", items.length, "-> paged", paged.length, { start, end });
+        setCurrentItems(paged);
       } else if ((response as any).data) {
         const items = (response as any).data as T[];
-        // Cuando el backend implementa paginación, `items` corresponde a la página
-        // actual y `total` al total real. No almacenamos la lista completa en
-        // allItemsFull para evitar confusiones.
-        setAllItemsFull(items);
+        // Cuando el backend implementa paginación, `items` debería corresponder
+        // a la página actual y `total` al total real. Sin embargo algunos
+        // endpoints pueden devolver la lista completa dentro de `data`.
+        // Detectamos ese caso y aplicamos un slice para garantizar que
+        // currentItems nunca exceda pageSize.
         const total = (response as any).total ?? (items?.length ?? 0);
         setTotalItems(total);
-
-        // Si la página solicitada excede el total disponible, ajustarla y salir
-        const totalPages = Math.max(1, Math.ceil(total / pageSize));
-        if (currentPage > totalPages) {
-          setCurrentPage(totalPages);
-          return;
+        // Guardamos la lista completa sólo si parece serlo
+        if (items.length > pageSize && items.length === total) {
+          // Parece que `data` contiene la lista completa -> paginar localmente
+          setAllItemsFull(items);
+          const start = (currentPage - 1) * pageSize;
+          const paged = items.slice(start, start + pageSize);
+          console.debug("useCrudCatalog: backend returned full list inside data; slicing to", paged.length, { start, pageSize });
+          setCurrentItems(paged);
+        } else {
+          // Caso normal: `data` ya está paginado por el backend
+          setAllItemsFull(items);
+          const totalPages = Math.max(1, Math.ceil(total / pageSize));
+          if (currentPage > totalPages) {
+            setCurrentPage(totalPages);
+            return;
+          }
+          console.debug("useCrudCatalog: using paginated backend response; items", items.length, "total", total);
+          setCurrentItems(items);
         }
-
-        // Usamos la página devuelta por el backend directamente
-        setCurrentItems(items);
       } else {
         // Fallback: si la respuesta es inesperada, tratamos como array
         const items = (response as unknown) as T[];
@@ -158,7 +173,9 @@ export const useCrudCatalog = <T extends CrudItem, C extends ItemForm, U extends
         setTotalItems((items as any)?.length ?? 0);
         const start = (currentPage - 1) * pageSize;
         const end = start + pageSize;
-        setCurrentItems((items || []).slice(start, end));
+        const paged = (items || []).slice(start, end);
+        console.debug("useCrudCatalog: fallback array; items", (items || []).length, "-> paged", paged.length, { start, end });
+        setCurrentItems(paged);
       }
 
     }catch (error) {
@@ -177,11 +194,15 @@ export const useCrudCatalog = <T extends CrudItem, C extends ItemForm, U extends
     }, [currentPage, pageSize, searchTerm, ...(options.customDependencies || [])]);
 
     // 🔑 HANDLER DE BÚSQUEDA AJUSTADO PARA RESETEAR LA PÁGINA
-    const handleSearch = (term: string) => {
-        setSearchTerm(term);
-        // Resetear a la página 1 cuando se realiza una nueva búsqueda
-        setCurrentPage(1);
-    };
+  const handleSearch = (term: string) => {
+    // Sólo actualizar y resetear página si el término realmente cambió.
+    // Esto evita que componentes como SearchInput (debounced)
+    // provoquen un reset a 1 al montarse si el valor es el mismo.
+    if (term === searchTerm) return;
+    setSearchTerm(term);
+    // Resetear a la página 1 cuando se realiza una nueva búsqueda
+    setCurrentPage(1);
+  };
 
     // Wrapper para cambiar el tamaño de página y resetear a la página 1
     const handlePageSizeChangeWrapper = (size: number) => {

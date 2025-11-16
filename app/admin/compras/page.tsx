@@ -3,21 +3,24 @@
 import React, { useEffect, useState } from "react";
 import AuthenticatedLayout from "../../../components/layout/AuthenticatedLayout";
 
+// UI generales
+import ActionButton from "../../../components/common/ActionButton";
+import Paginator from "../../../components/common/Paginator";
 import ModalVentana from "../../../components/ui/ModalVentana";
 import Alert from "../../../components/ui/Alert";
-import Paginator from "../../../components/common/Paginator";
 import SearchInput from "../../../components/common/form/SearchInput";
+import FormSelect from "../../../components/common/form/FormSelect";
 
-// Componentes UI Compras
+import { FilePlus2, FileSpreadsheet } from "lucide-react";
 
-
+// Tabla y Form
 import ComprasTable from "../../../components/catalogos/ComprasTable";
 import ComprasForm from "../../../components/catalogos/ComprasForm";
 
 // Hook CRUD
 import { useCrudCatalog } from "../../../components/hooks/useCrudCatalog";
 
-// Servicios de compras
+// Servicios
 import {
   getCompras,
   createCompra,
@@ -31,6 +34,20 @@ import {
 export default function ComprasPage() {
   const [formError, setFormError] = useState("");
 
+  const [monthsOptions, setMonthsOptions] = useState<
+    { value: string; label: string }[]
+  >([]);
+  const [yearOptions, setYearOptions] = useState<
+    { value: string; label: string }[]
+  >([]);
+  const [monthsGrouped, setMonthsGrouped] = useState<
+    Record<string, { value: string; label: string }[]>
+  >({});
+
+  const [selectedYear, setSelectedYear] = useState("");
+  const [selectedMonth, setSelectedMonth] = useState("");
+
+  // ===================== CRUD HOOK ======================
   const {
     currentItems,
     totalItems,
@@ -53,101 +70,241 @@ export default function ComprasPage() {
     setNotification,
   } = useCrudCatalog<Compra, CreateCompraDTO, UpdateCompraDTO>(
     {
-      loadItems: async (all, page, size, searchTerm) =>
-        await getCompras(page, size, searchTerm),
+      loadItems: async (
+        all,
+        page,
+        size,
+        searchTermParam,
+        selectedYearParam,
+        selectedMonthParam
+      ) => {
+        if (selectedMonthParam) {
+          const resp = await getCompras(
+            1,
+            Math.max(1000, page * size),
+            searchTermParam
+          );
+          let items: any[] = Array.isArray(resp) ? resp : resp?.data ?? [];
+
+          const filtered = items.filter((it: any) => {
+            if (!it?.fecha) return false;
+            const d = new Date(it.fecha);
+            const ym = `${d.getFullYear()}-${String(
+              d.getMonth() + 1
+            ).padStart(2, "0")}`;
+            return ym === String(selectedMonthParam);
+          });
+
+          const total = filtered.length;
+          const start = (page - 1) * size;
+          const pageItems = filtered.slice(start, start + size);
+          return { data: pageItems, total };
+        }
+
+        if (selectedYearParam) {
+          const resp = await getCompras(
+            1,
+            Math.max(1000, page * size),
+            searchTermParam
+          );
+          let items: any[] = Array.isArray(resp) ? resp : resp?.data ?? [];
+
+          const filtered = items.filter((it: any) => {
+            if (!it?.fecha) return false;
+            const d = new Date(it.fecha);
+            return `${d.getFullYear()}` === String(selectedYearParam);
+          });
+
+          const total = filtered.length;
+          const start = (page - 1) * size;
+          const pageItems = filtered.slice(start, start + size);
+          return { data: pageItems, total };
+        }
+
+        return await getCompras(page, size, searchTermParam);
+      },
       createItem: createCompra,
       updateItem: updateCompra,
       deleteItem: deleteCompra,
     },
-    "Compra"
+    "Compra",
+    { customDependencies: [selectedYear, selectedMonth] }
   );
 
   const editingCompra = editingItem as Compra | null;
 
+  // ===================== ERROR HANDLER =====================
   const handleSubmitWithError = async (data: any) => {
     setFormError("");
     try {
       await handleFormSubmit(data);
     } catch (err: any) {
-      // El backend puede devolver `message` como array de errores de validación.
       const remote = err?.response?.data;
       let msg: string;
+
       if (remote) {
-        if (Array.isArray(remote.message)) {
-          msg = remote.message.join(". ");
-        } else if (typeof remote.message === "string") {
-          msg = remote.message;
-        } else {
-          msg = JSON.stringify(remote);
-        }
-      } else {
-        msg = err?.message || "Error al guardar.";
-      }
+        if (Array.isArray(remote.message)) msg = remote.message.join(". ");
+        else msg = remote.message || "Error al guardar.";
+      } else msg = err?.message || "Error desconocido.";
+
       setFormError(msg);
     }
   };
 
-  const handleDeleteWithRefresh = async (id: number) => {
-    await handleDelete(id);
-  };
+  // ================== CARGA DE MESES/AÑOS ==================
+  useEffect(() => {
+    const reload = async () => {
+      try {
+        const resp = await getCompras(1, 1000, "");
+        const items: any[] = Array.isArray(resp) ? resp : resp?.data ?? [];
+
+        const grouped: Record<string, any[]> = {};
+        const years = new Set<string>();
+
+        items.forEach((it) => {
+          if (!it?.fecha) return;
+
+          const d = new Date(it.fecha);
+          const y = `${d.getFullYear()}`;
+          const ym = `${d.getFullYear()}-${String(
+            d.getMonth() + 1
+          ).padStart(2, "0")}`;
+          const label = d.toLocaleString("es-CO", { month: "long" });
+
+          years.add(y);
+
+          if (!grouped[y]) grouped[y] = [];
+          if (!grouped[y].some((m) => m.value === ym))
+            grouped[y].push({ value: ym, label });
+        });
+
+        const yearOpts = Array.from(years).map((y) => ({ value: y, label: y }));
+        yearOpts.sort((a, b) => (a.value < b.value ? 1 : -1));
+        Object.keys(grouped).forEach((y) =>
+          grouped[y].sort((a, b) => (a.value < b.value ? 1 : -1))
+        );
+
+        setMonthsGrouped(grouped);
+        setYearOptions(yearOpts);
+      } catch {}
+    };
+
+    reload();
+  }, [notification]);
+
+  useEffect(() => {
+    if (!selectedYear) {
+      setMonthsOptions([]);
+      return;
+    }
+    const months = monthsGrouped[selectedYear] ?? [];
+    setMonthsOptions(months);
+    setSelectedMonth("");
+  }, [selectedYear]);
 
   return (
     <AuthenticatedLayout>
       <div className="space-y-6">
-        {/* ================== HEADER ================== */}
-        <div className="flex justify-between items-start">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-800">Registro de Compras</h1>
-            <p className="text-gray-600">Administra el historial de compras</p>
+        {/* =================== HEADER (Sin el botón "Nueva Compra") =================== */}
+        <div className="bg-white shadow rounded-lg p-6">
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+                <FileSpreadsheet className="w-6 h-6 text-indigo-600" />
+                Registro de Compras
+              </h1>
+              <p className="text-gray-600 mt-2">
+                Administra y controla el historial de compras a proveedores.
+              </p>
+            </div>
+            {/* El botón ActionButton fue movido a la sección de la tabla */}
           </div>
-
-          <button
-            onClick={handleAdd}
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg shadow hover:bg-blue-700"
-          >
-            Nueva Compra
-          </button>
         </div>
 
-        {/* ================== BUSCADOR ================== */}
-        <div className="max-w-sm">
-          <SearchInput
-            placeholder="Buscar por proveedor o código..."
-            value={searchTerm}
-            onChange={setSearchTerm}
-          />
-        </div>
+        {/* =================== TABLA Y CONTROLES =================== */}
+        <div className="bg-white shadow rounded-lg p-6">
+          
+          {/* Header de la tabla con título */}
+          <h3 className="text-xl font-semibold text-gray-900 mb-4">
+            Lista de Compras
+          </h3>
 
-        {/* ================== TABLA ================== */}
-        <ComprasTable
-          data={currentItems || []}
-          loading={loading}
-          onEdit={handleEdit}
-          onDelete={handleDeleteWithRefresh}
-        />
+          {/* CONTROLES: Buscador, Selectores y Botón "Nueva Compra" */}
+          <div className="flex flex-wrap justify-between items-end gap-4 mb-6">
+            
+            {/* Grupo de Buscador y Selectores (para que se mantengan juntos a la izquierda) */}
+            <div className="flex flex-wrap items-end gap-4">
+                
+                {/* 1. Buscador por Proveedor */}
+                <div className="flex-1 min-w-[250px] max-w-sm">
+                  <SearchInput
+                    searchTerm={searchTerm}
+                    placeholder="Buscar por proveedor..."
+                    onSearchChange={setSearchTerm}
+                  />
+                </div>
 
-        {/* ================== PAGINADOR ================== */}
-        <div className="flex justify-between items-center mt-4">
-          <p className="text-gray-600 text-sm">
-            {!loading && totalItems > 0
-              ? `Mostrando ${currentItems.length} de ${totalItems} compras`
-              : loading
-              ? "Cargando..."
-              : "No hay compras registradas"}
-          </p>
+                {/* 2. Año */}
+                <div className="min-w-[140px]">
+                  <FormSelect
+                    label="Año" 
+                    name="year"
+                    value={selectedYear}
+                    onChange={(e) => setSelectedYear(e.target.value)}
+                    options={yearOptions}
+                    placeholder="Todos"
+                  />
+                </div>
 
-          {!loading && totalItems > 0 && (
-            <Paginator
-              total={totalItems}
-              currentPage={currentPage}
-              pageSize={pageSize}
-              onPageChange={handlePageChange}
-              onPageSizeChange={handlePageSizeChange}
+                {/* 3. Mes */}
+                <div className="min-w-[180px]">
+                  <FormSelect
+                    label="Mes" 
+                    name="month"
+                    value={selectedMonth}
+                    disabled={!selectedYear}
+                    onChange={(e) => setSelectedMonth(e.target.value)}
+                    options={monthsOptions}
+                    placeholder="Todos los meses"
+                  />
+                </div>
+            </div>
+
+            {/* Botón "Nueva Compra" alineado a la derecha */}
+            <ActionButton
+              icon={<FilePlus2 className="h-5 w-5" />}
+              label="Nueva Compra"
+              onClick={handleAdd}
             />
-          )}
+          </div>
+          {/* FIN DE CONTROLES */}
+          
+          <ComprasTable
+            data={currentItems || []}
+            loading={loading}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+          />
+
+          {/* PAGINADOR */}
+          <div className="flex justify-between items-center mt-4">
+            <p className="text-sm text-gray-600">
+              Mostrando {currentItems.length} de {totalItems} compras
+            </p>
+
+            {!loading && totalItems > 0 && (
+              <Paginator
+                total={totalItems}
+                currentPage={currentPage}
+                pageSize={pageSize}
+                onPageChange={handlePageChange}
+                onPageSizeChange={handlePageSizeChange}
+              />
+            )}
+          </div>
         </div>
 
-        {/* ================== MODAL ================== */}
+        {/* =================== MODAL =================== */}
         {showModal && (
           <ModalVentana
             isOpen={showModal}
@@ -163,7 +320,7 @@ export default function ComprasPage() {
           </ModalVentana>
         )}
 
-        {/* ================== ALERTAS ================== */}
+        {/* =================== ALERTAS =================== */}
         {notification && (
           <div className="fixed top-10 right-4 z-[9999]">
             <Alert

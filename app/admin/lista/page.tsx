@@ -37,8 +37,6 @@ import {
 import { Package, AlertTriangle, Box, Upload } from "lucide-react"; 
 import ActionButton from "../../../components/common/ActionButton";
 import FilterBar from "../../../components/common/FilterBar";
-import ListaTable from "../../../components/catalogos/ListaTable";
-import ListaForm from "../../../components/catalogos/ListaForm";
 
 // Tipos para el resumen de widgets
 interface ProductSummary {
@@ -245,7 +243,7 @@ export default function ListaProductosPage() {
           </div>
 
           {/* TABLA DE PRODUCTOS */}
-          <ListaTable
+          <ProductosTable
             data={currentItems as Producto[]}
             loading={loading}
             onEdit={handleEdit}
@@ -280,7 +278,7 @@ export default function ListaProductosPage() {
     onClose={handleCloseModal}
     title={editingProducto ? "Editar Producto" : "Nuevo Producto"}
   >
-    <ListaForm
+    <ProductosForm
       initialData={editingProducto}
       onSubmit={handleFormSubmitWithStats}
       onCancel={handleCloseModal}

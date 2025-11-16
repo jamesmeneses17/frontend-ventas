@@ -11,7 +11,7 @@ interface PaginatorProps {
 }
 
 // Opciones de tamaño de página
-const PAGE_SIZE_OPTIONS = [5, 10, 15, 25]; // Mantenemos 3 porque lo tenías en tu código
+const PAGE_SIZE_OPTIONS = [5, 10, 15, 25]; // conservamos las opciones tradicionales
 
 const Paginator: React.FC<PaginatorProps> = ({
   total,
@@ -24,8 +24,14 @@ const Paginator: React.FC<PaginatorProps> = ({
   
   if (total <= 0) return null;
 
+  // Aseguramos que la opción actual aparezca en el select
+  const pageSizeOptions = Array.from(new Set([...PAGE_SIZE_OPTIONS, pageSize])).sort((a, b) => a - b);
+
   const handleSizeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    onPageSizeChange(Number(e.target.value));
+    const newSize = Number(e.target.value);
+    // cambiar tamaño y resetear a la primera página
+    onPageSizeChange(newSize);
+    onPageChange(1);
   };
 
   return (
@@ -41,7 +47,7 @@ const Paginator: React.FC<PaginatorProps> = ({
               onChange={handleSizeChange}
               className="border border-gray-300 rounded-md py-1 px-2 focus:ring-indigo-500 focus:border-indigo-500"
           >
-              {PAGE_SIZE_OPTIONS.map((size) => (
+              {pageSizeOptions.map((size) => (
                   <option key={size} value={size}>
                       {size}
                   </option>
@@ -55,7 +61,7 @@ const Paginator: React.FC<PaginatorProps> = ({
             <button
                 type="button"
                 disabled={currentPage === 1}
-                onClick={() => onPageChange(currentPage - 1)}
+                onClick={() => onPageChange(Math.max(1, currentPage - 1))}
                 className="px-4 py-2 bg-white text-gray-700 rounded-md border border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition"
             >
                 Anterior
@@ -64,7 +70,7 @@ const Paginator: React.FC<PaginatorProps> = ({
             <button
                 type="button"
                 disabled={currentPage === totalPages}
-                onClick={() => onPageChange(currentPage + 1)}
+                onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
                 className="px-4 py-2 bg-white text-gray-700 rounded-md border border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition"
             >
                 Siguiente
