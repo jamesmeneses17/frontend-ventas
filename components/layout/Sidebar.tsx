@@ -35,13 +35,16 @@ const navigation = [
   {
     title: "INVENTARIO Y PRODUCTOS",
     items: [
-      { name: "Lista de Productos", href: "/admin/lista-productos", icon: Box },
-      { name: "Precios & Ofertas", href: "/admin/precios", icon: DollarSign },
+      { name: "INVENTARIO", href: "/admin/lista-productos", icon: Box },
+      { name: "PRODUCTOS", href: "/admin/lista", icon: DollarSign },
+      { name: "LISTA DE PRODUCTOS", href: "/admin/precios", icon: DollarSign },
     ],
   },
   {
     title: "OPERACIONES",
     items: [
+            { name: "Compras", href: "/admin/compras", icon: ShoppingCart },
+
       { name: "Ventas", href: "/admin/ventas", icon: ShoppingCart },
     ],
   },

@@ -53,27 +53,78 @@ export default function ProductosTable({
     {
       key: "compras",
       label: "Compras",
-      render: (row: Producto) => <span className="text-sm text-gray-700">{typeof row.compras !== 'undefined' ? row.compras : 0}</span>
+      render: (row: Producto) => (
+        <span className="text-sm text-gray-700">
+          {typeof row.compras !== "undefined" ? row.compras : 0}
+        </span>
+      ),
     },
     {
       key: "ventas",
       label: "Ventas",
-      render: (row: Producto) => <span className="text-sm text-gray-700">{typeof row.ventas !== 'undefined' ? row.ventas : 0}</span>
-    },
-    { key: "stock", label: "Stock" },
-    
-    {
-      key: "precio",
-      label: "COSTO UNITARIO",
       render: (row: Producto) => (
-        <span className="font-semibold">
-          {row.precio !== undefined ? formatCurrency(row.precio) : "N/A"}
+        <span className="text-sm text-gray-700">
+          {typeof row.ventas !== "undefined" ? row.ventas : 0}
         </span>
       ),
     },
-       { key: "precio_venta", label: "PRECIO VENTA" },
-          { key: "Utilidad", label: "UTILIDAD PRO PRODUCTO" },
-             { key: "Valor ", label: "VALOR INVENTARIO" },
+    { key: "stock", label: "Stock" },
+
+    {
+      key: "costo_unitario",
+      label: "Costo Unitario",
+      render: (row: Producto) => {
+        const costo = Number((row as any).precio_costo ?? 0);
+        return <span className="font-semibold">{formatCurrency(costo)}</span>;
+      },
+    },
+    {
+      key: "precio_venta",
+      label: "Precio Venta",
+      render: (row: Producto) => {
+        const precioVenta = Number(
+          (row as any).precio_venta ??
+            (row as any).precioVenta ??
+            row.precio ??
+            0
+        );
+        return (
+          <span className="font-semibold">{formatCurrency(precioVenta)}</span>
+        );
+      },
+    },
+    {
+      key: "utilidad",
+      label: "Utilidad / Producto",
+      render: (row: Producto) => {
+        const costo = Number((row as any).precio_costo ?? 0);
+        const precioVenta = Number(
+          (row as any).precio_venta ??
+            (row as any).precioVenta ??
+            row.precio ??
+            0
+        );
+        const utilidad = precioVenta - costo;
+        const className = utilidad < 0 ? "text-red-600" : "text-green-600";
+        return (
+          <span className={`font-semibold ${className}`}>
+            {formatCurrency(utilidad)}
+          </span>
+        );
+      },
+    },
+    {
+      key: "valor_inventario",
+      label: "Valor Inventario",
+      render: (row: Producto) => {
+        const costo = Number((row as any).precio_costo ?? 0);
+        const stock = Number(row.stock ?? 0);
+        const valor = costo * stock;
+        return (
+          <span className="text-sm text-gray-700">{formatCurrency(valor)}</span>
+        );
+      },
+    },
 
     // ✅ SOLO una columna para el estado dinámico del producto
     {

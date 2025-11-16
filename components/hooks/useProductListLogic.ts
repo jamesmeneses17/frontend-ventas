@@ -75,6 +75,9 @@ export const useProductListLogic = (initialSort: SortOption = 'relevancia') => {
                     } else if (preciosRes && Array.isArray((preciosRes as any).data)) {
                         preciosArray = (preciosRes as any).data;
                     }
+                    // Debug: mostrar cuantos precios trajimos y una muestra
+                    console.debug('[useProductListLogic] preciosArray.length =', preciosArray.length);
+                    if (preciosArray.length > 0) console.debug('[useProductListLogic] precios sample', preciosArray.slice(0, 8));
                     setPreciosList(preciosArray);
                 } catch (e) {
                     // Si falla obtener precios, seguimos sin promociones
@@ -98,6 +101,14 @@ export const useProductListLogic = (initialSort: SortOption = 'relevancia') => {
             // Preferir el precio final de la tabla `precios` (valor_final) cuando exista,
             // luego valor_unitario y finalmente los campos del producto.
             const priceValue = precioEntry?.valor_final ?? precioEntry?.valor_unitario ?? p.precios?.[0]?.valor_final ?? p.precios?.[0]?.valor_unitario ?? (p as any).precio ?? (p as any).precio_costo;
+            // Debug: mostrar el mapeo de precio para los primeros productos (ayuda a diagnosticar por qué falta precio_venta)
+            if (p && preciosList && productos && productos.length) {
+                // limitar logging a los primeros 10 productos
+                const prodIndex = productos.findIndex(pr => Number(pr.id) === Number(p.id));
+                if (prodIndex >= 0 && prodIndex < 10) {
+                    console.debug('[useProductListLogic] price mapping', { productId: p.id, precio_venta: (p as any).precio_venta ?? (p as any).precioVenta ?? null, precio_costo: (p as any).precio_costo ?? null, precio_from_precios: precioEntry ? (precioEntry.valor_final ?? precioEntry.valor_unitario) : null, priceValue });
+                }
+            }
             const discountFromPrecios = precioEntry?.descuento_porcentaje ?? precioEntry?.descuento ?? undefined;
             const discountFromProducto = p.precios?.[0]?.descuento_porcentaje ?? p.precios?.[0]?.descuento ?? undefined;
 

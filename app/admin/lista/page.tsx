@@ -37,6 +37,8 @@ import {
 import { Package, AlertTriangle, Box, Upload } from "lucide-react"; 
 import ActionButton from "../../../components/common/ActionButton";
 import FilterBar from "../../../components/common/FilterBar";
+import ListaTable from "../../../components/catalogos/ListaTable";
+import ListaForm from "../../../components/catalogos/ListaForm";
 
 // Tipos para el resumen de widgets
 interface ProductSummary {
@@ -191,30 +193,8 @@ export default function ListaProductosPage() {
             color="text-indigo-600" 
             icon={<Box className="h-4 w-4" />} 
           />
-          <CardStat 
-            title="Stock Bajo" 
-            value={String(productSummary.stockBajo ?? 0)} 
-            color="text-yellow-600" 
-            icon={<AlertTriangle className="h-4 w-4" />} 
-          />
-          <CardStat 
-            title="Sin Stock" 
-            value={String(productSummary.sinStock ?? 0)} 
-            color="text-red-600" 
-            icon={<Package className="h-4 w-4" />} 
-          />
-          <CardStat
-            title="Total Inventario"
-            value={formatCurrency(
-              (currentItems || []).reduce((acc, p) => {
-                const costo = Number((p as any).precio_costo ?? 0);
-                const stock = Number((p as any).stock ?? 0);
-                return acc + costo * stock;
-              }, 0)
-            )}
-            color="text-emerald-600"
-            icon={<Package className="h-4 w-4" />}
-          />
+          
+        
         </div>
 
         {/* --- CONTENIDO PRINCIPAL --- */}
@@ -265,7 +245,7 @@ export default function ListaProductosPage() {
           </div>
 
           {/* TABLA DE PRODUCTOS */}
-          <ProductosTable
+          <ListaTable
             data={currentItems as Producto[]}
             loading={loading}
             onEdit={handleEdit}
@@ -300,7 +280,7 @@ export default function ListaProductosPage() {
     onClose={handleCloseModal}
     title={editingProducto ? "Editar Producto" : "Nuevo Producto"}
   >
-    <ProductosForm
+    <ListaForm
       initialData={editingProducto}
       onSubmit={handleFormSubmitWithStats}
       onCancel={handleCloseModal}

@@ -205,9 +205,11 @@ export const getProductos = async (
         const normalized = productos.map((it: any) => {
             // El backend puede enviar `precio_costo` o `precio`. Preferimos usar
             // `precio_costo` cuando es mayor a 0. Si es 0 o nulo, usamos `precio`.
+            // Preferir en este orden: precio_venta (si existe), precio_costo, luego precio
+            const precioVentaNum = Number(it.precio_venta ?? it.precioVenta ?? 0);
             const precioCostoNum = Number(it.precio_costo ?? 0);
             const precioNum = Number(it.precio ?? 0);
-            const finalPrice = precioCostoNum > 0 ? precioCostoNum : precioNum;
+            const finalPrice = precioVentaNum > 0 ? precioVentaNum : (precioCostoNum > 0 ? precioCostoNum : precioNum);
             // Priorizar el campo `stock` en la raíz del producto (setiado por el backend).
             // Si no existe, intentar leer `it.inventario?.stock` o `it.inventario?.[0]?.stock`.
             const finalStock = Number(it.stock ?? it.inventario?.[0]?.stock) || 0;
@@ -243,9 +245,10 @@ export const getProductoById = async (id: number): Promise<Producto> => {
         const res = await axios.get(`${ENDPOINT_BASE}/${id}/with-relations`);
         const data = res.data;
         // Normalizar campos numéricos
-        const precioCostoNum = Number(data.precio_costo ?? 0);
-        const precioNum = Number(data.precio ?? 0);
-        data.precio = precioCostoNum > 0 ? precioCostoNum : precioNum;
+    const precioVentaNum = Number(data.precio_venta ?? data.precioVenta ?? 0);
+    const precioCostoNum = Number(data.precio_costo ?? 0);
+    const precioNum = Number(data.precio ?? 0);
+    data.precio = precioVentaNum > 0 ? precioVentaNum : (precioCostoNum > 0 ? precioCostoNum : precioNum);
         data.stock = Number(data.stock) || 0;
         data.stockMinimo = Number(data.stockMinimo) || 5;
         return data as Producto;
@@ -255,9 +258,10 @@ export const getProductoById = async (id: number): Promise<Producto> => {
         try {
             const res2 = await axios.get(`${ENDPOINT_BASE}/${id}`);
             const data = res2.data;
+            const precioVentaNum = Number(data.precio_venta ?? data.precioVenta ?? 0);
             const precioCostoNum = Number(data.precio_costo ?? 0);
             const precioNum = Number(data.precio ?? 0);
-            data.precio = precioCostoNum > 0 ? precioCostoNum : precioNum;
+            data.precio = precioVentaNum > 0 ? precioVentaNum : (precioCostoNum > 0 ? precioCostoNum : precioNum);
             data.stock = Number(data.stock) || 0;
             data.stockMinimo = Number(data.stockMinimo) || 5;
             return data as Producto;
@@ -288,12 +292,13 @@ export const getProductosSimple = async (productosArray: any[]): Promise<Product
     const normalized = productosArray.map((p: any) => {
         const finalStockMinimo = Number(p.stockMinimo ?? 0);
         const calculated_estado_stock = calcularEstadoStock(Number(p.stock ?? 0), finalStockMinimo);
+        const precioVentaNum = Number(p.precio_venta ?? p.precioVenta ?? 0);
         const precioCostoNum = Number(p.precio_costo ?? 0);
         const precioNum = Number(p.precio ?? 0);
         return {
             ...p,
-            // Preferir precio_costo cuando esté disponible (>0)
-            precio: precioCostoNum > 0 ? precioCostoNum : precioNum,
+            // Preferir en este orden: precio_venta, precio_costo, precio
+            precio: precioVentaNum > 0 ? precioVentaNum : (precioCostoNum > 0 ? precioCostoNum : precioNum),
             stock: Number(p.stock ?? 0),
             stockMinimo: finalStockMinimo,
             estado_stock: calculated_estado_stock,
