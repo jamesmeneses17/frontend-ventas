@@ -9,7 +9,6 @@ const ENDPOINT_BASE = `${API_URL}/compras`;
 // ------------------------------------------------------
 export interface Compra {
     id: number;
-    codigo: string;
     fecha: string;
 
     producto_id: number;
@@ -24,7 +23,6 @@ export interface Compra {
 }
 
 export interface CreateCompraDTO {
-    codigo: string;
     fecha: string;
     producto_id: number;
     categoria_id: number;
@@ -112,13 +110,22 @@ export const getCompraById = async (id: number): Promise<Compra> => {
  * Crear una compra.
  */
 export const createCompra = async (data: CreateCompraDTO): Promise<Compra> => {
-    console.log("[createCompra] POST", ENDPOINT_BASE, data);
+    // Construir payload explícito con sólo los campos que el backend espera
+    const payload: any = {
+        fecha: data.fecha,
+        producto_id: Number(data.producto_id),
+        cantidad: Number(data.cantidad),
+        // Aceptar decimales; eliminar cualquier carácter no numérico salvo '.' y '-'
+        costo_unitario: Number(String(data.costo_unitario).replace(/[^0-9.\-]/g, "")) || 0,
+    };
+
+    console.log("[createCompra] POST", ENDPOINT_BASE, payload);
 
     try {
-        const res = await axios.post(ENDPOINT_BASE, data);
+        const res = await axios.post(ENDPOINT_BASE, payload);
         return res.data as Compra;
     } catch (err: any) {
-        console.error("[createCompra] Error:", err);
+        console.error("[createCompra] Error:", err?.message ?? err, err?.response?.data ?? err?.response);
         throw err;
     }
 };

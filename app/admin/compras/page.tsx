@@ -69,8 +69,20 @@ export default function ComprasPage() {
     try {
       await handleFormSubmit(data);
     } catch (err: any) {
-      const msg =
-        err?.response?.data?.message || err?.message || "Error al guardar.";
+      // El backend puede devolver `message` como array de errores de validación.
+      const remote = err?.response?.data;
+      let msg: string;
+      if (remote) {
+        if (Array.isArray(remote.message)) {
+          msg = remote.message.join(". ");
+        } else if (typeof remote.message === "string") {
+          msg = remote.message;
+        } else {
+          msg = JSON.stringify(remote);
+        }
+      } else {
+        msg = err?.message || "Error al guardar.";
+      }
       setFormError(msg);
     }
   };

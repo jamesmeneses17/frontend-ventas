@@ -7,6 +7,7 @@ import FormSelect from "../common/form/FormSelect";
 import Button from "../ui/button";
 
 import { getProductos, Producto } from "../services/productosService";
+import { CreateCompraDTO } from "../services/comprasService";
 import { formatCurrency } from "../../utils/formatters";
 
 type FormData = {
@@ -21,7 +22,7 @@ type FormData = {
 
 interface Props {
     initialData?: Partial<FormData> | null;
-    onSubmit: (data: FormData) => void;
+    onSubmit: (data: CreateCompraDTO) => void;
     onCancel: () => void;
     formError?: string;
 }
@@ -108,8 +109,13 @@ export default function ComprasForm({
 
         // 💰 Formateo automático para costo_unitario
         if (name === "costo_unitario") {
-            const numericValue = value.replace(/[^\d]/g, "");
-            setValue(name as keyof FormData, Number(numericValue), {
+            // Permitir decimales (p. ej. 2222.50) y aceptar entradas con comas o símbolos.
+            // 1) Eliminar caracteres que no sean dígitos, punto o coma
+            let cleaned = String(value).replace(/[^0-9.,-]/g, "");
+            // 2) Reemplazar coma por punto para parseFloat
+            cleaned = cleaned.replace(/,/g, ".");
+            const parsed = parseFloat(cleaned || "0");
+            setValue(name as keyof FormData, Number.isNaN(parsed) ? 0 : parsed, {
                 shouldValidate: true,
             });
             return;
@@ -124,11 +130,23 @@ export default function ComprasForm({
     };
 
     const submitForm: SubmitHandler<FormData> = (data) => {
-        data.costo_unitario = Number(
-            String(data.costo_unitario).replace(/[^\d]/g, "")
-        );
-        data.costo_total = Number(data.costo_total);
-        onSubmit(data);
+        // Buscar producto seleccionado para obtener categoria
+        const productoSel = productos.find((p) => p.id === Number(data.productoId));
+        if (!productoSel) {
+            // No debería ocurrir (select obliga a elegir), pero prevenir envío inválido
+            throw new Error("Selecciona un producto válido antes de enviar la compra.");
+        }
+
+        // Construir payload mínimo tal como pide el backend: fecha, producto_id, cantidad, costo_unitario
+        const payload: any = {
+            fecha: data.fecha_compra ? new Date(data.fecha_compra).toISOString() : new Date().toISOString(),
+            producto_id: Number(data.productoId),
+            cantidad: Math.max(1, Number(data.cantidad) || 0),
+            // Asegurar número puro (permitir decimales)
+            costo_unitario: Number(String(data.costo_unitario).replace(/[^0-9.\-]/g, "")) || 0,
+        };
+
+        onSubmit(payload as CreateCompraDTO);
     };
 
     const productoOptions = productos.map((p) => ({

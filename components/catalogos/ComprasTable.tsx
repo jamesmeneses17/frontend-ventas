@@ -16,7 +16,6 @@ interface Props {
 
 export default function ComprasTable({ data = [], loading = false, onEdit, onDelete }: Props) {
   const columns = [
-    { key: "codigo", label: "Código" },
     {
       key: "fecha",
       label: "Fecha",
