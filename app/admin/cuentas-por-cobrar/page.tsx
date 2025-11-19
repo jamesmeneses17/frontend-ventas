@@ -1,0 +1,1 @@
+<h1>CUENTAS POR COBRAR</h1>
