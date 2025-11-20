@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -7,8 +7,8 @@ import Button from "../ui/button";
 import FormInput from "../common/form/FormInput";
 import FormSelect from "../common/form/FormSelect";
 
-import { createCredito, updateCredito, getCreditoById } from "../services/cuentasCobrarService";
-import { getClientes } from "../services/clientesService"; // asume tienes servicio clientes
+import { getClientes } from "../services/clientesServices"; // asume tienes servicio clientes
+import { createCredito, getCreditoById, updateCredito } from "../services/creditosService";
 
 const schema = z.object({
   cliente_id: z.number().int().positive(),
@@ -27,16 +27,20 @@ interface Props {
 }
 
 export default function CuentasCobrarForm({ initialData = null, onSaved, onCancel }: Props) {
-  const { register, handleSubmit, setValue, reset, formState: { errors, isSubmitting } } = useForm<FormData>({
+  const { register, handleSubmit, setValue, reset, watch, formState: { errors, isSubmitting } } = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: { cliente_id: 0, articulo: "", valor_credito: 0, fecha_inicial: "", fecha_final: "" }
   });
+
+  const [clientesOptions, setClientesOptions] = useState<{ value: string; label: string }[]>([]);
 
   useEffect(() => {
     (async () => {
       // load clientes for select
       try {
         const clientes = await getClientes();
+        const opts = (clientes || []).map((c:any) => ({ value: String(c.id), label: c.nombre || c.nombre_completo || c.nombre_cliente || `Cliente ${c.id}` }));
+        setClientesOptions(opts);
         if (clientes && clientes.length > 0 && !initialData) {
           setValue("cliente_id", clientes[0].id);
         }
@@ -68,22 +72,28 @@ export default function CuentasCobrarForm({ initialData = null, onSaved, onCance
         await createCredito(data as any);
       }
       onSaved();
-    } catch (err) {
-      console.error("[CuentasCobrarForm] error", err);
-      alert(err?.response?.data?.message ?? "Error al guardar");
-    }
+    } catch (err: any) {
+        console.error("[CuentasCobrarForm] error", err);
+        alert(err?.response?.data?.message ?? "Error al guardar");
+      }
   };
+
+  const clienteId = watch("cliente_id");
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-      <FormSelect label="Cliente" name="cliente_id" {...{
-        value: String((initialData?.cliente_id ?? 0)),
-        onChange: (e:any) => setValue("cliente_id", Number(e.target.value))
-      }} options={[]} /> {/* Puedes reemplazar por componente que haga fetch de clientes */}
-      <FormInput label="Artículo" name="articulo" {...register("articulo")} error={errors.articulo?.message as any} />
-      <FormInput label="Valor crédito" name="valor_credito" type="number" {...register("valor_credito", { valueAsNumber: true })} error={errors.valor_credito?.message as any} />
-      <FormInput label="Fecha inicial" name="fecha_inicial" type="date" {...register("fecha_inicial")} />
-      <FormInput label="Fecha final" name="fecha_final" type="date" {...register("fecha_final")} />
+      <FormSelect
+        label="Cliente"
+        name="cliente_id"
+        value={String(clienteId ?? "")}
+        onChange={(e:any) => setValue("cliente_id", Number(e.target.value))}
+        options={clientesOptions}
+        required
+      />
+      <FormInput label="Artículo" {...register("articulo")} />
+      <FormInput label="Valor crédito" type="number" {...register("valor_credito", { valueAsNumber: true })} />
+      <FormInput label="Fecha inicial" type="date" {...register("fecha_inicial")} />
+      <FormInput label="Fecha final" type="date" {...register("fecha_final")} />
 
       <div className="flex justify-end gap-3 pt-4">
         <Button type="button" onClick={onCancel} disabled={isSubmitting}>Cancelar</Button>

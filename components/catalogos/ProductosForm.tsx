@@ -7,8 +7,8 @@ import FormSelect from "../common/form/FormSelect";
 import Button from "../ui/button";
 
 import { Producto, CreateProductoData } from "../services/productosService";
-import { getCategorias, Categoria } from "../../components/services/categoriasService";
-import { getEstados, Estado } from "../../components/services/estadosService";
+import { getCategorias, Categoria } from "../services/categoriasService";
+import { getEstados, Estado } from "../services/estadosService";
 import { formatCurrency } from "../../utils/formatters"; // ✅ IMPORTAMOS EL FORMATEADOR
 
 type FormData = CreateProductoData & { id?: number };

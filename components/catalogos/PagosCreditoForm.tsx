@@ -2,9 +2,10 @@
 import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import Button from "../ui/button";
-import { registrarPago, getPagosByCredito, getCreditoById } from "../services/cuentasCobrarService";
-import { formatCurrency } from "../utils/formatters";
+import { formatCurrency } from "../../utils/formatters";
 import FormInput from "../common/form/FormInput";
+import { getPagosByCredito, registrarPago } from "../services/pagosCreditoService";
+import { getCreditoById } from "../services/creditosService";
 
 interface Props {
   creditoId: number;
@@ -32,7 +33,7 @@ export default function PagosCreditoForm({ creditoId, onClose }: Props) {
       await load();
     } catch (err) {
       console.error("[PagosCreditoForm] error", err);
-      alert(err?.response?.data?.message ?? "Error registrando pago");
+      alert((err as any)?.response?.data?.message ?? "Error registrando pago");
     }
   };
 
@@ -48,8 +49,8 @@ export default function PagosCreditoForm({ creditoId, onClose }: Props) {
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="grid grid-cols-1 md:grid-cols-3 gap-3">
-        <FormInput label="Monto" name="monto_pago" type="number" {...register("monto_pago", { valueAsNumber: true })} />
-        <FormInput label="Fecha (opcional)" name="fecha_pago" type="date" {...register("fecha_pago")} />
+        <FormInput label="Monto" type="number" {...register("monto_pago", { valueAsNumber: true })} />
+        <FormInput label="Fecha (opcional)" type="date" {...register("fecha_pago")} />
         <div className="flex items-end">
           <Button type="submit" disabled={isSubmitting}>Registrar Pago</Button>
         </div>

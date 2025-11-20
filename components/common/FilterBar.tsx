@@ -18,9 +18,9 @@ interface FilterBarProps {
   searchPlaceholder?: string;
 
   // Propiedades para el filtro Select (Estado de Stock)
-  selectOptions: FilterOption[];
-  selectFilterValue: string;
-  onSelectFilterChange: (value: string) => void;
+  selectOptions?: FilterOption[];
+  selectFilterValue?: string;
+  onSelectFilterChange?: (value: string) => void;
   // Opcional: segundo select (por ejemplo, filtro de promoción)
   selectOptions2?: FilterOption[];
   selectFilterValue2?: string;
@@ -36,8 +36,8 @@ export default function FilterBar({
   onSearchChange,
   searchPlaceholder = "Buscar...",
   selectOptions = [],
-  selectFilterValue,
-  onSelectFilterChange,
+  selectFilterValue = "",
+  onSelectFilterChange = () => {},
   selectOptions2 = [],
   selectFilterValue2 = "",
   onSelectFilterChange2,

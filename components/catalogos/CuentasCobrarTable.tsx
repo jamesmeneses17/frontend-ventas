@@ -3,7 +3,7 @@ import React from "react";
 import CrudTable from "../common/CrudTable";
 import ActionButton from "../common/ActionButton";
 import { Pencil, Trash, DollarSign } from "lucide-react";
-import { formatCurrency } from "../utils/formatters";
+import { formatCurrency } from "../../utils/formatters";
 
 interface Props {
   data: any[];

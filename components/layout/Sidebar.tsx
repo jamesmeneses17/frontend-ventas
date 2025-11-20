@@ -52,7 +52,7 @@ const navigation = [
     title: "FINANZAS Y CAJA",
     items: [
       { name: "Ingresos y Egresos", href: "/admin/ingresos-egresos", icon: Wallet },
-      { name: "Cuentas por Cobrar", href: "/admin/cuentas-por-cobrar", icon: Scale },
+      { name: "Cuentas por Cobrar", href: "/admin/cuentas-cobrar", icon: Scale },
     ],
   },
   {

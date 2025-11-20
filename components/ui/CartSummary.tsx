@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { useCart } from './../hooks/CartContext'; // Asegúrate de la ruta correcta
-import { WhatsAppOrderButton } from './../../components/ui/WhatsAppOrderButton'; // Creamos este componente aparte
+import { WhatsAppOrderButton } from './WhatsAppOrderButton'; // Creamos este componente aparte
 import { formatCurrency } from '../../utils/formatters';
 
 export const CartSummary: React.FC = () => {
