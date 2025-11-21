@@ -10,6 +10,7 @@ export interface Credito {
     id: number;
     cliente_id: number;
     articulo: string;
+    articulo_id?: number;
 
     valor_credito: number;
     saldo_pendiente: number;
@@ -24,6 +25,7 @@ export interface Credito {
 
 export interface CreateCreditoDTO {
     cliente_id: number;
+    articulo_id?: number;
     articulo: string;
     valor_credito: number;
     fecha_inicial: string;
@@ -112,7 +114,8 @@ export const createCredito = async (data: CreateCreditoDTO): Promise<Credito> =>
 
     const payload = {
         cliente_id: Number(data.cliente_id),
-        articulo: data.articulo.trim(),
+        articulo_id: typeof (data as any).articulo_id !== 'undefined' ? Number((data as any).articulo_id) : undefined,
+        articulo: String(data.articulo ?? "").trim(),
         valor_credito: Number(String(data.valor_credito).replace(/[^0-9.\-]/g, "")) || 0,
         fecha_inicial: data.fecha_inicial,
         fecha_final: data.fecha_final,

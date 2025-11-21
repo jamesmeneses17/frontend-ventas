@@ -7,6 +7,7 @@ const BASE = `${API_URL}/creditos`;
 export interface Credito {
   id:number;
   cliente_id:number;
+  articulo_id?: number;
   articulo:string;
   valor_credito:number;
   saldo_pendiente:number;

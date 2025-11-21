@@ -18,6 +18,7 @@ import {
   getCreditos,
   deleteCredito,
 } from "../../../components/services/cuentasCobrarService";
+import { getClientes } from "../../../components/services/clientesServices";
 
 export default function CuentasCobrarPage() {
   const [creditos, setCreditos] = useState<any[]>([]);
@@ -40,8 +41,21 @@ export default function CuentasCobrarPage() {
     setLoading(true);
     try {
       const resp = await getCreditos(page, limit, search);
-      setCreditos(resp.data || []);
-      setTotal(resp.total ?? resp.data?.length ?? 0);
+      let items = resp.data || [];
+      // Si la API devuelve solo cliente_id, intentamos resolver el nombre del cliente localmente
+      if (items.length > 0 && items[0].cliente == null && items[0].cliente_id != null) {
+        try {
+          const clientesList = await getClientes("", 1, 1000);
+          const map = new Map<number, any>();
+          (clientesList || []).forEach((c:any) => map.set(Number(c.id), c));
+          items = items.map((it:any) => ({ ...it, cliente: map.get(Number(it.cliente_id))?.nombre || null }));
+        } catch (err) {
+          console.warn("No se pudieron cargar clientes para mapear nombres:", err);
+        }
+      }
+
+      setCreditos(items);
+      setTotal(resp.total ?? items.length ?? 0);
     } catch (err) {
       console.error("[CuentasCobrarPage] load error", err);
       setNotification({ message: "Error cargando cuentas por cobrar", type: "error" });
