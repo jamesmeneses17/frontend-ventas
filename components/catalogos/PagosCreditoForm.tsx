@@ -21,6 +21,7 @@ export default function PagosCreditoForm({ creditoId, onClose }: Props) {
     const c = await getCreditoById(creditoId);
     setCredito(c);
     const p = await getPagosByCredito(creditoId);
+    console.log("[PagosCreditoForm] loaded pagos:", p);
     setPagos(p || []);
   };
 
@@ -28,12 +29,45 @@ export default function PagosCreditoForm({ creditoId, onClose }: Props) {
 
   const onSubmit = async (data:any) => {
     try {
-      await registrarPago({ credito_id: creditoId, monto_pago: Number(data.monto_pago) });
+      const monto = Number(data.monto_pago);
+      console.log("[PagosCreditoForm] attempting registrar pago", { creditoId, monto, data });
+
+      if (isNaN(monto) || monto <= 0) {
+        alert("Ingrese un monto válido mayor que 0");
+        return;
+      }
+
+      // si tenemos info del crédito, validar contra el saldo pendiente
+      const saldo = Number(credito?.saldo_pendiente ?? 0);
+      if (saldo > 0 && monto > saldo) {
+        const ok = confirm(`El monto ingresado (${monto}) excede el saldo pendiente (${saldo}). ¿Desea continuar?`);
+        if (!ok) return;
+      }
+
+      console.log("[PagosCreditoForm] registering pago", { creditoId, monto_pago: monto });
+      const resp = await registrarPago({ credito_id: creditoId, monto_pago: monto });
+
+      // Si el backend devuelve el nuevo saldo, actualizarlo inmediatamente en UI
+      if (resp && typeof resp.nuevo_saldo !== 'undefined') {
+        setCredito((c:any) => ({ ...(c||{}), saldo_pendiente: resp.nuevo_saldo }));
+      }
+
+      // limpiar formulario y recargar historial de pagos
       reset();
-      await load();
-    } catch (err) {
+      const pagosActualizados = await getPagosByCredito(creditoId);
+      setPagos(pagosActualizados || []);
+      console.log("[PagosCreditoForm] pago registrado, nuevo saldo:", resp?.nuevo_saldo, resp);
+    } catch (err:any) {
       console.error("[PagosCreditoForm] error", err);
-      alert((err as any)?.response?.data?.message ?? "Error registrando pago");
+      console.error("[PagosCreditoForm] error response data:", err?.response?.data, "status:", err?.response?.status);
+      const serverMsg = err?.response?.data?.message ?? err?.message;
+      if (serverMsg) {
+        alert(serverMsg);
+      } else if (err?.response?.status) {
+        alert(`Error ${err.response.status}: ${JSON.stringify(err.response.data)}`);
+      } else {
+        alert("Error registrando pago");
+      }
     }
   };
 
