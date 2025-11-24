@@ -12,6 +12,9 @@ import {
   ChevronRight,
   MapPin,
   ShoppingCart,
+  Truck,
+  ShieldCheck,
+  Award,
 } from "lucide-react";
 import { getProductoById, Producto } from "@/components/services/productosService";
 import { mapProductToImage } from "@/utils/ProductUtils";
@@ -271,6 +274,120 @@ function ProductDetailPageContent({ productId }: { productId: string }) {
     );
   };
 
+  // Resolver posibles ubicaciones del URL de la ficha técnica en el objeto product
+  const resolveFichaUrl = (p: any): string | undefined => {
+    if (!p) return undefined;
+    const candidates = [
+      p.ficha_tecnica_url,
+      p.ficha_tecnica?.url,
+      p.ficha_tecnica?.file,
+      p.ficha_tecnica,
+      p.fichaTecnicaUrl,
+      p.fichaTecnica?.url,
+      p.ficha_tecnica_url_web,
+    ];
+    for (const c of candidates) {
+      if (!c) continue;
+      const s = String(c).trim();
+      // simple check para url o ruta relativa
+      if (s.startsWith("http://") || s.startsWith("https://") || s.startsWith("/")) return s;
+      // si parece terminar en pdf o docx también lo aceptamos
+      if (/\.pdf$|\.docx$|\.doc$|\.xlsx$/i.test(s)) return s;
+    }
+    return undefined;
+  };
+
+  // 🧾 Acciones relacionadas con la ficha técnica (ver / descargar)
+  const FichaActions = ({ url, productId }: { url?: string; productId?: number }) => {
+    const hasUrl = !!url;
+    const safeUrl = hasUrl ? String(url) : undefined;
+    const isPdf = hasUrl && safeUrl!.toLowerCase().endsWith(".pdf");
+    // extraer nombre de archivo para el atributo download si es posible
+    let filename: string | undefined;
+    if (hasUrl) {
+      try {
+        const parts = safeUrl!.split("/");
+        const last = parts[parts.length - 1];
+        if (last) filename = decodeURIComponent(last.split("?")[0]);
+      } catch (e) {
+        filename = undefined;
+      }
+    }
+
+    return (
+      <div className="mt-4 flex flex-col sm:flex-row sm:items-center sm:space-x-3 space-y-3 sm:space-y-0">
+        {productId ? (
+          <Link
+            href={`/users/especificaciones/${productId}/ficha`}
+            className="w-full sm:w-auto inline-flex items-center justify-center space-x-2 px-4 py-2 border rounded-lg text-sm font-semibold text-[#2e9fdb] bg-white hover:bg-gray-50"
+          >
+            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 2v14" stroke="#2e9fdb" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M5 9l7-7 7 7" stroke="#2e9fdb" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            <span>Ver Ficha Técnica</span>
+          </Link>
+        ) : (
+          <a
+            href={hasUrl ? safeUrl : '#'}
+            target={hasUrl ? '_blank' : undefined}
+            rel={hasUrl ? 'noopener noreferrer' : undefined}
+            className="w-full sm:w-auto inline-flex items-center justify-center space-x-2 px-4 py-2 border rounded-lg text-sm font-semibold text-[#2e9fdb] bg-white hover:bg-gray-50"
+          >
+            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 2v14" stroke="#2e9fdb" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M5 9l7-7 7 7" stroke="#2e9fdb" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            <span>Ver Ficha Técnica</span>
+          </a>
+        )}
+
+        {hasUrl ? (
+          <a
+            href={safeUrl}
+            download={filename ?? undefined}
+            className="w-full sm:w-auto inline-flex items-center justify-center space-x-2 px-4 py-2 rounded-lg text-sm font-semibold text-white bg-[#2e9fdb] hover:bg-[#2388c5]"
+            rel="noopener noreferrer"
+          >
+            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 3v12" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M7 10l5 5 5-5" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            <span>Descargar Ficha</span>
+          </a>
+        ) : null}
+      </div>
+    );
+  };
+
+  // ✨ Pequeña fila con íconos de características (envío, garantía, calidad)
+  const ProductExtras = () => (
+    <div className="mt-6 grid grid-cols-3 gap-3 text-sm text-gray-600">
+      <div className="flex items-center space-x-3 p-3 bg-white border rounded-lg">
+        <Truck className="w-6 h-6 text-[#2e9fdb]" />
+        <div>
+          <div className="font-semibold text-gray-800">Envío Nacional</div>
+          <div className="text-xs">A todo Colombia</div>
+        </div>
+      </div>
+      <div className="flex items-center space-x-3 p-3 bg-white border rounded-lg">
+        <ShieldCheck className="w-6 h-6 text-[#2e9fdb]" />
+        <div>
+          <div className="font-semibold text-gray-800">Garantía</div>
+          <div className="text-xs">Producto certificado</div>
+        </div>
+      </div>
+      <div className="flex items-center space-x-3 p-3 bg-white border rounded-lg">
+        <Award className="w-6 h-6 text-[#2e9fdb]" />
+        <div>
+          <div className="font-semibold text-gray-800">Calidad</div>
+          <div className="text-xs">100% Original</div>
+        </div>
+      </div>
+    </div>
+  );
+
   return (
     <PublicLayout>
       <div className="bg-white min-h-screen">
@@ -380,6 +497,11 @@ function ProductDetailPageContent({ productId }: { productId: string }) {
                 </div>
 
                 <AddToCartButton disabled={stock === 0} />
+                {/* Botones Ver / Descargar Ficha Técnica y extras */}
+                <div>
+                  <FichaActions url={resolveFichaUrl(product)} productId={product?.id} />
+                  <ProductExtras />
+                </div>
               </div>
 
               {/* 🧾 Descripción */}
