@@ -22,7 +22,7 @@ export default function HomePage() {
             <WhyChooseUsSection />
       {/* 4. SECCIÓN DE PRODUCTOS DESTACADOS (usando el nuevo archivo) */}
        {/* 5. SECCIÓN DE CONTACTO (NUEVO) */}
-            <ContactSection />     
+        {/*    <ContactSection />  */}   
     </PublicLayout>
   );
 }

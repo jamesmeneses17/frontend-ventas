@@ -1,100 +1,98 @@
 // /components/layout/FooterPublic.tsx
 
 import React from 'react';
-import { Facebook, Instagram, Twitter, Linkedin, Sun } from 'lucide-react'; // Iconos para redes y el logo
+// Eliminamos el componente 'Image' ya que no usaremos logo
+// Iconos: Teléfono, Email, Ubicación
+import { Phone, Mail, MapPin, Facebook, Instagram, Twitter, Linkedin } from 'lucide-react'; 
 
-// 🛑 Mock Data para los enlaces (debes adaptar esto a tus rutas reales)
-const footerLinks = {
-    Productos: [
-        { name: 'Paneles Solares', href: '/productos?q=paneles' },
-        { name: 'Baterías Solares', href: '/productos?q=baterias' },
-        { name: 'Controladores', href: '/productos?q=controladores' },
-        { name: 'Iluminación Solar', href: '/productos?q=iluminacion' },
-        { name: 'Kits Completos', href: '/productos?q=kits' },
-    ],
-    Empresa: [
-        { name: 'Sobre Nosotros', href: '/nosotros' },
-        { name: 'Proyectos', href: '/proyectos' },
-        { name: 'Testimonios', href: '/testimonios' },
-        { name: 'Blog', href: '/blog' },
-        { name: 'Contacto', href: '/contacto' },
-    ],
-    Legal: [
-        { name: 'Términos y Condiciones', href: '/legal/terminos' },
-        { name: 'Política de Privacidad', href: '/legal/privacidad' },
-        { name: 'Garantías', href: '/legal/garantias' },
-        { name: 'Devoluciones', href: '/legal/devoluciones' },
-        { name: 'Portal Admin', href: '/admin' }, // Enlace al área de administración
-    ],
+const ACCENT_COLOR_TAILWIND = "text-[#2e9fdb]"; // Azul DISEM para íconos
+const HOVER_COLOR_TAILWIND = "hover:text-[#2e9fdb]"; 
+const BG_COLOR = "bg-gray-900"; 
+
+// Datos de Contacto y Enlaces
+const CONTACT_INFO = {
+    telefono: '+57 (601) 286 1451',
+    whatsappMovil: '+57 315 2913102',
+    email: 'informacion@disemsas.com.co',
+    
+    direcciones: [
+        { ciudad: 'Bogotá', detalle: 'Calle 17 # 12 – 79 Centro' },
+        { ciudad: 'Villavicencio', detalle: 'Calle 35 # 26 – 63' },
+        { ciudad: 'Medellín', detalle: 'Calle 51 # 55 – 69 / Local 131' },
+    ]
 };
 
-// Componente para una columna de enlaces
-interface LinkColumnProps {
-    title: string;
-    links: { name: string; href: string }[];
-}
-
-const LinkColumn: React.FC<LinkColumnProps> = ({ title, links }) => (
-    <div>
-        <h3 className="text-lg font-bold text-white mb-4">{title}</h3>
-        <ul className="space-y-3">
-            {links.map((link) => (
-                <li key={link.name}>
-                    <a 
-                        href={link.href} 
-                        className="text-gray-400 hover:text-amber-500 transition duration-150 text-sm"
-                    >
-                        {link.name}
-                    </a>
-                </li>
-            ))}
-        </ul>
-    </div>
-);
+// Se eliminan los QUICK_LINKS ya que la columna 1 será 'Síguenos'
 
 /**
- * Footer completo de la aplicación con diseño oscuro.
+ * Footer minimalista, compacto y profesional.
  */
 const FooterPublic: React.FC = () => {
     return (
-        <footer className="bg-gray-900 text-white mt-20">
-            <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-16">
+        <footer className={`${BG_COLOR} text-white mt-auto`}>
+            <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pt-10 pb-6">
                 
-                {/* Contenedor Principal (4 Columnas) */}
-                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-10 border-b border-gray-700 pb-10">
+                {/* Contenedor Principal (3 Columnas: Síguenos, Contacto, Direcciones) */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-10 border-b border-gray-700 pb-8">
                     
-                    {/* Columna 1: Logo y Propuesta de Valor */}
-                    <div className="col-span-2 md:col-span-1">
-                        <div className="flex items-center space-x-2 mb-4">
-                            {/* Logo/Icono Naranja */}
-                            <Sun className="w-8 h-8 text-amber-500" fill="currentColor" />
-                            <span className="text-2xl font-bold text-white">DISEM SAS</span>
-                        </div>
-                        <p className="text-gray-400 text-sm mb-6">
-                            Soluciones de energía solar para un futuro sostenible. Calidad, garantía y servicio profesional.
-                        </p>
+                    {/* Columna 1: Síguenos (Redes Sociales) - MUEVE LAS REDES AQUÍ */}
+                    <div>
+                        <h3 className="text-xl font-bold text-white mb-4">Síguenos</h3>
                         
-                        {/* Iconos de Redes Sociales */}
-                        <div className="flex space-x-4">
-                            <a href="https://facebook.com/disemsas" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-amber-500 transition"><Facebook className="w-6 h-6" /></a>
-                            <a href="https://instagram.com/disemsas" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-amber-500 transition"><Instagram className="w-6 h-6" /></a>
-                            <a href="https://twitter.com/disemsas" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-amber-500 transition"><Twitter className="w-6 h-6" /></a>
-                            <a href="https://linkedin.com/company/disemsas" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-amber-500 transition"><Linkedin className="w-6 h-6" /></a>
+                        {/* Redes Sociales */}
+                        <div className="flex space-x-2">
+                            <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" className={`p-1 border border-gray-700 rounded-md text-gray-400 ${HOVER_COLOR_TAILWIND} transition`} aria-label="Facebook"><Facebook className="w-4 h-4" /></a>
+                            <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className={`p-1 border border-gray-700 rounded-md text-gray-400 ${HOVER_COLOR_TAILWIND} transition`} aria-label="Instagram"><Instagram className="w-4 h-4" /></a>
+                            <a href="https://twitter.com" target="_blank" rel="noopener noreferrer" className={`p-1 border border-gray-700 rounded-md text-gray-400 ${HOVER_COLOR_TAILWIND} transition`} aria-label="Twitter"><Twitter className="w-4 h-4" /></a>
+                            <a href="https://linkedin.com" target="_blank" rel="noopener noreferrer" className={`p-1 border border-gray-700 rounded-md text-gray-400 ${HOVER_COLOR_TAILWIND} transition`} aria-label="LinkedIn"><Linkedin className="w-4 h-4" /></a>
                         </div>
                     </div>
 
-                    {/* Columna 2: Productos */}
-                    <LinkColumn title="Productos" links={footerLinks.Productos} />
-
-                    {/* Columna 3: Empresa */}
-                    <LinkColumn title="Empresa" links={footerLinks.Empresa} />
-
-                    {/* Columna 4: Legal */}
-                    <LinkColumn title="Legal" links={footerLinks.Legal} />
+                    {/* Columna 2: Contáctanos (Teléfono y Email) - SE MANTIENE */}
+                    <div>
+                        <h3 className="text-xl font-bold text-white mb-4">Contáctanos</h3>
+                        
+                        {/* Teléfono */}
+                        <div className="mb-4">
+                            <div className={`flex items-center mb-1 ${ACCENT_COLOR_TAILWIND}`}>
+                                <Phone className="w-5 h-5 mr-2" />
+                                <span className="font-semibold text-base">Llámanos:</span>
+                            </div>
+                            <p className="text-gray-400 text-sm ml-7">Fijo: {CONTACT_INFO.telefono}</p>
+                            <p className="text-gray-400 text-sm ml-7">WhatsApp: {CONTACT_INFO.whatsappMovil}</p>
+                        </div>
+                        
+                        {/* Email */}
+                        <div>
+                            <div className={`flex items-center mb-1 ${ACCENT_COLOR_TAILWIND}`}>
+                                <Mail className="w-5 h-5 mr-2" />
+                                <span className="font-semibold text-base">Email:</span>
+                            </div>
+                            <p className="text-gray-400 text-sm ml-7 break-words">{CONTACT_INFO.email}</p>
+                        </div>
+                    </div>
+                    
+                    {/* Columna 3: Ubicación y Direcciones - SE MANTIENE SOLO DIRECCIONES */}
+                    <div>
+                        <h3 className="text-xl font-bold text-white mb-4">Ubicación y Direcciones</h3>
+                        
+                        {/* Direcciones */}
+                        <div className="mb-6">
+                            <div className={`flex items-center mb-2 ${ACCENT_COLOR_TAILWIND}`}>
+                                <MapPin className="w-5 h-5 mr-2" />
+                                <span className="font-semibold text-base">Sedes:</span>
+                            </div>
+                            {CONTACT_INFO.direcciones.map((dir, index) => (
+                                <p key={index} className="text-gray-400 text-sm ml-7 mb-1">
+                                    <span className="font-medium text-white">{dir.ciudad}:</span> {dir.detalle}
+                                </p>
+                            ))}
+                        </div>
+                    </div>
                 </div>
 
                 {/* Derechos de Autor */}
-                <div className="mt-8 text-center text-gray-500 text-sm">
+                <div className="mt-4 text-center text-gray-500 text-xs">
                     © {new Date().getFullYear()} DISEM SAS. Todos los derechos reservados.
                 </div>
             </div>

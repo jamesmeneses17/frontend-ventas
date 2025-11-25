@@ -1,94 +1,66 @@
-// /components/ui/WhyChooseUsSection.tsx
-
-"use client"; // Se recomienda si usas elementos interactivos o hooks, aunque aquí no es estrictamente necesario.
+"use client";
 
 import React from 'react';
-import Image from 'next/image';
-// 🛑 Importamos los iconos de Lucide
-import { Award, ShieldCheck, Zap, Lightbulb } from 'lucide-react'; 
+// Ya no necesitamos los íconos ni Image de next/image
 
-
-// Sub-componente para cada valor (simplicidad y reutilización)
-interface ValueCardProps {
-    title: string;
-    description: string;
-    icon: React.ReactNode; 
-}
-
-const ValueCard: React.FC<ValueCardProps> = ({ title, description, icon }) => (
-    <div className="flex flex-col items-center sm:items-start text-center sm:text-left">
-        {/* Usamos el icono directamente */}
-        <div className="text-amber-600 mb-4">{icon}</div> 
-        
-        <h3 className="text-xl font-semibold text-gray-800 mb-2">{title}</h3>
-        <p className="text-gray-600">{description}</p>
-    </div>
-);
+// Definimos la ruta del video
+const VIDEO_SRC = '/videos/VIDEO.mp4'; 
+const WHY_CHOOSE_US_TEXT = "Nuestro enfoque personalizado y atención al detalle nos permite diseñar sistemas solares a medida, adaptados a las necesidades y metas de cada cliente. Además, nuestra dedicación a la innovación constante nos permite estar a la vanguardia de las últimas tecnologías solares, asegurando resultados superiores en términos de rendimiento, durabilidad y rentabilidad.";
 
 /**
- * Sección que comunica los valores clave y la propuesta de venta de la empresa.
+ * Sección que comunica los valores clave con un video de fondo.
  */
 const WhyChooseUsSection: React.FC = () => {
-    
-    // 🛑 Definimos las props de los iconos aquí para DRY (Don't Repeat Yourself)
-    const IconProps = { className: "w-8 h-8 md:w-10 md:h-10" };
-    
     return (
-        <section className="py-20 bg-white">
-            <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+        // 1. Contenedor principal: Altura fija, posición relativa para el video/overlay, y centrado del contenido.
+        <section className="relative w-full overflow-hidden 
+                            h-[300px] md:h-[350px] lg:h-[400px]">
+
+            {/* ========================================================== */}
+            {/* 2. Video de Fondo (Ocupa el 100% de la sección) */}
+            {/* ========================================================== */}
+            <video
+                className="absolute top-0 left-0 w-full h-full object-cover"
+                src={VIDEO_SRC}
+                // Atributos clave para video de fondo:
+                autoPlay // Inicia la reproducción automáticamente
+                loop     // Se repite continuamente
+                muted    // Fundamental para el autoplay en la mayoría de navegadores
+                playsInline // Recomendado para móviles
+            >
+                {/* Fallback para navegadores que no soportan el video */}
+                Tu navegador no soporta el elemento de video.
+            </video>
+
+            {/* ========================================================== */}
+            {/* 3. Overlay Oscuro para Mejorar la Legibilidad del Texto */}
+            {/* ========================================================== */}
+            <div className="absolute top-0 left-0 w-full h-full bg-black/50"></div>
+
+            {/* ========================================================== */}
+            {/* 4. Contenido (Texto) - Centrado sobre el video */}
+            {/* ========================================================== */}
+            <div className="relative z-10 w-full h-full flex flex-col justify-center items-center text-white p-4">
                 
-                {/* Lado Izquierdo: Imagen (Usando Next/Image para optimización) */}
-                <div className="order-2 lg:order-1 relative rounded-xl shadow-2xl overflow-hidden" 
-                     style={{ aspectRatio: '16/10' }}>
-                    
-                    <Image 
-                        src="/images/energia.webp" 
-                        alt="Instalación de paneles solares por equipo experto"
-                        fill // Hace que la imagen llene el contenedor padre
-                        style={{ objectFit: 'cover' }}
-                        sizes="(max-width: 1024px) 100vw, 50vw" // Ayuda a Next.js a optimizar
-                        priority // Se usa para imágenes importantes en la parte superior de la página
-                    />
-                </div>
+                {/* Título Principal */}
+                <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-4 text-center tracking-wide uppercase">
+                    POR QUÉ ELEGIRNOS A NOSOTROS
+                </h2>
+                
+                {/* Descripción Reducida */}
+                <p className="mt-4 text-base sm:text-lg text-center max-w-4xl font-medium px-4">
+                    {WHY_CHOOSE_US_TEXT}
+                </p>
 
-                {/* Lado Derecho: Contenido y Propuestas de Valor */}
-                <div className="order-1 lg:order-2">
-                    <h2 className="text-4xl font-extrabold text-gray-900 mb-4">
-                        ¿Por qué elegir DISEM SAS?
-                    </h2>
-                    <p className="mt-4 text-lg text-gray-600 mb-10 max-w-lg">
-                        Somos líderes en soluciones de energía solar en Colombia, con más 
-                        de 10 años de experiencia ayudando a hogares y empresas a hacer la 
-                        transición hacia energías renovables.
-                    </p>
-
-                    <div className="grid grid-cols-2 gap-x-8 gap-y-12">
-                        {/* 🛑 Reemplazamos IconCircle con iconos Lucide */}
-                        <ValueCard 
-                            title="Calidad Certificada"
-                            description="Todos nuestros productos cuentan con certificaciones internacionales."
-                            icon={<Award {...IconProps} />}
-                        />
-                        <ValueCard 
-                            title="Garantía Extendida"
-                            description="Hasta 25 años de garantía en paneles solares y equipos clave."
-                            icon={<ShieldCheck {...IconProps} />}
-                        />
-                        <ValueCard 
-                            title="Asesoría Experta"
-                            description="Equipo técnico especializado para guiarte en tu proyecto de inicio a fin."
-                            icon={<Lightbulb {...IconProps} />}
-                        />
-                        <ValueCard 
-                            title="Instalación Profesional"
-                            description="Servicio de instalación y mantenimiento especializado incluido."
-                            icon={<Zap {...IconProps} />}
-                        />
-                    </div>
-                </div>
             </div>
+            
         </section>
     );
 };
+
+// Ya no necesitamos el componente ValueCard si eliminamos la cuadrícula de iconos.
+/*
+const ValueCard: React.FC<ValueCardProps> = ({ title, description, icon }) => (...)
+*/
 
 export default WhyChooseUsSection;
