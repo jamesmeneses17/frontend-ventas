@@ -20,7 +20,8 @@ const PublicLayout: React.FC<PublicLayoutProps> = ({ children }) => {
 
       {/* 2. Contenido principal de la página */}
       {/* Añadimos padding-top igual a la altura del header (h-24) para compensar el header fixed */}
-      <main className="pt-24">
+    <main className="pt-[0px]">
+
         {/* 🚀 ¡NUEVA SECCIÓN DE MARCAS AQUÍ! */}
         <AlliedBrandsSection />
         {children}
