@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import Image from 'next/image';
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import HeaderProductsDropdown from "../ui/HeaderProductsDropdown";
@@ -48,7 +49,7 @@ const HeaderPublic: React.FC = () => {
   `;
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 shadow-md h-24 bg-[#ebebeb] relative">
+    <nav className="fixed top-0 left-0 right-0 z-50 shadow-md h-24 bg-[#ebebeb]">
 
       {/* ========================================================== */}
       {/* FONDO DIAGONAL (INGESOLAR STYLE) */}
@@ -80,9 +81,9 @@ const HeaderPublic: React.FC = () => {
 
           {/* LADO IZQUIERDO: LOGO */}
           <div className="flex items-center">
-            <div className="flex-shrink-0">
+              <div className="flex-shrink-0">
               <Link href="/" className="flex items-center space-x-3">
-                <img
+                <Image
                   src="/images/logo-disem.jpeg"
                   alt="DISEM SAS"
                   width={200}

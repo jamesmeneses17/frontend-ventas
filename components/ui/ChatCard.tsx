@@ -1,6 +1,7 @@
 "use client";
 
 import { ReactNode } from "react";
+import Image from 'next/image';
 
 interface ChatCardProps {
   avatar?: string;
@@ -24,11 +25,9 @@ export default function ChatCard({
       }`}
     >
       {!right && avatar && (
-        <img
-          src={avatar}
-          alt={name}
-          className="w-10 h-10 rounded-full object-cover"
-        />
+        <div className="w-10 h-10 relative rounded-full overflow-hidden">
+          <Image src={avatar} alt={name} fill className="object-cover" />
+        </div>
       )}
       <div
         className={`rounded-2xl px-4 py-2 max-w-xs shadow 
@@ -47,11 +46,9 @@ export default function ChatCard({
         )}
       </div>
       {right && avatar && (
-        <img
-          src={avatar}
-          alt={name}
-          className="w-10 h-10 rounded-full object-cover"
-        />
+        <div className="w-10 h-10 relative rounded-full overflow-hidden">
+          <Image src={avatar} alt={name} fill className="object-cover" />
+        </div>
       )}
     </div>
   );

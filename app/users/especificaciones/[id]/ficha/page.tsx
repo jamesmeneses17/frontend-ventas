@@ -101,7 +101,7 @@ export default function FichaPage({ params }: { params: { id: string } }) {
       console.error('No se pudo abrir la ficha en nueva pestaña:', err);
       setPopupBlocked(true);
     }
-  }, [fichaUrl]);
+  }, [fichaUrl, fichaPreviewUrl]);
 
   if (loading) {
     return (

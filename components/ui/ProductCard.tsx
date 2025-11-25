@@ -1,5 +1,6 @@
 // /components/ProductCard.tsx
 import React from "react";
+import Image from 'next/image';
 import Link from "next/link";
 
 interface ProductCardProps {
@@ -72,14 +73,12 @@ const ProductCard: React.FC<ProductCardProps> = ({
     return (
       <div className="group relative block bg-white rounded-xl overflow-hidden shadow-xl hover:shadow-2xl transition duration-300 transform hover:-translate-y-1">
         {/* Imagen con etiquetas */}
-        <Link href={targetHref} className="block relative h-48 sm:h-56 overflow-hidden">
+          <Link href={targetHref} className="block relative h-48 sm:h-56 overflow-hidden">
           <DiscountBadge />
           <StockBadge />
-          <img
-            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105 z-10 relative"
-            src={imageSrc}
-            alt={nombre}
-          />
+          <div className="absolute inset-0">
+            <Image src={imageSrc} alt={nombre} fill className="object-cover transition-transform duration-300 group-hover:scale-105 z-10" />
+          </div>
         </Link>
 
         {/* Contenido */}
@@ -135,11 +134,9 @@ const ProductCard: React.FC<ProductCardProps> = ({
       >
         <DiscountBadge />
         <StockBadge />
-        <img
-          src={imageSrc}
-          alt={nombre}
-          className="h-full w-full object-cover transition-transform duration-300 hover:scale-105 z-10 relative"
-        />
+        <div className="absolute inset-0">
+          <Image src={imageSrc} alt={nombre} fill className="object-cover transition-transform duration-300 hover:scale-105 z-10" />
+        </div>
       </Link>
 
       {/* Contenido */}

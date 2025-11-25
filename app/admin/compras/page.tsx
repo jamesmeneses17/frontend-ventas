@@ -200,7 +200,7 @@ export default function ComprasPage() {
     const months = monthsGrouped[selectedYear] ?? [];
     setMonthsOptions(months);
     setSelectedMonth("");
-  }, [selectedYear]);
+  }, [selectedYear, monthsGrouped]);
 
   return (
     <AuthenticatedLayout>

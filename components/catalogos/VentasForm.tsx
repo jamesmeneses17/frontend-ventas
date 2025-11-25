@@ -7,7 +7,7 @@ import FormSelect from "../common/form/FormSelect";
 import Button from "../ui/button";
 
 import { getProductos, Producto } from "../services/productosService";
-import { getClientes } from "../services/clientesServices";
+import { Cliente, getClientes } from "../services/clientesServices";
 import { CreateVentaDTO } from "../services/ventasService";
 
 import { formatCurrency } from "../../utils/formatters";
@@ -73,10 +73,8 @@ export default function VentasForm({
                     ? listProd
                     : listProd?.data ?? [];
 
-                const listCli = await getClientes(1, 100, "", "");
-                const clientesList = Array.isArray(listCli)
-                    ? listCli
-                    : listCli?.data ?? [];
+                const listCli = await getClientes("", 1, 100);
+                const clientesList = Array.isArray(listCli) ? listCli : listCli ?? [];
 
                 setProductos(productosList);
                 setClientes(clientesList);
@@ -110,8 +108,8 @@ export default function VentasForm({
         const total =
             Number(formValues.cantidad || 0) *
             Number(formValues.precio_unitario || 0);
-        setValue("precio_total", total);
-    }, [formValues.cantidad, formValues.precio_unitario]);
+            setValue("precio_total", total);
+        }, [formValues.cantidad, formValues.precio_unitario, setValue]);
 
     // 📌 Control universal de cambios
     const handleChange = (
@@ -147,12 +145,14 @@ export default function VentasForm({
         const clienteSel = clientes.find((c) => c.id === Number(data.clienteId));
         if (!clienteSel) throw new Error("Selecciona un cliente válido.");
 
+        // Ajustar el payload para que coincida con `CreateVentaDTO` del servicio
+        const precioUnit = Number(String(data.precio_unitario).replace(/[^0-9.\-]/g, "")) || 0;
         const payload: CreateVentaDTO = {
             fecha: data.fecha_venta ? new Date(data.fecha_venta).toISOString() : new Date().toISOString(),
-            producto_id: Number(data.productoId),
-            cliente_id: Number(data.clienteId),
+            productoId: Number(data.productoId),
             cantidad: Math.max(1, Number(data.cantidad) || 0),
-            precio_unitario: Number(String(data.precio_unitario).replace(/[^0-9.\-]/g, "")) || 0,
+            costo_unitario: precioUnit,
+            precio_venta: precioUnit,
         };
 
         onSubmit(payload);
@@ -165,7 +165,7 @@ export default function VentasForm({
 
     const clienteOptions = clientes.map((c) => ({
         value: String(c.id),
-        label: `${c.nombre} ${c.apellido ?? ""} (${c.documento})`,
+        label: `${c.nombre} (${c.numero_documento ?? ''})`,
     }));
 
     return (

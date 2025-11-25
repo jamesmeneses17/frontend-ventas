@@ -57,7 +57,7 @@ export default function VentasTable({
     return () => {
       mounted = false;
     };
-  }, [data]);
+  }, [data, productMap]);
   
   // ========================
   // COLUMNAS TABLA (ADAPTADAS)

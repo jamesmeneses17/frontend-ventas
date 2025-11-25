@@ -1,5 +1,6 @@
 // /components/layout/AuthSplitPanel.tsx
 import React, { ReactNode } from 'react';
+import Image from 'next/image';
 
 interface AuthSplitPanelProps {
   children: ReactNode; 
@@ -22,11 +23,9 @@ const AuthSplitPanel: React.FC<AuthSplitPanelProps> = ({ children, imageSrc, ima
 
         {/* Columna 2: La Imagen (Oculta en móviles) */}
         <div className="hidden lg:block lg:w-1/2">
-          <img
-            src={imageSrc}
-            alt={imageAlt}
-            className="w-full h-full object-cover"
-          />
+          <div className="relative w-full h-full">
+            <Image src={imageSrc} alt={imageAlt} fill className="object-cover" />
+          </div>
         </div>
 
       </div>

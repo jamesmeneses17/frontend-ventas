@@ -49,7 +49,7 @@ const SubcategoriasForm: React.FC<Props> = ({ initialData, onSuccess, onCancel, 
         setCategorias(data);
 
         // Si es modo Creación y no hay selección inicial, preseleccionar la primera si existe
-        if (!initialData && data.length > 0 && values.categoriaId === 0) {
+        if (!initialData && data.length > 0) {
           setValues(s => ({ ...s, categoriaId: data[0].id }));
         }
       } catch (error) {

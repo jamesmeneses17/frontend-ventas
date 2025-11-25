@@ -17,15 +17,16 @@ export default function PagosCreditoForm({ creditoId, onClose }: Props) {
   const [pagos, setPagos] = useState<any[]>([]);
   const [credito, setCredito] = useState<any | null>(null);
 
-  const load = async () => {
-    const c = await getCreditoById(creditoId);
-    setCredito(c);
-    const p = await getPagosByCredito(creditoId);
-    console.log("[PagosCreditoForm] loaded pagos:", p);
-    setPagos(p || []);
-  };
-
-  useEffect(() => { load(); }, [creditoId]);
+  useEffect(() => {
+    const load = async () => {
+      const c = await getCreditoById(creditoId);
+      setCredito(c);
+      const p = await getPagosByCredito(creditoId);
+      console.log("[PagosCreditoForm] loaded pagos:", p);
+      setPagos(p || []);
+    };
+    load();
+  }, [creditoId]);
 
   const onSubmit = async (data:any) => {
     try {

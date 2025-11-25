@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import Button from "../components/ui/button";
 import InputField from "../components/ui/InputField";
 
@@ -5,9 +6,12 @@ export default function Register() {
   return (
     <div className="flex min-h-screen flex-col justify-center px-6 py-12 bg-white">
       <div className="sm:mx-auto sm:w-full sm:max-w-sm">
-        <img
+        <Image
+          src="/logodisem.jpg"
           alt="Logo de la empresa"
-          className="mx-auto h-20 w-auto"
+          className="mx-auto h-20 w-auto object-contain"
+          width={80}
+          height={80}
         />
         <h2 className="mt-10 text-center text-2xl font-bold tracking-tight text-gray-900">
           Crear una cuenta

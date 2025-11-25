@@ -17,6 +17,7 @@ import {
   Award,
 } from "lucide-react";
 import { getProductoById, Producto } from "@/components/services/productosService";
+import Image from 'next/image';
 import { mapProductToImage } from "@/utils/ProductUtils";
 import { formatCurrency } from '@/utils/formatters';
 import { useCart } from "../../../../components/hooks/CartContext";
@@ -166,6 +167,7 @@ function ProductDetailPageContent({ productId }: { productId: string }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [quantity, setQuantity] = useState(1);
+    const [imgSrc, setImgSrc] = useState<string>("/images/placeholder.webp");
   const id = parseInt(productId, 10);
 
 
@@ -195,6 +197,17 @@ function ProductDetailPageContent({ productId }: { productId: string }) {
     load();
   }, [id]);
 
+  useEffect(() => {
+    if (!product) return;
+    const initialImage =
+      (product as any).image ||
+      (product as any).imagen ||
+      (product as any).imagenes?.[0]?.url ||
+      mapProductToImage(product.nombre, product.id) ||
+      "/images/placeholder.webp";
+    setImgSrc(initialImage);
+  }, [product]);
+
   if (loading) {
     return (
       <PublicLayout>
@@ -215,12 +228,6 @@ function ProductDetailPageContent({ productId }: { productId: string }) {
     );
   }
 
-   const imageUrl =
-    (product as any).image ||
-    (product as any).imagen ||
-    (product as any).imagenes?.[0]?.url ||
-    mapProductToImage(product.nombre, product.id) ||
-    "/images/placeholder.webp";
 
   const { nombre, precio, stock, codigo, categoria } = product;
   const descripcion =
@@ -242,7 +249,7 @@ function ProductDetailPageContent({ productId }: { productId: string }) {
     nombre: product.nombre,
     precio: precioNum,
     descuento: descuentoNum,
-    imageUrl: imageUrl,
+    imageUrl: imgSrc,
     stock: stock || 0,
     moneda: 'COP',
   } : null;
@@ -398,16 +405,15 @@ function ProductDetailPageContent({ productId }: { productId: string }) {
             {/* 🖼️ Imagen */}
             <div className="lg:col-span-1 mb-8 lg:mb-0">
               <div className="rounded-xl overflow-hidden shadow-2xl sticky top-4">
-                <img
-                  src={imageUrl}
-                  alt={nombre}
-                  className="w-full h-auto object-cover max-h-[600px]"
-                  onError={(e) => {
-                    const img = e.currentTarget as HTMLImageElement;
-                    img.onerror = null;
-                    img.src = "/images/placeholder.webp";
-                  }}
-                />
+                <div className="w-full h-auto max-h-[600px] relative">
+                  <Image
+                    src={imgSrc}
+                    alt={nombre}
+                    fill
+                    className="object-cover"
+                    onError={() => setImgSrc('/images/placeholder.webp')}
+                  />
+                </div>
               </div>
             </div>
 

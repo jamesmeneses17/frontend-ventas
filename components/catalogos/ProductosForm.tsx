@@ -102,7 +102,7 @@ useEffect(() => {
 
   loadLookups();
   // 👇 Agregamos dependencias para que siempre cargue bien
-}, [initialData, reset, getCategorias, getEstados]);
+}, [initialData, reset]);
 
 
 

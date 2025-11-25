@@ -1,6 +1,7 @@
 // /components/ui/ImageLinkCard.tsx
 
 import React from 'react';
+import Image from 'next/image';
 
 interface ImageLinkCardProps {
     /** La URL a la que navegará el usuario. */
@@ -24,11 +25,9 @@ const ImageLinkCard: React.FC<ImageLinkCardProps> = ({ href, imageSrc, altText, 
         className="group relative block rounded-xl overflow-hidden shadow-lg hover:shadow-2xl transition duration-300 transform hover:-translate-y-1"
     >
         {/* Imagen de Fondo */}
-        <img 
-            className="absolute inset-0 h-full w-full object-cover opacity-80 group-hover:opacity-100 transition duration-300" 
-            src={imageSrc} 
-            alt={altText}
-        />
+        <div className="absolute inset-0">
+            <Image src={imageSrc} alt={altText} fill className="h-full w-full object-cover opacity-80 group-hover:opacity-100 transition duration-300" />
+        </div>
         {/* Overlay de Gradiente Oscuro */}
         <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent"></div>
         

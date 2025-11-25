@@ -96,8 +96,8 @@ export default function ComprasForm({
         const total =
             Number(formValues.cantidad || 0) *
             Number(formValues.costo_unitario || 0);
-        setValue("costo_total", total);
-    }, [formValues.cantidad, formValues.costo_unitario]);
+            setValue("costo_total", total);
+        }, [formValues.cantidad, formValues.costo_unitario, setValue]);
 
     // 📌 Control universal de cambios
     const handleChange = (

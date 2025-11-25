@@ -1,5 +1,6 @@
 "use client";
 import React, { useEffect, useCallback, useState } from "react";
+import Image from 'next/image';
 import AuthenticatedLayout from "../../../components/layout/AuthenticatedLayout";
 import CardStat from "../../../components/ui/CardStat";
 import FilterBar from "../../../components/common/FilterBar";
@@ -102,7 +103,7 @@ export default function CuentasCobrarPage() {
       <div className="space-y-6">
         {/* Stats */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <CardStat title="Total Cuentas por Cobrar" value={new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP" }).format(totalSaldo)} color="text-red-600" icon={<img src="/mnt/data/1e9d06db-b350-46d1-beb8-f632c263e0b4.png" alt="diseño" className="w-5 h-5"/>} />
+          <CardStat title="Total Cuentas por Cobrar" value={new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP" }).format(totalSaldo)} color="text-red-600" icon={<Image src="/logodisem.jpg" alt="diseño" className="w-5 h-5" width={20} height={20}/> } />
           <CardStat title="Créditos Totales" value={String(total)} color="text-indigo-600" icon={<Plus className="w-4 h-4"/>} />
           <CardStat title="Pendientes" value={`${creditos.filter(c=>c.estado==="PENDIENTE").length}`} color="text-yellow-600" icon={<Plus className="w-4 h-4"/>} />
         </div>

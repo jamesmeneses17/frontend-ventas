@@ -1,4 +1,5 @@
 import React from 'react';
+import Image from 'next/image';
 import { Minus, Plus, X } from 'lucide-react';
 import { useCart } from './../hooks/CartContext'; // Asegúrate de la ruta correcta
 import { formatCurrency } from '../../utils/formatters';
@@ -27,11 +28,14 @@ export const CartItem: React.FC<CartItemProps> = ({ item }) => {
         <div className="flex items-center border-b py-4 space-x-4">
             
             {/* 1. Imagen */}
-            <img 
-                src={item.imageUrl} 
-                alt={item.nombre} 
-                className="w-16 h-16 object-cover rounded-md shadow-md" 
-            />
+                        <div className="w-16 h-16 relative rounded-md overflow-hidden">
+                            <Image
+                                src={item.imageUrl}
+                                alt={item.nombre}
+                                fill
+                                className="object-cover"
+                            />
+                        </div>
 
             {/* 2. Detalles del Producto */}
             <div className="flex-1 min-w-0">
