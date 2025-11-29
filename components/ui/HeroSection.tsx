@@ -76,8 +76,8 @@ const HeroSection: React.FC = () => {
             alt={current.alt || `Slide ${current.id}`}
             fill
             priority
-            // Usamos object-contain para ver la imagen completa
-            className="object-cover transition-opacity duration-1000 ease-in-out" 
+            // En móvil mostramos la imagen completa; en md+ usamos cover
+            className="object-contain md:object-cover transition-opacity duration-1000 ease-in-out"
             sizes="100vw"
             quality={80}
           />
