@@ -61,23 +61,19 @@ const HeroSection: React.FC = () => {
   return (
     // Quitamos el padding inferior que sobraba
     <section className="bg-white relative"> 
-      <div className="mx-auto w-full relative overflow-hidden">
+      <div className="mx-auto w-full max-w-screen-xl px-4 relative overflow-hidden">
         
         {/* ========================================================== */}
         {/* Contenedor de la Imagen (¡Altura MÁS Reducida!) */}
         {/* ========================================================== */}
-        <div className="w-full 
-            h-[200px]   /* Móvil */ 
-            md:h-[280px] /* Tablet */ 
-            lg:h-[350px] /* Escritorio */ 
-            relative"> 
+        <div className="w-full h-[180px] md:h-[220px] lg:h-[260px] relative"> 
           <Image
             src={current.src}
             alt={current.alt || `Slide ${current.id}`}
             fill
             priority
-            // En móvil mostramos la imagen completa; en md+ usamos cover
-            className="object-contain md:object-cover transition-opacity duration-1000 ease-in-out"
+            // Mostrar la imagen completa (no recortar) en todas las resoluciones
+            className="object-contain transition-opacity duration-1000 ease-in-out"
             sizes="100vw"
             quality={80}
           />
