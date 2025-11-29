@@ -5,10 +5,7 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 
-import {
-  getSubcategorias,
-  Subcategoria,
-} from "../services/subcategoriasService";
+import { getCategorias, getCategoriaById } from "../services/categoriasService";
 
 interface FilterCategory {
   id: number;
@@ -33,27 +30,16 @@ const MobileCategoryList: React.FC<MobileCategoryListProps> = ({
     const fetchAndGroup = async () => {
       setIsLoading(true);
       try {
-        const apiSubcategorias: Subcategoria[] = await getSubcategorias();
+        // Primero obtenemos las categorías principales
+        const apiCategorias = await getCategorias();
         const categoryMap = new Map<number, FilterCategory>();
 
-        apiSubcategorias.forEach((subCat) => {
-          const parent = subCat.categoria;
-          if (!subCat.estado || subCat.estado.nombre !== "Activo") return;
-          const childCategory: FilterCategory = {
-            id: subCat.id,
-            nombre: subCat.nombre,
-          };
-
-          if (!categoryMap.has(parent.id)) {
-            const parentCategory: FilterCategory = {
-              id: parent.id,
-              nombre: parent.nombre,
-              subcategorias: [],
-            };
-            categoryMap.set(parent.id, parentCategory);
-          }
-          categoryMap.get(parent.id)?.subcategorias?.push(childCategory);
+        apiCategorias.forEach((cat) => {
+          categoryMap.set(cat.id, { id: cat.id, nombre: cat.nombre, subcategorias: [] });
         });
+
+        // No asumimos que exista un endpoint /subcategorias; en su lugar
+        // cargaremos subcategorías por categoría a demanda (al abrir)
         setGroupedCategories(Array.from(categoryMap.values()));
       } catch (error) {
         console.error(
@@ -68,9 +54,29 @@ const MobileCategoryList: React.FC<MobileCategoryListProps> = ({
   }, []);
 
   const toggleCategory = (categoryId: number, hasSubcategories: boolean) => {
-    if (hasSubcategories) {
-      setOpenCategoryId(openCategoryId === categoryId ? null : categoryId);
+    if (!hasSubcategories) return;
+
+    // Si la categoría tiene subcategorias aún no cargadas, intentar cargarlas
+    const category = groupedCategories.find((c) => c.id === categoryId);
+    if (category && (!category.subcategorias || category.subcategorias.length === 0)) {
+      // carga por id: algunas APIs devuelven subcategorias en GET /categorias/:id
+      getCategoriaById(categoryId)
+        .then((catData: any) => {
+          const subs = (catData.subcategorias || []).filter((s: any) => s.estado?.nombre === "Activo").map((s: any) => ({ id: s.id, nombre: s.nombre }));
+          setGroupedCategories((prev) =>
+            prev.map((p) => (p.id === categoryId ? { ...p, subcategorias: subs } : p))
+          );
+        })
+        .catch((err) => {
+          console.debug("No se encontraron subcategorías por categoría (GET /categorias/:id):", err?.message ?? err);
+        })
+        .finally(() => {
+          setOpenCategoryId(openCategoryId === categoryId ? null : categoryId);
+        });
+      return;
     }
+
+    setOpenCategoryId(openCategoryId === categoryId ? null : categoryId);
   };
 
   if (isLoading) {
