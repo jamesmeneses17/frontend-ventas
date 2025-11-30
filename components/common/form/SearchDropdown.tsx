@@ -101,7 +101,7 @@ const SearchDropdown: React.FC<SearchDropdownProps> = ({ placeholder, onSearchTe
         };
 
         fetchResults();
-    }, [debouncedSearchTerm]);
+    }, [debouncedSearchTerm, maxResults]);
 
     // Ocultar resultados si se hace clic fuera del componente
     const handleClickOutside = useCallback((event: MouseEvent) => {
@@ -215,7 +215,7 @@ const SearchDropdown: React.FC<SearchDropdownProps> = ({ placeholder, onSearchTe
                                         className="w-full text-left px-4 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-100 flex items-center"
                                     >
                                         <SearchIcon className="h-4 w-4 mr-3" />
-                                        Ver todos los resultados para "{searchTerm}"
+                                        Ver todos los resultados para &quot;{searchTerm}&quot;
                                     </button>
                                 </div>
                             </>
@@ -224,7 +224,7 @@ const SearchDropdown: React.FC<SearchDropdownProps> = ({ placeholder, onSearchTe
                         {/* No hay resultados */}
                         {!loading && results.length === 0 && debouncedSearchTerm.length >= 2 && (
                             <div className="px-4 py-3 text-sm text-gray-500">
-                                No se encontraron coincidencias para "{searchTerm}".
+                                No se encontraron coincidencias para &quot;{searchTerm}&quot;.
                             </div>
                         )}
                     </div>

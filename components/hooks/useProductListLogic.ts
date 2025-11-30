@@ -92,7 +92,7 @@ export const useProductListLogic = (initialSort: SortOption = 'relevancia') => {
             }
         };
         fetchProductos();
-    }, [subcategoriaIdParam, categoriaIdParam]); // Dependencias para recargar si cambian los filtros de URL
+    }, [subcategoriaIdParam, categoriaIdParam, qParam]); // Dependencias para recargar si cambian los filtros de URL o la búsqueda
 
     // 4. Mapeo y Ordenamiento (Memorizado)
     const displayedProducts = useMemo(() => {
@@ -178,7 +178,7 @@ export const useProductListLogic = (initialSort: SortOption = 'relevancia') => {
         }
 
         return sortedProducts;
-    }, [productos, sortOption, preciosList]); // Recalcular solo si cambian los productos, precios o la opción de orden
+    }, [productos, sortOption, preciosList, qParam]); // Recalcular si cambian productos, precios, sort o parámetro de búsqueda
 
     // 5. Devolver la interfaz pública del hook
     return {
