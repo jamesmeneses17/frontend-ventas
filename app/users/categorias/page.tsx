@@ -1,5 +1,3 @@
-// /app/categorias/page.tsx (PÁGINA PÚBLICA DE CATÁLOGO DE CATEGORÍAS)
-
 "use client";
 
 import React, { useState, useEffect, Suspense, useMemo } from "react";
@@ -73,7 +71,7 @@ const CategoryCard: React.FC<CategoryCardDisplayProps> = ({
     <div className="flex flex-col justify-end h-full">
       {/* Título e ícono */}
       <div className="flex items-center space-x-2 text-white mb-3">
-      
+        {/* Usamos text-xl para mantener la jerarquía visual */}
         <h3 className="text-xl font-bold">{nombre}</h3>
       </div>
 
@@ -107,7 +105,9 @@ function CategoriasClientePageContent() {
       try {
         setLoading(true);
         const data = await getCategorias();
-        setCategories(data);
+        // Ordenar categorías alfabéticamente para una mejor usabilidad
+        const sortedData = data.sort((a, b) => a.nombre.localeCompare(b.nombre));
+        setCategories(sortedData);
       } catch (err) {
         console.error("Error al cargar categorías:", err);
       } finally {
@@ -121,6 +121,7 @@ function CategoriasClientePageContent() {
   const filteredCategories = useMemo(() => {
     if (!searchTerm) return categories;
     const lower = searchTerm.toLowerCase();
+    // Filtro por nombre de categoría (Lógica simple, rápida y local)
     return categories.filter((cat) =>
       cat.nombre.toLowerCase().includes(lower)
     );
@@ -130,7 +131,7 @@ function CategoriasClientePageContent() {
       (cat) => ({ // Ahora mapeamos el array filtrado
       ...cat,
       imageSrc: mapCategoryToImage(cat.nombre, cat.id),
-    href: `/users/productos?categoriaId=${cat.id}`,
+      href: `/users/productos?categoriaId=${cat.id}`,
     })
   );
 
@@ -172,11 +173,27 @@ function CategoriasClientePageContent() {
                   : "No hay categorías disponibles en este momento."}
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              // ⭐️ CAMBIO CLAVE: Diseño de cuadrícula responsiva sin paginación
+              <div 
+                className="grid grid-cols-2 // Móvil (2 columnas)
+                           sm:grid-cols-3 // Tablet (3 columnas)
+                           lg:grid-cols-4 // Desktop (4 columnas)
+                           xl:grid-cols-5 // Desktop Grande (5 columnas)
+                           gap-6"
+              >
                 {displayedCategories.map((category) => (
                   <CategoryCard key={category.id} {...category} />
                 ))}
               </div>
+            )}
+            
+            {/* Mensaje de conteo total (opcional, pero ayuda a la intuición) */}
+            {!loading && displayedCategories.length > 0 && (
+                <div className="mt-10 text-center text-gray-500 text-sm">
+                    {filteredCategories.length === categories.length
+                        ? `Mostrando las ${categories.length} categorías disponibles.`
+                        : `Mostrando ${filteredCategories.length} de ${categories.length} categorías.`}
+                </div>
             )}
           </main>
         </div>
