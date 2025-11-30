@@ -36,7 +36,7 @@ const HeaderProductsDropdown: React.FC = () => {
     fetchCategories();
   }, []);
 
-  const isProductsActive = pathname.startsWith("/productos");
+  const isProductsActive = pathname.startsWith("/users/productos");
   const handleMouseEnter = () => setIsMenuOpen(true);
   const handleMouseLeave = () => setIsMenuOpen(false);
 
@@ -79,20 +79,58 @@ const HeaderProductsDropdown: React.FC = () => {
         </svg>
       </Link>
 
-      {/* 🟢 Menú simple de Categorías (aparece hacia abajo - debajo del header) */}
+      {/* Mega-menu: columnas, centrado y scroll si hay muchas categorías */}
       {isMenuOpen && categories.length > 0 && (
-        <div className="absolute z-50 top-full left-0 mt-0 w-56 origin-top-left rounded-md bg-white shadow-xl ring-1 ring-black ring-opacity-5 focus:outline-none">
-          <div className="py-1">
-            {categories.map((category) => (
-              <Link
-                key={category.id}
-                href={`/users/productos?categoriaId=${category.id}`}
-                onClick={() => setIsMenuOpen(false)}
-                className="block px-4 py-2 text-sm text-gray-700 hover:bg-amber-50 hover:text-amber-700"
-              >
-                {category.nombre}
-              </Link>
-            ))}
+        <div
+          className="absolute z-50 top-full left-1/2 transform -translate-x-1/2 mt-2 w-[900px] max-w-[calc(100vw-2rem)] rounded-lg bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none"
+          role="menu"
+          aria-label="Categorías de productos"
+        >
+          <div className="p-4 max-h-80 overflow-auto">
+            {/* Calcula columnas según número de categorías (responsive) */}
+            {(() => {
+              const total = categories.length;
+              let cols = 5;
+              if (total <= 8) cols = 2;
+              else if (total <= 16) cols = 3;
+              else if (total <= 28) cols = 4;
+              // dividir categorías en columnas contiguas (verticales)
+              const splitIntoColumns = <T,>(items: T[], cols: number): T[][] => {
+                const result: T[][] = [];
+                if (cols <= 0) return result;
+                const perCol = Math.ceil(items.length / cols);
+                for (let i = 0; i < cols; i++) {
+                  const start = i * perCol;
+                  const end = start + perCol;
+                  result.push(items.slice(start, end));
+                }
+                return result;
+              };
+
+              const columns = splitIntoColumns(categories, cols);
+
+              return (
+                <div
+                  className="grid gap-x-8"
+                  style={{ gridTemplateColumns: `repeat(${cols}, minmax(0,1fr))` }}
+                >
+                  {columns.map((col, colIdx) => (
+                    <div key={colIdx} className="space-y-1">
+                      {col.map((category) => (
+                        <Link
+                          key={category.id}
+                          href={`/users/productos?categoriaId=${category.id}`}
+                          onClick={() => setIsMenuOpen(false)}
+                          className="block px-0 py-1 text-sm text-gray-700 hover:text-amber-700"
+                        >
+                          {category.nombre}
+                        </Link>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
           </div>
         </div>
       )}

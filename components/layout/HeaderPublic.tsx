@@ -63,7 +63,6 @@ const HeaderPublic: React.FC = () => {
             background: `linear-gradient(to right, ${DISEM_BLUE}, #ffffff)`,
           }}
         />
-
         {/* BANDA DIAGONAL IZQUIERDA */}
         <div
           className="absolute inset-y-0 left-0 w-[35%] bg-[#2e9fdb]"
@@ -72,13 +71,11 @@ const HeaderPublic: React.FC = () => {
           }}
         />
       </div>
-
       {/* ========================================================== */}
       {/* CONTENIDO DEL HEADER (encima del diseño) */}
       {/* ========================================================== */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="flex justify-between h-24">
-
           {/* LADO IZQUIERDO: LOGO */}
           <div className="flex items-center">
               <div className="flex-shrink-0">
@@ -93,7 +90,6 @@ const HeaderPublic: React.FC = () => {
               </Link>
             </div>
           </div>
-
           {/* LADO DERECHO: NAV + ADMIN */}
           <div className="flex items-center">
 
@@ -113,7 +109,6 @@ const HeaderPublic: React.FC = () => {
                 )
               )}
             </div>
-
             {/* Botones: carrito + admin */}
             <div className="hidden sm:ml-6 sm:flex sm:items-center">
               
@@ -161,7 +156,6 @@ const HeaderPublic: React.FC = () => {
           </div>
         </div>
       </div>
-
       {/* ========================================================== */}
       {/* MENÚ MÓVIL */}
       {/* ========================================================== */}
@@ -208,8 +202,7 @@ const HeaderPublic: React.FC = () => {
             href="/login"
             onClick={toggleMenu}
             className="block w-full text-center px-4 py-3 rounded-lg bg-black text-white"
-          >
-            Admin
+          > Admin
           </Link>
         </div>
       </div>
