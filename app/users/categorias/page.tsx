@@ -7,6 +7,7 @@ import { getCategorias, Categoria } from "@/components/services/categoriasServic
 import { createSlug } from "@/utils/slug";
 import SearchInput from "../../../components/common/form/SearchInput";
 import Link from "next/link";
+import SearchDropdown from "../../../components/common/form/SearchDropdown";
 
 // ----------------------------------------------------------------------
 // 1. Tipos, Mapeo y Fallback de Imágenes
@@ -153,12 +154,11 @@ function CategoriasClientePageContent() {
 
           {/* Buscador */}
           <div className="mb-8 max-w-lg mx-auto">
-            <SearchInput
-              searchTerm={searchTerm}
-              onSearchChange={(v: string) => setSearchTerm(v)}
-              placeholder="Buscar categoría por nombre..."
-            />
-          </div>
+            <SearchDropdown
+              placeholder="Buscar categoría o producto..."
+              onSearchTermChange={(v: string) => setSearchTerm(v)}
+            />
+          </div>
 
           {/* Catálogo */}
           <main id="catalog" className="mt-5">

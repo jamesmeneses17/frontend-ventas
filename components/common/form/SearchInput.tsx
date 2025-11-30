@@ -14,6 +14,9 @@ interface SearchInputProps {
     placeholder?: string;
     // Tiempo en ms para debounce (por defecto 300ms). Si 0, sin debounce.
     debounceMs?: number;
+    // Eventos adicionales que pueden necesitar los consumidores
+    onFocus?: () => void;
+    onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void;
 }
 
 export default function SearchInput({
@@ -23,6 +26,8 @@ export default function SearchInput({
     onChange,
     placeholder = "Buscar...",
     debounceMs = 300,
+    onFocus,
+    onKeyDown,
 }: SearchInputProps) {
     // Estado interno para input controlado localmente y debounce
     const initial = typeof searchTerm !== 'undefined' ? searchTerm : (typeof value !== 'undefined' ? value : '');
@@ -61,6 +66,8 @@ export default function SearchInput({
                 placeholder={placeholder}
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
+                onFocus={onFocus}
+                onKeyDown={onKeyDown}
                 className="p-2 pl-10 border border-gray-300 rounded-md w-full focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
             />
             <svg
