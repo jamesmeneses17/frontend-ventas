@@ -2,54 +2,41 @@
 
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import SearchInput from './SearchInput'; // Reutilizamos el componente SearchInput
-import useDebounce from '../../hooks/useDebounce';
-import { SearchIcon, XIcon, BoxIcon, TagIcon } from 'lucide-react'
-import { CubeIcon } from '@heroicons/react/16/solid';
+import SearchInput from './SearchInput'; // Componente de input que se reutiliza
+import useDebounce from '../../hooks/useDebounce'; // Hook personalizado para el 'debounce'
+import { SearchIcon, XIcon, TagIcon } from 'lucide-react'; // Íconos de lucide-react
+import { CubeIcon } from '@heroicons/react/24/solid'; // Ícono para productos (asumiendo que tienes instalado @heroicons/react)
+// NOTA: Asegúrate de que '@/utils/formatters' exista y contenga 'formatCurrency'
+import { formatCurrency } from '@/utils/formatters'; 
+import { getProductos } from '@/components/services/productosService';
 
 
 // --- TIPOS DE DATOS ---
 
-// Tipo de resultado genérico
 interface SearchResultItem {
     id: number | string;
     nombre: string;
     tipo: 'producto' | 'categoria';
     href: string;
+    precio?: number; // Precio, solo si el resultado es un producto
 }
 
-// SIMULACIÓN: Esta función DEBE ser reemplazada por tu llamada API real
-// que busque tanto en productos como en categorías.
-// La simulación genera resultados falsos basados en el término de búsqueda.
-const simulateSearchResults = async (query: string): Promise<SearchResultItem[]> => {
-    if (query.length < 2) return [];
-    
-    // Simular retraso de API
-    await new Promise(resolve => setTimeout(resolve, 300));
-
-    const lowerQuery = query.toLowerCase();
-    const results: SearchResultItem[] = [];
-
-    // 1. Simulación de Productos
-    if (lowerQuery.includes('panel')) {
-        // Usar rutas consistentes con la app de usuarios
-        results.push({ id: 1, nombre: 'Panel Solar Monocristalino 500W', tipo: 'producto', href: '/users/especificaciones/1' });
-        results.push({ id: 2, nombre: 'Inversor Híbrido 3kW', tipo: 'producto', href: '/users/especificaciones/2' });
-    }
-    
-    // 2. Simulación de Categorías
-    if (lowerQuery.includes('bate')) {
-        results.push({ id: 101, nombre: 'Baterías de Litio', tipo: 'categoria', href: '/users/productos?categoriaId=101' });
-    }
-
-    if (results.length === 0) {
-        // Fallback genérico: evitar enlaces a detalles inexistentes (que provocan 404).
-        // En lugar de devolver un producto con ID ficticio, devolvemos un enlace
-        // hacia la página de búsqueda de productos para que el usuario vea resultados reales.
-        results.push({ id: `search-${query}`, nombre: `Ver resultados relacionados con "${query}"`, tipo: 'producto', href: `/users/productos?q=${encodeURIComponent(query)}` });
-    }
-
-    return results; // devolver todos y limitará el padre según `maxResults`
+// Llamada real a la API de productos usando el servicio disponible.
+// Devuelve resultados de productos (no incluye categorías). Si quieres resultados mixtos
+// (categorías + productos) añade una llamada a `categoriasService` similar.
+const fetchSearchProducts = async (query: string, limit: number): Promise<SearchResultItem[]> => {
+    if (!query || query.length < 2) return [];
+    // getProductos(page, size, stockFiltro, searchTerm, subcategoriaId?, categoriaId?)
+    const response = await getProductos(1, limit, "", query);
+    const items = response?.data || [];
+    const mapped: SearchResultItem[] = items.map((p: any) => ({
+        id: p.id,
+        nombre: p.nombre,
+        tipo: 'producto',
+        href: `/users/especificaciones/${p.id}`,
+        precio: typeof p.precio !== 'undefined' ? Number(p.precio) : undefined
+    }));
+    return mapped;
 };
 
 // ----------------------------------------------------------------------
@@ -68,17 +55,22 @@ interface SearchDropdownProps {
     debounceMs?: number;
 }
 
-const SearchDropdown: React.FC<SearchDropdownProps> = ({ placeholder, onSearchTermChange, onSearchSubmit, maxResults = 8, debounceMs = 300 }) => {
+const SearchDropdown: React.FC<SearchDropdownProps> = ({ 
+    placeholder, 
+    onSearchTermChange, 
+    onSearchSubmit, 
+    maxResults = 5, 
+    debounceMs = 300 
+}) => {
     const [searchTerm, setSearchTerm] = useState('');
     const [results, setResults] = useState<SearchResultItem[]>([]);
     const [loading, setLoading] = useState(false);
     const [isFocused, setIsFocused] = useState(false);
     
-    // Hook para aplicar un retraso (debounce) a la búsqueda
     const debouncedSearchTerm = useDebounce(searchTerm, debounceMs); 
     const wrapperRef = useRef<HTMLDivElement>(null);
 
-    // Lógica para realizar la búsqueda cuando el término con debounce cambia
+    // Lógica para realizar la búsqueda instantánea (API)
     useEffect(() => {
         const fetchResults = async () => {
             if (debouncedSearchTerm.length < 2) {
@@ -89,8 +81,8 @@ const SearchDropdown: React.FC<SearchDropdownProps> = ({ placeholder, onSearchTe
 
             setLoading(true);
             try {
-                // LLAMADA A LA API REAL AQUÍ (reemplazar simulateSearchResults)
-                const data = await simulateSearchResults(debouncedSearchTerm);
+                // Llamada a la API real usando el servicio de productos
+                const data = await fetchSearchProducts(debouncedSearchTerm, maxResults);
                 setResults(data.slice(0, maxResults));
             } catch (error) {
                 console.error("Error en la búsqueda instantánea:", error);
@@ -117,22 +109,24 @@ const SearchDropdown: React.FC<SearchDropdownProps> = ({ placeholder, onSearchTe
         };
     }, [handleClickOutside]);
 
+    // Mostrar dropdown si está enfocado O si está cargando resultados
     const showDropdown = (isFocused || loading) && searchTerm.length > 0;
 
-    // Notificar al componente padre con el término debounced (mejor para rendimiento)
     useEffect(() => {
         if (onSearchTermChange) onSearchTermChange(debouncedSearchTerm);
     }, [debouncedSearchTerm, onSearchTermChange]);
 
-    // Función para manejar la navegación o submit de búsqueda
+    // Función para manejar la navegación a la página completa de resultados
     const handleFullSearch = () => {
         const term = debouncedSearchTerm.length > 0 ? debouncedSearchTerm : searchTerm;
+        setIsFocused(false); // Esconde el dropdown
+        
         if (onSearchSubmit) {
             onSearchSubmit(term);
             return;
         }
-        // Por defecto: Redirigir a la página completa de resultados de búsqueda
-        window.location.href = `/search?q=${encodeURIComponent(term)}`;
+        // Redirigir a la página completa de resultados de búsqueda (usa el parámetro 'q')
+        window.location.href = `/users/productos?q=${encodeURIComponent(term)}`;
     };
 
     return (
@@ -143,7 +137,6 @@ const SearchDropdown: React.FC<SearchDropdownProps> = ({ placeholder, onSearchTe
                 onSearchChange={setSearchTerm}
                 placeholder={placeholder}
                 onFocus={() => setIsFocused(true)}
-                // Cuando se presiona Enter, forzar la búsqueda completa
                 onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
                     if (e.key === 'Enter') {
                         e.preventDefault();
@@ -152,7 +145,7 @@ const SearchDropdown: React.FC<SearchDropdownProps> = ({ placeholder, onSearchTe
                 }}
             />
 
-            {/* Icono de borrado (limpia el input y resetea resultados) */}
+            {/* Icono de borrado (Clear button) */}
             {searchTerm && (
                 <button 
                     onClick={() => { setSearchTerm(''); setResults([]); setLoading(false); }}
@@ -170,6 +163,7 @@ const SearchDropdown: React.FC<SearchDropdownProps> = ({ placeholder, onSearchTe
                         
                         {loading && (
                             <div className="px-4 py-2 text-sm text-gray-500 flex items-center">
+                                {/* Animación de carga */}
                                 <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-amber-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
@@ -190,21 +184,30 @@ const SearchDropdown: React.FC<SearchDropdownProps> = ({ placeholder, onSearchTe
                                         onClick={() => { setIsFocused(false); setSearchTerm(''); }}
                                         className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition duration-150"
                                     >
-                                        {/* Icono dinámico */}
+                                        {/* Icono dinámico: CubeIcon para Producto, TagIcon para Categoría */}
                                         {item.tipo === 'producto' ? (
-                                            <CubeIcon className="h-4 w-4 mr-3 text-amber-500" />
+                                            <CubeIcon className="h-5 w-5 mr-3 text-amber-500" />
                                         ) : (
-                                            <TagIcon className="h-4 w-4 mr-3 text-blue-500" />
+                                            <TagIcon className="h-5 w-5 mr-3 text-blue-500" />
                                         )}
-                                        
+
                                         <span className="truncate">{item.nombre}</span>
-                                        
-                                        {/* Etiqueta de tipo */}
-                                        <span className={`ml-auto px-2 py-0.5 text-xs font-medium rounded-full ${
-                                            item.tipo === 'producto' ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800'
-                                        }`}>
-                                            {item.tipo === 'producto' ? 'Producto' : 'Categoría'}
-                                        </span>
+
+                                        <div className="ml-auto flex items-center gap-3">
+                                            {/* MOSTRAR PRECIO: Solo si es producto y tiene precio */}
+                                            {item.tipo === 'producto' && item.precio !== undefined && (
+                                                <span className="text-sm font-semibold text-gray-800">
+                                                    {formatCurrency(item.precio)}
+                                                </span>
+                                            )}
+
+                                            {/* Etiqueta de tipo */}
+                                            <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${
+                                                item.tipo === 'producto' ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800'
+                                            }`}>
+                                                {item.tipo === 'producto' ? 'Producto' : 'Categoría'}
+                                            </span>
+                                        </div>
                                     </Link>
                                 ))}
 
@@ -215,7 +218,7 @@ const SearchDropdown: React.FC<SearchDropdownProps> = ({ placeholder, onSearchTe
                                         className="w-full text-left px-4 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-100 flex items-center"
                                     >
                                         <SearchIcon className="h-4 w-4 mr-3" />
-                                        Ver todos los resultados para &quot;{searchTerm}&quot;
+                                        Ver todos los resultados para "{searchTerm}"
                                     </button>
                                 </div>
                             </>
@@ -224,7 +227,23 @@ const SearchDropdown: React.FC<SearchDropdownProps> = ({ placeholder, onSearchTe
                         {/* No hay resultados */}
                         {!loading && results.length === 0 && debouncedSearchTerm.length >= 2 && (
                             <div className="px-4 py-3 text-sm text-gray-500">
-                                No se encontraron coincidencias para &quot;{searchTerm}&quot;.
+                                No se encontraron coincidencias para "{searchTerm}".
+                                <div className="border-t mt-3 pt-2">
+                                     <button
+                                        onClick={handleFullSearch}
+                                        className="w-full text-left px-0 py-1 text-sm font-semibold text-blue-600 hover:text-blue-800 flex items-center"
+                                    >
+                                        <SearchIcon className="h-4 w-4 mr-2" />
+                                        Buscar de todos modos en el catálogo
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                        
+                        {/* Mensaje de tip, solo si está enfocado y no ha escrito nada */}
+                        {!loading && searchTerm.length < 2 && isFocused && (
+                             <div className="px-4 py-3 text-sm text-gray-500">
+                                Por favor, ingresa al menos 2 caracteres para iniciar la búsqueda.
                             </div>
                         )}
                     </div>
