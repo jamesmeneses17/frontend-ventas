@@ -5,7 +5,7 @@ import PublicLayout from "../../../components/layout/PublicLayout";
 import ImageLinkCard from "@/components/ui/ImageLinkCard";
 import { getCategorias, Categoria } from "@/components/services/categoriasService";
 import { createSlug } from "@/utils/slug";
-import SearchInput from "../../../components/common/form/SearchInput";
+import { useRouter } from 'next/navigation';
 import Link from "next/link";
 import SearchDropdown from "../../../components/common/form/SearchDropdown";
 
@@ -99,7 +99,7 @@ const CategoryCard: React.FC<CategoryCardDisplayProps> = ({
 function CategoriasClientePageContent() {
   const [categories, setCategories] = useState<Categoria[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
+  const router = useRouter();
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -118,23 +118,14 @@ function CategoriasClientePageContent() {
     fetchCategories();
   }, []);
 
-  // Filtro optimizado
-  const filteredCategories = useMemo(() => {
-    if (!searchTerm) return categories;
-    const lower = searchTerm.toLowerCase();
-    // Filtro por nombre de categoría (Lógica simple, rápida y local)
-    return categories.filter((cat) =>
-      cat.nombre.toLowerCase().includes(lower)
-    );
-  }, [categories, searchTerm]);
-
-  const displayedCategories: CategoryCardDisplayProps[] = filteredCategories.map(
-      (cat) => ({ // Ahora mapeamos el array filtrado
-      ...cat,
-      imageSrc: mapCategoryToImage(cat.nombre, cat.id),
-      href: `/users/productos?categoriaId=${cat.id}`,
-    })
-  );
+  // No filtrar el catálogo en tiempo real (seguimos la especificación):
+  // el desplegable muestra sugerencias, y la acción "Ver todos" lleva
+  // a la página de resultados dedicada.
+  const displayedCategories: CategoryCardDisplayProps[] = categories.map((cat) => ({
+    ...cat,
+    imageSrc: mapCategoryToImage(cat.nombre, cat.id),
+    href: `/users/productos?categoriaId=${cat.id}`,
+  }));
 
   return (
     <PublicLayout>
@@ -152,13 +143,15 @@ function CategoriasClientePageContent() {
             </p>
           </div>
 
-          {/* Buscador */}
+          {/* Buscador: usamos onSearchSubmit para navegar a la página de resultados */}
           <div className="mb-8 max-w-lg mx-auto">
-            <SearchDropdown
-              placeholder="Buscar categoría o producto..."
-              onSearchTermChange={(v: string) => setSearchTerm(v)}
-            />
-          </div>
+            <SearchDropdown
+              placeholder="Buscar categoría o producto..."
+              onSearchSubmit={(v: string) => router.push(`/search?q=${encodeURIComponent(v)}`)}
+              maxResults={8}
+              debounceMs={250}
+            />
+          </div>
 
           {/* Catálogo */}
           <main id="catalog" className="mt-5">
@@ -168,9 +161,7 @@ function CategoriasClientePageContent() {
               </div>
             ) : displayedCategories.length === 0 ? (
               <div className="text-center py-12 text-gray-500">
-                {searchTerm
-                  ? `No se encontraron categorías para "${searchTerm}".`
-                  : "No hay categorías disponibles en este momento."}
+                No hay categorías disponibles en este momento.
               </div>
             ) : (
               // ⭐️ CAMBIO CLAVE: Diseño de cuadrícula responsiva sin paginación
@@ -189,11 +180,11 @@ function CategoriasClientePageContent() {
             
             {/* Mensaje de conteo total (opcional, pero ayuda a la intuición) */}
             {!loading && displayedCategories.length > 0 && (
-                <div className="mt-10 text-center text-gray-500 text-sm">
-                    {filteredCategories.length === categories.length
-                        ? `Mostrando las ${categories.length} categorías disponibles.`
-                        : `Mostrando ${filteredCategories.length} de ${categories.length} categorías.`}
-                </div>
+              <div className="mt-10 text-center text-gray-500 text-sm">
+                {displayedCategories.length === categories.length
+                  ? `Mostrando las ${categories.length} categorías disponibles.`
+                  : `Mostrando ${displayedCategories.length} de ${categories.length} categorías.`}
+              </div>
             )}
           </main>
         </div>

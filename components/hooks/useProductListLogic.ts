@@ -25,6 +25,7 @@ export const useProductListLogic = (initialSort: SortOption = 'relevancia') => {
     const searchParams = useSearchParams();
     const subcategoriaIdParam = searchParams.get('subcategoriaId');
     const categoriaIdParam = searchParams.get('categoriaId');
+    const qParam = searchParams.get('q');
 
     // 2. Estados Locales
     const [productos, setProductos] = useState<BaseProductType[]>([]);
@@ -44,7 +45,8 @@ export const useProductListLogic = (initialSort: SortOption = 'relevancia') => {
                 // Llamada al servicio de productos
                 // Pasamos subcategoriaId y categoriaId en los parámetros opcionales del servicio
                 // y solicitamos un size amplio para la vista pública (traer muchos elementos)
-                const response = await getProductos(1, 1000, "", "", subId, catId);
+                // Pasar el parámetro de búsqueda `qParam` al backend para que realice el filtrado
+                const response = await getProductos(1, 1000, "", qParam ?? "", subId, catId);
 
                 // Nota: Algunos backends no aplican correctamente el filtro por categoría en el endpoint.
                 // Para asegurar que la UI muestre únicamente los productos de la categoría seleccionada,
@@ -157,6 +159,22 @@ export const useProductListLogic = (initialSort: SortOption = 'relevancia') => {
                 // Relevancia: mantener el orden por ID (asumiendo que es el orden por defecto de la API)
                 sortedProducts.sort((a, b) => a.id - b.id);
                 break;
+        }
+
+        // Si existe un parámetro de búsqueda `q`, filtrar por nombre, marca o categoría
+        if (qParam && qParam.trim().length > 0) {
+            const q = String(qParam).toLowerCase();
+            const filtered = sortedProducts.filter(p => {
+                const name = String(p.nombre ?? '').toLowerCase();
+                const brand = String(p.brand ?? '').toLowerCase();
+                const category = String(p.categoria ?? '').toLowerCase();
+                return (
+                    name.includes(q) ||
+                    brand.includes(q) ||
+                    category.includes(q)
+                );
+            });
+            return filtered;
         }
 
         return sortedProducts;

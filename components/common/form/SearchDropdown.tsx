@@ -32,18 +32,21 @@ const simulateSearchResults = async (query: string): Promise<SearchResultItem[]>
 
     // 1. Simulación de Productos
     if (lowerQuery.includes('panel')) {
-        results.push({ id: 1, nombre: 'Panel Solar Monocristalino 500W', tipo: 'producto', href: '/producto/panel-500w' });
-        results.push({ id: 2, nombre: 'Inversor Híbrido 3kW', tipo: 'producto', href: '/producto/inversor-3kw' });
+        // Usar rutas consistentes con la app de usuarios
+        results.push({ id: 1, nombre: 'Panel Solar Monocristalino 500W', tipo: 'producto', href: '/users/especificaciones/1' });
+        results.push({ id: 2, nombre: 'Inversor Híbrido 3kW', tipo: 'producto', href: '/users/especificaciones/2' });
     }
     
     // 2. Simulación de Categorías
     if (lowerQuery.includes('bate')) {
-        results.push({ id: 101, nombre: 'Baterías de Litio', tipo: 'categoria', href: '/productos?categoriaId=101' });
+        results.push({ id: 101, nombre: 'Baterías de Litio', tipo: 'categoria', href: '/users/productos?categoriaId=101' });
     }
 
     if (results.length === 0) {
-        // Fallback genérico para mostrar al menos algo si la API no devuelve nada
-        results.push({ id: 99, nombre: `Producto Genérico relacionado con "${query}"`, tipo: 'producto', href: '/producto/generico' });
+        // Fallback genérico: evitar enlaces a detalles inexistentes (que provocan 404).
+        // En lugar de devolver un producto con ID ficticio, devolvemos un enlace
+        // hacia la página de búsqueda de productos para que el usuario vea resultados reales.
+        results.push({ id: `search-${query}`, nombre: `Ver resultados relacionados con "${query}"`, tipo: 'producto', href: `/users/productos?q=${encodeURIComponent(query)}` });
     }
 
     return results; // devolver todos y limitará el padre según `maxResults`
