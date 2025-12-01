@@ -1,6 +1,6 @@
 // /components/hooks/useCrudCatalog.ts (NUEVO)
 
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 
 type LoadItemsFunction<T> = (
   all: boolean, 
@@ -73,19 +73,42 @@ export const useCrudCatalog = <T extends CrudItem, C extends ItemForm, U extends
     }
   }, [notification]);
 
+  // Normalizar y memoizar las dependencias personalizadas para evitar referencias
+  // nuevas en cada render que provoquen que `fetchItems` cambie constantemente.
+  const customDepsKey = useMemo(
+    () => (options.customDependencies || []).map((d: any) => String(d)).join('|'),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [options.customDependencies]
+  );
+
+  const customDependencies = useMemo(() => options.customDependencies || [], [customDepsKey]);
+
   // Función de carga de datos (memoizada para usar en el efecto)
-  const customDepsKey = useMemo(() => (options.customDependencies || []).map((d: any) => String(d)).join('|'), [options.customDependencies]);
+  // Mantener una referencia estable al servicio para evitar que cambios de
+  // referencia en el objeto 'service' provoquen recreaciones innecesarias
+  // de callbacks que dependen de él.
+  const serviceRef = useRef(service);
+  useEffect(() => {
+    serviceRef.current = service;
+  }, [service]);
+
+  // Evitar llamadas concurrentes superpuestas que pueden producir múltiples
+  // requests si algo provoca re-render rápido (por ejemplo, cambios de estado
+  // externos). Usamos un ref booleano para no depender de `loading` en las deps.
+  const fetchInProgressRef = useRef(false);
 
   const fetchItems = useCallback(async () => {
+    if (fetchInProgressRef.current) return;
+    fetchInProgressRef.current = true;
     setLoading(true);
     try {
-      console.debug("useCrudCatalog: fetchItems called", { currentPage, pageSize, searchTerm, customDeps: options.customDependencies });
-      const response = await service.loadItems(
+      console.debug("useCrudCatalog: fetchItems called", { currentPage, pageSize, searchTerm, customDeps: customDependencies });
+      const response = await serviceRef.current.loadItems(
         false,
         currentPage,
         pageSize,
         searchTerm,
-        ...(options.customDependencies || [])
+        ...customDependencies
       );
 
       console.debug("useCrudCatalog: service.loadItems response:", response && (Array.isArray(response) ? `array(${(response as any).length})` : `object(data:${(response as any)?.data?.length ?? 'na'}, total:${(response as any)?.total ?? 'na'})`));
@@ -97,12 +120,12 @@ export const useCrudCatalog = <T extends CrudItem, C extends ItemForm, U extends
 
         if (items.length === pageSize) {
           try {
-            const fullResp = await service.loadItems(
+            const fullResp = await serviceRef.current.loadItems(
               true,
               1,
               Math.max(1000, pageSize),
               searchTerm,
-              ...(options.customDependencies || [])
+              ...customDependencies
             );
             if (Array.isArray(fullResp)) {
               total = (fullResp as T[]).length;
@@ -161,9 +184,10 @@ export const useCrudCatalog = <T extends CrudItem, C extends ItemForm, U extends
       setCurrentItems([]);
       setTotalItems(0);
     } finally {
+      fetchInProgressRef.current = false;
       setLoading(false);
     }
-  }, [service, currentPage, pageSize, searchTerm, itemKey, options.customDependencies]);
+  }, [currentPage, pageSize, searchTerm, itemKey, customDepsKey]);
 
 
   useEffect(() => {
@@ -219,9 +243,9 @@ export const useCrudCatalog = <T extends CrudItem, C extends ItemForm, U extends
 
     try {
       if (isEditing) {
-        await service.updateItem(editingItem!.id, formData as U);
+        await serviceRef.current.updateItem(editingItem!.id, formData as U);
       } else {
-        await service.createItem(formData as C);
+        await serviceRef.current.createItem(formData as C);
       }
 
       setNotification({
@@ -248,7 +272,7 @@ export const useCrudCatalog = <T extends CrudItem, C extends ItemForm, U extends
       confirm(`¿Estás seguro de eliminar ${itemKey.toLowerCase()} "${item.nombre}"?`)
     ) {
        try {
-                await service.deleteItem(item.id);
+                await serviceRef.current.deleteItem(item.id);
                 setNotification({ message: `${itemKey} eliminado correctamente.`, type: "success" });
                 await fetchItems(); 
             } catch (error) {
