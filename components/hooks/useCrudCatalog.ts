@@ -77,7 +77,6 @@ export const useCrudCatalog = <T extends CrudItem, C extends ItemForm, U extends
   // nuevas en cada render que provoquen que `fetchItems` cambie constantemente.
   const customDepsKey = useMemo(
     () => (options.customDependencies || []).map((d: any) => String(d)).join('|'),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [options.customDependencies]
   );
 
@@ -187,7 +186,7 @@ export const useCrudCatalog = <T extends CrudItem, C extends ItemForm, U extends
       fetchInProgressRef.current = false;
       setLoading(false);
     }
-  }, [currentPage, pageSize, searchTerm, itemKey, customDepsKey]);
+  }, [currentPage, pageSize, searchTerm, itemKey, customDepsKey, customDependencies]);
 
 
   useEffect(() => {
