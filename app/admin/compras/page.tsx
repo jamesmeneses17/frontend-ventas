@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import AuthenticatedLayout from "../../../components/layout/AuthenticatedLayout";
 
 // UI generales
@@ -30,6 +30,8 @@ import {
   CreateCompraDTO,
   UpdateCompraDTO,
 } from "../../../components/services/comprasService";
+import { formatCurrency } from "../../../utils/formatters";
+import CardStat from "../../../components/ui/CardStat";
 
 export default function ComprasPage() {
   const [formError, setFormError] = useState("");
@@ -46,6 +48,7 @@ export default function ComprasPage() {
 
   const [selectedYear, setSelectedYear] = useState("");
   const [selectedMonth, setSelectedMonth] = useState("");
+  const [totalComprasAll, setTotalComprasAll] = useState<number>(0);
 
   // ===================== CRUD HOOK ======================
   const {
@@ -192,6 +195,44 @@ export default function ComprasPage() {
     reload();
   }, [notification]);
 
+  // Recalcular total agregado de todas las compras filtradas (no sólo la página)
+  const recalculateTotalAll = React.useCallback(async () => {
+    try {
+      const resp = await getCompras(1, 10000, searchTerm || "");
+      const items: any[] = Array.isArray(resp) ? resp : resp?.data ?? [];
+
+      let filtered = items;
+      if (selectedMonth) {
+        filtered = items.filter((it: any) => {
+          if (!it?.fecha) return false;
+          const d = new Date(it.fecha);
+          const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+          return ym === String(selectedMonth);
+        });
+      } else if (selectedYear) {
+        filtered = items.filter((it: any) => {
+          if (!it?.fecha) return false;
+          const d = new Date(it.fecha);
+          return `${d.getFullYear()}` === String(selectedYear);
+        });
+      }
+
+      const total = filtered.reduce((sum: number, it: any) => {
+        const cantidad = Number(it?.cantidad ?? 0);
+        const costo = Number(it?.costo_unitario ?? 0);
+        return sum + cantidad * costo;
+      }, 0);
+
+      setTotalComprasAll(total);
+    } catch (err) {
+      setTotalComprasAll(0);
+    }
+  }, [searchTerm, selectedMonth, selectedYear]);
+
+  useEffect(() => {
+    recalculateTotalAll();
+  }, [recalculateTotalAll, notification]);
+
   useEffect(() => {
     if (!selectedYear) {
       setMonthsOptions([]);
@@ -206,7 +247,23 @@ export default function ComprasPage() {
     <AuthenticatedLayout>
       <div className="space-y-6">
         {/* =================== HEADER (Sin el botón "Nueva Compra") =================== */}
+          {/* Tarjeta resumen: Total acumulado de todas las compras filtradas */}
+          <div className="mb-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <CardStat
+                title="Total Compras"
+                value={formatCurrency(totalComprasAll)}
+                color="text-emerald-600"
+                icon={<FileSpreadsheet className="h-4 w-4 text-emerald-600" />}
+              />
+            </div>
+          </div>
+        
+
+        {/* =================== TABLA Y CONTROLES =================== */}
         <div className="bg-white shadow rounded-lg p-6">
+          
+          {/* Header de la tabla con título */}
           <div className="flex justify-between items-center">
             <div>
               <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
@@ -219,15 +276,8 @@ export default function ComprasPage() {
             </div>
             {/* El botón ActionButton fue movido a la sección de la tabla */}
           </div>
-        </div>
 
-        {/* =================== TABLA Y CONTROLES =================== */}
-        <div className="bg-white shadow rounded-lg p-6">
-          
-          {/* Header de la tabla con título */}
-          <h3 className="text-xl font-semibold text-gray-900 mb-4">
-            Lista de Compras
-          </h3>
+        
 
           {/* CONTROLES: Buscador, Selectores y Botón "Nueva Compra" */}
           <div className="flex flex-wrap justify-between items-end gap-4 mb-6">

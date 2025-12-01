@@ -11,7 +11,9 @@ import Alert from "../../../components/ui/Alert";
 import SearchInput from "../../../components/common/form/SearchInput";
 import FormSelect from "../../../components/common/form/FormSelect";
 
-import { FilePlus2, ShoppingCart } from "lucide-react";
+import { FilePlus2, ShoppingCart, DollarSign, TrendingUp } from "lucide-react";
+import CardStat from "../../../components/ui/CardStat";
+import { formatCurrency } from "../../../utils/formatters";
 
 // Tabla y Form
 import VentasTable from "../../../components/catalogos/VentasTable";
@@ -46,6 +48,8 @@ export default function VentasPage() {
 
   const [selectedYear, setSelectedYear] = useState("");
   const [selectedMonth, setSelectedMonth] = useState("");
+  const [totalVentasAll, setTotalVentasAll] = useState<number>(0);
+  const [totalUtilidadAll, setTotalUtilidadAll] = useState<number>(0);
 
   // ===================== CRUD HOOK ======================
   const {
@@ -133,6 +137,52 @@ export default function VentasPage() {
 
   const editingVenta = editingItem as Venta | null;
 
+  // Recalcula totales agregados (ventas y utilidad) sobre todos los items filtrados
+  const recalculateTotalsAll = React.useCallback(async () => {
+    try {
+      const resp = await getVentas(1, 10000, searchTerm || "");
+      const items: any[] = Array.isArray(resp) ? resp : resp?.data ?? [];
+
+      let filtered = items;
+      if (selectedMonth) {
+        filtered = items.filter((it: any) => {
+          if (!it?.fecha) return false;
+          const d = new Date(it.fecha);
+          const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+          return ym === String(selectedMonth);
+        });
+      } else if (selectedYear) {
+        filtered = items.filter((it: any) => {
+          if (!it?.fecha) return false;
+          const d = new Date(it.fecha);
+          return `${d.getFullYear()}` === String(selectedYear);
+        });
+      }
+
+      const totalVentas = filtered.reduce((sum: number, it: any) => {
+        // asumir que 'total_venta' está en el objeto o calcular como cantidad * precio_venta
+        const totalField = Number(it?.total_venta ?? (Number(it?.cantidad ?? 0) * Number(it?.precio_venta ?? 0)));
+        return sum + (isNaN(totalField) ? 0 : totalField);
+      }, 0);
+
+      const totalUtilidad = filtered.reduce((sum: number, it: any) => {
+        // asumir que 'utilidad' campo existe; si no, intentar calcular: (precio_venta - costo_unitario) * cantidad
+        const utilidadField = Number(it?.utilidad ?? NaN);
+        if (!isNaN(utilidadField)) return sum + utilidadField;
+        const precioVenta = Number(it?.precio_venta ?? 0);
+        const costoUnit = Number(it?.costo_unitario ?? 0);
+        const cantidad = Number(it?.cantidad ?? 0);
+        return sum + (precioVenta - costoUnit) * cantidad;
+      }, 0);
+
+      setTotalVentasAll(totalVentas);
+      setTotalUtilidadAll(totalUtilidad);
+    } catch (err) {
+      setTotalVentasAll(0);
+      setTotalUtilidadAll(0);
+    }
+  }, [searchTerm, selectedMonth, selectedYear]);
+
   // ===================== ERROR HANDLER =====================
   const handleSubmitWithError = async (data: any) => {
     setFormError("");
@@ -192,6 +242,11 @@ export default function VentasPage() {
     reload();
   }, [notification]);
 
+  // recalcular totales cuando cambian filtros o hay notificaciones
+  useEffect(() => {
+    recalculateTotalsAll();
+  }, [recalculateTotalsAll, notification]);
+
   useEffect(() => {
     if (!selectedYear) {
       setMonthsOptions([]);
@@ -204,10 +259,30 @@ export default function VentasPage() {
 
   return (
     <AuthenticatedLayout>
+      <div className="w-full md:w-auto">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <CardStat
+                  title="Total Ventas"
+                  value={formatCurrency(totalVentasAll, "$")}
+                  icon={<DollarSign className="w-4 h-4" />}
+                  color="text-green-600"
+                />
+
+                <CardStat
+                  title="Utilidad"
+                  value={formatCurrency(totalUtilidadAll, "$")}
+                  icon={<TrendingUp className="w-4 h-4" />}
+                  color="text-yellow-600"
+                />
+              </div>
+            </div>
       <div className="space-y-6">
         {/* =================== HEADER =================== */}
+       
+
+        {/* =================== TABLA & CONTROLES =================== */}
         <div className="bg-white shadow rounded-lg p-6">
-          <div className="flex justify-between items-center">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
               <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
                 <ShoppingCart className="w-6 h-6 text-green-600" />
@@ -216,15 +291,11 @@ export default function VentasPage() {
               <p className="text-gray-600 mt-2">
                 Administra y controla todas las ventas realizadas a clientes.
               </p>
-            </div>
+            
+
+            
           </div>
         </div>
-
-        {/* =================== TABLA & CONTROLES =================== */}
-        <div className="bg-white shadow rounded-lg p-6">
-          <h3 className="text-xl font-semibold text-gray-900 mb-4">
-            Lista de Ventas
-          </h3>
 
           <div className="flex flex-wrap justify-between items-end gap-4 mb-6">
             <div className="flex flex-wrap items-end gap-4">

@@ -36,8 +36,8 @@ const navigation = [
     title: "INVENTARIO Y PRODUCTOS",
     items: [
       { name: "INVENTARIO", href: "/admin/lista-productos", icon: Box },
-      { name: "PRODUCTOS", href: "/admin/lista", icon: DollarSign },
-      { name: "LISTA DE PRODUCTOS", href: "/admin/precios", icon: DollarSign },
+      { name: "BD LISTA PRODUCTOS", href: "/admin/bd-lista", icon: DollarSign },
+      //{ name: "l", href: "/admin/precios", icon: DollarSign },
     ],
   },
   {
@@ -51,22 +51,22 @@ const navigation = [
   {
     title: "FINANZAS Y CAJA",
     items: [
-      { name: "Ingresos y Egresos", href: "/admin/ingresos-egresos", icon: Wallet },
+     // { name: "Ingresos y Egresos", href: "/admin/ingresos-egresos", icon: Wallet },
       { name: "Cuentas por Cobrar", href: "/admin/cuentas-cobrar", icon: Scale },
     ],
   },
-  {
-    title: "REPORTES",
+  /*{
+    //title: "REPORTES",
     items: [
-      { name: "Resumen Financiero", href: "/admin/resumen-financiero", icon: FileText },
+     // { name: "Resumen Financiero", href: "/admin/resumen-financiero", icon: FileText },
     ],
-  },
-  {
-    title: "CONFIGURACIÓN",
+  },*/
+  /*{
+    //title: "CONFIGURACIÓN",
     items: [
-      { name: "Usuarios Admin", href: "/admin/usuarios", icon: User },
+     // { name: "Usuarios Admin", href: "/admin/usuarios", icon: User },
     ],
-  },
+  },*/
 ];
 
 export default function Sidebar() {

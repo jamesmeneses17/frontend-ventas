@@ -210,7 +210,8 @@ export default function ListaProductosPage() {
                 const costo = Number((p as any).precio_costo ?? 0);
                 const stock = Number((p as any).stock ?? 0);
                 return acc + costo * stock;
-              }, 0)
+              }, 0),
+              '$'
             )}
             color="text-emerald-600"
             icon={<Package className="h-4 w-4" />}
