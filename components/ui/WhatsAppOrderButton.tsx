@@ -13,7 +13,7 @@ interface WhatsAppButtonProps {
   currency: string;
 }
 
-const BUSINESS_PHONE = "573506324968";
+const BUSINESS_PHONE = "573206197545";
 
 export const WhatsAppOrderButton: React.FC<WhatsAppButtonProps> = ({
   items,
