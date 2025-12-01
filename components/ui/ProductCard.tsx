@@ -73,11 +73,11 @@ const ProductCard: React.FC<ProductCardProps> = ({
     return (
       <div className="group relative block bg-white rounded-xl overflow-hidden shadow-xl hover:shadow-2xl transition duration-300 transform hover:-translate-y-1">
         {/* Imagen con etiquetas */}
-          <Link href={targetHref} className="block relative h-48 sm:h-56 overflow-hidden">
+          <Link href={targetHref} className="block relative h-48 sm:h-56 overflow-hidden flex items-center justify-center bg-white p-4">
           <DiscountBadge />
           <StockBadge />
-          <div className="absolute inset-0">
-            <Image src={imageSrc} alt={nombre} fill className="object-cover transition-transform duration-300 group-hover:scale-105 z-10" />
+          <div className="relative w-full h-full max-w-[260px] md:max-w-[320px]">
+            <Image src={imageSrc} alt={nombre} fill className="object-contain transition-transform duration-300 group-hover:scale-105 z-10" />
           </div>
         </Link>
 
@@ -130,12 +130,12 @@ const ProductCard: React.FC<ProductCardProps> = ({
       {/* Imagen con etiquetas */}
       <Link
         href={targetHref}
-        className="w-full sm:w-56 h-56 flex-shrink-0 relative overflow-hidden"
+        className="w-full sm:w-56 h-56 flex-shrink-0 relative overflow-hidden flex items-center justify-center p-3 bg-white"
       >
         <DiscountBadge />
         <StockBadge />
-        <div className="absolute inset-0">
-          <Image src={imageSrc} alt={nombre} fill className="object-cover transition-transform duration-300 hover:scale-105 z-10" />
+        <div className="relative w-full h-full max-w-[220px] md:max-w-[280px]">
+          <Image src={imageSrc} alt={nombre} fill className="object-contain transition-transform duration-300 hover:scale-105 z-10" />
         </div>
       </Link>
 

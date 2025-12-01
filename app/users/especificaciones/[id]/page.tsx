@@ -405,14 +405,16 @@ function ProductDetailPageContent({ productId }: { productId: string }) {
             {/* 🖼️ Imagen */}
             <div className="lg:col-span-1 mb-8 lg:mb-0">
               <div className="rounded-xl overflow-hidden shadow-2xl sticky top-4">
-                <div className="w-full h-auto max-h-[600px] relative">
-                  <Image
-                    src={imgSrc}
-                    alt={nombre}
-                    fill
-                    className="object-cover"
-                    onError={() => setImgSrc('/images/placeholder.webp')}
-                  />
+                <div className="w-full flex items-center justify-center bg-white p-6">
+                  <div className="relative w-full max-w-[420px] h-[320px] sm:max-w-[480px] sm:h-[380px] md:max-w-[520px] md:h-[440px] rounded-lg overflow-hidden shadow-sm">
+                    <Image
+                      src={imgSrc}
+                      alt={nombre}
+                      fill
+                      className="object-contain"
+                      onError={() => setImgSrc('/images/placeholder.webp')}
+                    />
+                  </div>
                 </div>
               </div>
             </div>
