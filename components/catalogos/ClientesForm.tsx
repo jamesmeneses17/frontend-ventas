@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'; // <-- Añadido useEffect
 import FormInput from '@/components/common/form/FormInput'; 
-import { createCliente, CreateClienteData, updateCliente, UpdateClienteData } from '../services/clientesServices';
+import { createCliente, CreateClienteData, updateCliente, UpdateClienteData, getClientes } from '../services/clientesServices';
 // <-- Importamos el nuevo servicio y tipo de datos
 import { getTiposDocumento, TipoDocumento } from '../services/tiposDocumentoService'; 
 import Alert from '../ui/Alert';
@@ -109,6 +109,29 @@ const ClientesForm: React.FC<Props> = ({ initialData, onSuccess, onCancel, onSub
     const payload: CreateClienteData = values;
 
     try {
+      // VALIDACIÓN FRONTAL: evitar crear o actualizar clientes con documento duplicado
+      try {
+        const matches = await getClientes(String(values.numero_documento).trim(), 1, 50);
+        const exists = matches.some((c: any) => {
+          const sameDoc = String(c.numero_documento).trim() === String(values.numero_documento).trim();
+          const sameTipo = Number(c.tipo_documento_id) === Number(values.tipo_documento_id);
+          if (!isEditing) return sameDoc && sameTipo;
+          // Si estamos editando, ignorar el propio registro (mismo id)
+          const isSelf = initialData?.id && Number(c.id) === Number(initialData.id);
+          return sameDoc && sameTipo && !isSelf;
+        });
+        if (exists) {
+          throw new Error('Ya existe un cliente con ese tipo y número de documento.');
+        }
+      } catch (checkErr: any) {
+        // Si la validación frontal detectó duplicado, propagamos el error
+        if (checkErr.message && checkErr.message.includes('Ya existe')) {
+          throw checkErr;
+        }
+        // Si falla la consulta (red/servidor), no bloqueamos la operación aquí;
+        // el backend debe realizar la validación definitiva y responder con error.
+      }
+
       let result: any;
       if (onSubmit) {
         result = await onSubmit(payload);

@@ -5,6 +5,7 @@ import {
   TipoDocumento,
   createTipoDocumento,
   updateTipoDocumento,
+  getTiposDocumento,
 } from '../services/tiposDocumentoService';
 
 interface Props {
@@ -54,6 +55,21 @@ const TiposDocumentoForm: React.FC<Props> = ({ initialData, onSuccess, onCancel 
 
     try {
       let result: TipoDocumento;
+
+        // VALIDACIÓN FRONTAL: evitar duplicados por nombre (case-insensitive)
+        try {
+          const all = await getTiposDocumento();
+          const name = payload.nombre.trim().toLowerCase();
+          const exists = all.some((t) => t.nombre.trim().toLowerCase() === name && (!isEditing || t.id !== initialData?.id));
+          if (exists) {
+            throw new Error('Ya existe un tipo de documento con ese nombre.');
+          }
+        } catch (checkErr: any) {
+          if (checkErr.message && checkErr.message.includes('Ya existe')) {
+            throw checkErr;
+          }
+          // Si falla la comprobación por red, permitimos continuar y confiar en la validación del backend
+        }
 
       if (isEditing && initialData?.id) {
         console.debug('[TiposDocumentoForm] Editando tipo documento ID:', initialData.id);
