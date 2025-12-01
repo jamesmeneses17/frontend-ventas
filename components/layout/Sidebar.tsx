@@ -77,11 +77,11 @@ export default function Sidebar() {
   const activeColor = "#8BC34A";
 
   return (
-    <div className="w-64 bg-gray-800 text-white flex flex-col">
-      <div className="p-4 text-xl font-bold border-b border-gray-700">
+    <div className="w-56 bg-gray-800 text-white flex flex-col">
+      <div className="p-3 text-lg font-bold border-b border-gray-700">
         Sistema Ventas
       </div>
-      <nav className="flex-1 p-2">
+      <nav className="flex-1 p-2 overflow-y-auto hide-scrollbar">
         {navigation.map((section) => (
           <div key={section.title} className="mb-4">
             <h3 className="text-xs font-semibold uppercase text-gray-400 mt-2 mb-1 px-2">
@@ -103,7 +103,7 @@ export default function Sidebar() {
                 <Link
                   key={item.name}
                   href={item.href}
-                  className={`flex items-center gap-2 p-2 rounded transition 
+                  className={`flex items-center gap-2 p-2 rounded transition text-sm 
                     ${isActive 
                       ? 'text-gray-900 font-semibold'
                       : 'text-white'

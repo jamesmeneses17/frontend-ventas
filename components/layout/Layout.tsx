@@ -19,7 +19,7 @@ export default function Layout({ children }: LayoutProps) {
     <div className="flex h-screen">
       
       <div
-        className={`fixed inset-y-0 left-0 z-40 w-64 transform bg-gray-800 transition duration-300 ease-in-out md:flex md:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-40 w-56 transform bg-gray-800 transition duration-300 ease-in-out md:flex md:translate-x-0 ${
           isSidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
@@ -41,7 +41,7 @@ export default function Layout({ children }: LayoutProps) {
         <Header toggleSidebar={toggleSidebar} isSidebarOpen={isSidebarOpen} />
 
         
-        <main className="flex-1 overflow-x-hidden overflow-y-auto p-6 md:ml-64 bg-gray-50">
+        <main className="flex-1 overflow-x-hidden overflow-y-auto p-6 md:ml-56 bg-gray-50">
           {children}
         </main>
       </div>

@@ -26,7 +26,7 @@ export default function Header({ toggleSidebar, isSidebarOpen }: HeaderProps) {
         bg-white px-6 py-3 shadow
         sticky top-0 z-40
         h-[80px]
-        md:ml-[258px]     /* 👈 solo aplica en escritorio */
+        md:ml-56     /* 👈 coincide con el ancho del sidebar (w-56) */
       "
     >
       {/* === LADO IZQUIERDO === */}
