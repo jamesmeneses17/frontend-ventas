@@ -12,7 +12,7 @@ const BG_COLOR = "bg-gray-900";
 // Datos de Contacto y Enlaces
 const CONTACT_INFO = {
     telefono: '+57 (601) 286 1451',
-    whatsappMovil: '+57 315 2913102',
+    whatsappMovil: '+57 3206197545',
     email: 'informacion@disemsas.com.co',
     
     direcciones: [
