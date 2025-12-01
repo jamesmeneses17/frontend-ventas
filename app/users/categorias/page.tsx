@@ -147,7 +147,7 @@ function CategoriasClientePageContent() {
           <div className="mb-8 max-w-lg mx-auto">
             <SearchDropdown
               placeholder="Buscar categoría o producto..."
-              onSearchSubmit={(v: string) => router.push(`/search?q=${encodeURIComponent(v)}`)}
+              onSearchSubmit={(v: string) => router.push(`/users/productos?q=${encodeURIComponent(v)}`)}
               maxResults={8}
               debounceMs={250}
             />

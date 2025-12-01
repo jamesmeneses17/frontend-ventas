@@ -197,16 +197,18 @@ const SearchDropdown: React.FC<SearchDropdownProps> = ({
                                             {/* MOSTRAR PRECIO: Solo si es producto y tiene precio */}
                                             {item.tipo === 'producto' && item.precio !== undefined && (
                                                 <span className="text-sm font-semibold text-gray-800">
-                                                    {formatCurrency(item.precio)}
+                                                    {formatCurrency(item.precio, '$')}
                                                 </span>
                                             )}
 
-                                            {/* Etiqueta de tipo */}
-                                            <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${
-                                                item.tipo === 'producto' ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800'
-                                            }`}>
-                                                {item.tipo === 'producto' ? 'Producto' : 'Categoría'}
-                                            </span>
+                                            {/* Etiqueta de tipo: solo mostrar para categorías */}
+                                            {item.tipo === 'categoria' && (
+                                                <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${
+                                                    'bg-blue-100 text-blue-800'
+                                                }`}>
+                                                    Categoría
+                                                </span>
+                                            )}
                                         </div>
                                     </Link>
                                 ))}
