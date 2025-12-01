@@ -4,6 +4,8 @@ import { Bell, LogOut, Menu } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "../../contexts/AuthContext";
 import Image from "next/image";
+import { useState } from "react";
+import ConfirmDialog from "../common/ConfirmDialog";
 
 interface HeaderProps {
   toggleSidebar: () => void;
@@ -13,11 +15,36 @@ interface HeaderProps {
 export default function Header({ toggleSidebar, isSidebarOpen }: HeaderProps) {
   const { user, logout } = useAuth();
   const router = useRouter();
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   const handleLogout = async () => {
-    await logout();
-    router.push("/login");
+    // abrir diálogo de confirmación
+    setConfirmOpen(true);
   };
+
+  const doLogoutConfirmed = async () => {
+    // Cerrar sesión primero y luego forzar navegación completa a la landing
+    setConfirmOpen(false);
+    try {
+      await logout();
+    } catch (err) {
+      // ignorar errores de logout
+    }
+
+    try {
+      // Usar una navegación completa (reload) para evitar que los
+      // protectores de rutas del cliente reemplacen la navegación.
+      if (typeof window !== "undefined") {
+        window.location.href = "/";
+      } else {
+        router.replace("/");
+      }
+    } catch (e) {
+      /* ignore */
+    }
+  };
+
+  const cancelLogout = () => setConfirmOpen(false);
 
   return (
     <header
@@ -72,6 +99,14 @@ export default function Header({ toggleSidebar, isSidebarOpen }: HeaderProps) {
           <span className="hidden sm:inline">Salir</span>
         </button>
       </div>
+      
+      <ConfirmDialog
+        open={confirmOpen}
+        title="¿Estás seguro?"
+        message="¿Quieres cerrar sesión y volver a la página principal?"
+        onConfirm={doLogoutConfirmed}
+        onCancel={cancelLogout}
+      />
     </header>
   );
 }

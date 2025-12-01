@@ -6,7 +6,7 @@ import Link from 'next/link'; // Usamos Link de Next.js para una mejor navegaci√
 
 export default function LoginPage() {
   return (
-    <AuthSplitPanel imageSrc="/images/logo-disem.jpeg" imageAlt="Paneles Solares de DISEM">
+    <AuthSplitPanel >
       
       <div className="text-center">
         <h2 className="text-3xl font-bold mb-3 text-gray-900">
