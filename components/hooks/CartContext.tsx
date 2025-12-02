@@ -8,6 +8,7 @@ interface CartProduct {
     nombre: string;
     precio: number;
     descuento: number;
+    codigo?: string;
     imageUrl: string;
     stock: number;
     quantity: number; // NUEVO: Cantidad en el carrito

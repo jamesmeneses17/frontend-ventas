@@ -249,6 +249,7 @@ function ProductDetailPageContent({ productId }: { productId: string }) {
     nombre: product.nombre,
     precio: precioNum,
     descuento: descuentoNum,
+    codigo: codigo ?? (product as any).codigo ?? '',
     imageUrl: imgSrc,
     stock: stock || 0,
     moneda: 'COP',
@@ -259,13 +260,30 @@ function ProductDetailPageContent({ productId }: { productId: string }) {
     const { addToCart } = useCart();
     const handle = () => {
       if (!productToAddBase) return;
-      if (quantity > 0 && productToAddBase.stock > 0) {
-        addToCart(productToAddBase, quantity);
-        console.log(`🛒 ${quantity} unidad(es) de "${productToAddBase.nombre}" agregadas al carrito.`);
-        setQuantity(1);
-      } else {
-        console.warn('No se puede agregar al carrito: producto agotado o cantidad inválida.');
+      if (quantity <= 0) {
+        alert('Cantidad inválida.');
+        return;
       }
+
+      // Si no hay stock, impedir agregar
+      if (productToAddBase.stock <= 0) {
+        alert('Producto agotado. No es posible agregar al carrito.');
+        return;
+      }
+
+      // Si la cantidad excede el stock, ajustar y avisar
+      if (quantity > productToAddBase.stock) {
+        alert(`La cantidad solicitada (${quantity}) excede el stock disponible (${productToAddBase.stock}). Se ajustará a la cantidad máxima disponible.`);
+        addToCart(productToAddBase, productToAddBase.stock);
+        console.log(`🛒 ${productToAddBase.stock} unidad(es) de "${productToAddBase.nombre}" agregadas al carrito (ajustado por stock).`);
+        setQuantity(1);
+        return;
+      }
+
+      // Agregar cantidad válida
+      addToCart(productToAddBase, quantity);
+      console.log(`🛒 ${quantity} unidad(es) de "${productToAddBase.nombre}" agregadas al carrito.`);
+      setQuantity(1);
     };
     return (
       <button
@@ -467,17 +485,18 @@ function ProductDetailPageContent({ productId }: { productId: string }) {
                       type="number"
                       step={1}
                       min={1}
-                      max={stock ?? 99}
+                        // Permitimos editar libremente la cantidad para previsualizar subtotal;
+                        // la validación final ocurre al agregar al carrito.
                       value={quantity}
                       onChange={(e) => {
                         const v = parseInt(e.target.value as string, 10);
                         const sanitized = Number.isNaN(v) ? 1 : v;
                         // Respetar rango entre 1 y stock (si stock definido)
-                        if (typeof stock === "number") {
-                          setQuantity(Math.max(1, Math.min(sanitized, stock)));
-                        } else {
-                          setQuantity(Math.max(1, sanitized));
-                        }
+                          if (sanitized < 1) {
+                            setQuantity(1);
+                          } else {
+                            setQuantity(sanitized);
+                          }
                       }}
                       className="w-20 text-center border-l border-r p-2 focus:ring-[#2e9fdb] focus:border-[#2e9fdb]"
                     />
@@ -486,12 +505,13 @@ function ProductDetailPageContent({ productId }: { productId: string }) {
                       aria-label="Aumentar cantidad"
                       onClick={() => {
                         setQuantity((prev) => {
-                          const next = Number(prev || 1) + 1;
-                          if (typeof stock === "number") return Math.min(next, stock);
-                          return next;
+                            const next = Number(prev || 1) + 1;
+                            return next;
                         });
                       }}
-                      disabled={typeof stock === "number" && quantity >= stock}
+                        // No deshabilitamos el botón para permitir previsualizar subtotal
+                        // incluso si supera el stock; la validación final ocurre al agregar.
+                        
                       className="px-3 py-2 bg-white hover:bg-gray-100 disabled:opacity-50"
                     >
                       +
