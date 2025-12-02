@@ -92,7 +92,7 @@ const QuickInfo = ({
       <div className="flex items-center space-x-2">
         <Package className="w-5 h-5 text-gray-400" />
         <span>
-          Referencia:{" "}
+          Codigo:{" "}
           <span className="font-semibold text-gray-800">
             {referencia ?? "N/A"}
           </span>
