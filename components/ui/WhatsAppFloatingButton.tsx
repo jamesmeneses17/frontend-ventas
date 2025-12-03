@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { usePathname } from "next/navigation";
 
 const BUSINESS_PHONE = "573206197545";
 // Mensaje predefinido enfocado en la necesidad de información en un e-commerce
@@ -11,6 +12,11 @@ const PREDEFINED_MESSAGE = encodeURIComponent(
 const WhatsAppFloatingButton: React.FC = () => {
   // Enlace con el número y el mensaje predefinido
   const whatsappLink = `https://wa.me/${BUSINESS_PHONE}?text=${PREDEFINED_MESSAGE}`;
+
+  const pathname = usePathname();
+  // Hide the floating button on admin, dashboard and login pages
+  const hidePrefixes = ["/admin", "/dashboard", "/login"];
+  if (pathname && hidePrefixes.some((p) => pathname.startsWith(p))) return null;
 
   return (
     <a
@@ -32,7 +38,6 @@ const WhatsAppFloatingButton: React.FC = () => {
           src="/images/logo-wasap.png"
           alt="WhatsApp"
           // Mantenemos w-full h-full para que la imagen ocupe todo el espacio del div
-          // y eliminamos rounded-full para no forzar el recorte si la imagen ya lo trae.
           className="w-full h-full object-cover"
           width={64}
           height={64}
