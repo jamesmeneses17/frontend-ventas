@@ -1,6 +1,7 @@
 import './globals.css'
 import { AuthProvider } from '../contexts/AuthContext'
 import Providers from '../components/Providers';
+import WhatsAppFloatingButton from '../components/ui/WhatsAppFloatingButton';
 
 export const metadata = {
   title: 'Sistema de Ventas - Disem S.A.S.',
@@ -18,6 +19,7 @@ export default function RootLayout({
         <AuthProvider>
           <Providers>
             {children}
+            <WhatsAppFloatingButton />
           </Providers>
         </AuthProvider>
       </body>
