@@ -4,8 +4,12 @@ import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-// Importamos getCategorias
+// Servicios: categorías y categorías principales (grupos)
 import { getCategorias, Categoria } from "../services/categoriasService";
+import {
+  getCategoriasPrincipales,
+  CategoriaPrincipal,
+} from "../services/categoriasPrincipalesService";
 
 // --- INTERFACES para la estructura del filtro ---
 interface FilterCategory {
@@ -14,7 +18,8 @@ interface FilterCategory {
 }
 
 const HeaderProductsDropdown: React.FC = () => {
-  const [categories, setCategories] = useState<FilterCategory[]>([]);
+  const [categories, setCategories] = useState<Categoria[]>([]);
+  const [mainCategories, setMainCategories] = useState<CategoriaPrincipal[]>([]);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [activeGroup, setActiveGroup] = useState<number>(0);
 
@@ -23,21 +28,23 @@ const HeaderProductsDropdown: React.FC = () => {
   // ref para timeout de cierre
   const closeTimeout = useRef<number | null>(null);
 
-  // 1. Cargar solo categorías principales
+  // Cargar categorías y categorías principales desde la API
   useEffect(() => {
-    const fetchCategories = async () => {
+    const fetchAll = async () => {
       try {
-        const apiCategorias: Categoria[] = await getCategorias();
-        const cats: FilterCategory[] = apiCategorias.map((c) => ({
-          id: c.id,
-          nombre: c.nombre,
-        }));
-        setCategories(cats);
+        const [apiCategorias, apiMain] = await Promise.all([
+          getCategorias(),
+          getCategoriasPrincipales(),
+        ]);
+        setCategories(apiCategorias);
+        setMainCategories(apiMain);
+        // por defecto activar el primer grupo si existe
+        if (apiMain && apiMain.length > 0) setActiveGroup(0);
       } catch (error) {
-        console.error(" Error al cargar categorías para el menú:", error);
+        console.error("Error al cargar categorías o categorías principales:", error);
       }
     };
-    fetchCategories();
+    fetchAll();
   }, []);
 
   // limpiar timeout al desmontar
@@ -50,81 +57,14 @@ const HeaderProductsDropdown: React.FC = () => {
     };
   }, []);
 
-  // Definimos 4 grupos generales con palabras clave para agrupar categorías
-  const groups = [
-    {
-      id: "energia",
-      nombre: "Energía y Electricidad ",
-      keywords: [
-        "energia",
-        "eléctr",
-        "electric",
-        "110v",
-        "panel",
-        "reflector",
-        "ilumin",
-        "bombillo",
-        "toma",
-        "proteccion",
-      ],
-    },
-    {
-      id: "frenos",
-      nombre: "Frenos y Transmisión ",
-      keywords: [
-        "freno",
-        "frenos",
-        "disco",
-        "pastilla",
-        "cilindro",
-        "guaya",
-        "banda",
-        "campana",
-        "transm",
-        "caja",
-      ],
-    },
-    {
-      id: "fluidos",
-      nombre: "Fluidos y Motor ",
-      keywords: [
-        "aceite",
-        "liquido",
-        "refriger",
-        "motor",
-        "fluido",
-        "hidraul",
-        "diferencial",
-      ],
-    },
-    {
-      id: "filtros",
-      nombre: "Filtración y Mantenimiento ",
-      keywords: [
-        "filtro",
-        "filtros",
-        "mantenimiento",
-        "filtro aire",
-        "filtro combustible",
-        "filtro aceite",
-      ],
-    },
-  ];
-
-  const matchesKeywords = (name: string, keywords: string[]) => {
-    const n = name.toLowerCase();
-    return keywords.some((k) => n.includes(k));
-  };
-
-  // Asignar categorías a cada grupo (y otras que no calcen)
-  const grouped = groups.map((g) => ({
-    ...g,
-    categorias: categories.filter((c) => matchesKeywords(c.nombre, g.keywords)),
+  // Agrupar categorías por la categoría principal (relación por id)
+  const grouped = mainCategories.map((m) => ({
+    id: m.id,
+    nombre: m.nombre,
+    categorias: categories.filter((c) => c.categoriaPrincipalId === m.id),
   }));
 
-  const uncategorized = categories.filter((c) => {
-    return !groups.some((g) => matchesKeywords(c.nombre, g.keywords));
-  });
+  const uncategorized = categories.filter((c) => !c.categoriaPrincipalId);
 
   const isProductsActive = pathname.startsWith("/users/productos");
 
@@ -186,7 +126,7 @@ const HeaderProductsDropdown: React.FC = () => {
       </Link>
 
       {/* Mega-menu: columnas, centrado y scroll si hay muchas categorías */}
-      {isMenuOpen && categories.length > 0 && (
+      {isMenuOpen && (categories.length > 0 || mainCategories.length > 0) && (
         <div
           className="absolute z-50 top-full left-1/2 transform -translate-x-1/2 mt-2 w-[900px] max-w-[calc(100vw-2rem)] rounded-lg bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none"
           role="menu"
@@ -194,7 +134,7 @@ const HeaderProductsDropdown: React.FC = () => {
         >
           <div className="p-4 max-h-80 overflow-hidden">
             <div className="flex gap-6">
-              {/* Columna izquierda: 4 grupos generales */}
+              {/* Columna izquierda: grupos (categorías principales) */}
               <div className="w-1/3">
                 <div className="space-y-1">
                   {grouped.map((g, idx) => (

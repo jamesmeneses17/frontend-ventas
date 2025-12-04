@@ -153,6 +153,7 @@ export default function CategoriasPage() {
                   ? {
                       nombre: editingCategoria.nombre,
                       estadoId: editingCategoria.estadoId, // Asumiendo que existe en Categoria
+                      categoriaPrincipalId: (editingCategoria as any).categoriaPrincipalId ?? (editingCategoria as any).categoriaPrincipal?.id ?? null,
                     }
                   : {
                       nombre: "",

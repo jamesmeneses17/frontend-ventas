@@ -1,9 +1,11 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import CrudTable from "../common/CrudTable";
 import ActionButton from "../common/ActionButton";
 import { Categoria } from "../services/categoriasService";
+import { getCategoriaById } from "../services/categoriasService";
+import { getCategoriaPrincipalById } from "../services/categoriasPrincipalesService";
 interface Props {
   data: Categoria[];
   loading?: boolean;
@@ -12,19 +14,75 @@ interface Props {
 }
 
 export default function CategoriasTable({ data, loading, onEdit, onDelete }: Props) {
+  const [parentMap, setParentMap] = useState<Record<number, string>>({});
+
+  useEffect(() => {
+    // recopilar ids de padres que no están en el `data` y no en el cache
+    const missingIds = Array.from(
+      new Set(
+        data
+          .map((d) => d.categoriaPrincipalId)
+          .filter((id): id is number => typeof id === "number" && id > 0 && !(id in parentMap))
+      )
+    );
+
+    if (missingIds.length === 0) return;
+
+    let cancelled = false;
+
+    (async () => {
+      const results: Record<number, string> = {};
+      await Promise.all(
+        missingIds.map(async (id) => {
+          try {
+            // Intentar obtener primero como categoria (por compatibilidad),
+            // si no existe, pedir a categorias-principales
+            let name: string | undefined;
+            try {
+              const cat = await getCategoriaById(id);
+              name = cat?.nombre;
+            } catch {
+              // ignorar
+            }
+            if (!name) {
+              try {
+                const catP = await getCategoriaPrincipalById(id);
+                name = catP?.nombre;
+              } catch {
+                // ignorar
+              }
+            }
+            if (!cancelled) results[id] = name ?? "-";
+          } catch (err) {
+            if (!cancelled) results[id] = "-";
+          }
+        })
+      );
+      if (!cancelled) setParentMap((prev) => ({ ...prev, ...results }));
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [data, parentMap]);
+
   const columns = [
     //{ key: "id", label: "ID" },
     { key: "nombre", label: "Nombre" },
     //{ key: "descripcion", label: "Descripción" },
-    
-    { 
-      key: "estado", 
-      label: "Estado",
-      render: (row: Categoria) => (
-        <span className={row.estado.id === 1 ? "text-green-600 font-medium" : "text-red-600 font-medium"}>
-          {row.estado.nombre}
-        </span>
-      ),
+    {
+      key: "categoriaPrincipal",
+      label: "Categoría principal",
+      render: (row: Categoria) => {
+          const parentFromObj = (row as any).categoriaPrincipal?.nombre as string | undefined;
+          if (parentFromObj) return <span className="text-gray-700">{parentFromObj}</span>;
+
+          const parent = data.find((d) => d.id === row.categoriaPrincipalId);
+          if (parent) return <span className="text-gray-700">{parent.nombre}</span>;
+
+          const cached = row.categoriaPrincipalId ? parentMap[row.categoriaPrincipalId] : undefined;
+          return <span className="text-gray-700">{cached ?? "-"}</span>;
+      },
     },
   ];
 
