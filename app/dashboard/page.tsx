@@ -2,9 +2,12 @@
 
 import AuthenticatedLayout from "../../components/layout/AuthenticatedLayout";
 import CardStat from "../../components/ui/CardStat";
-import RecentSales from "../../components/layout/RecentSales";
+// Importamos solo el componente clave para el dueño
+import FinancialSummary from "../../components/layout/FinancialSummary"; 
 import { useAuth } from "../../contexts/AuthContext";
 import { SVGProps } from "react";
+
+// --- Definición de Iconos (Necesarios para CardStat) ---
 
 const IconShoppingBag = (props: SVGProps<SVGSVGElement>) => (
   <svg {...props} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -52,27 +55,21 @@ const IconAlert = (props: SVGProps<SVGSVGElement>) => (
 
 export default function Dashboard() {
   const { user } = useAuth();
-
-  const sales = [
-    { id: 1, cliente: "Carlos", producto: "Panel Solar", fecha: "2025-10-02", total: 1200 },
-    { id: 2, cliente: "María", producto: "Inversor", fecha: "2025-10-03", total: 800 },
-    { id: 3, cliente: "Pedro", producto: "Controlador", fecha: "2025-10-03", total: 350 },
-  ];
+  // Eliminamos la variable 'sales' y el componente 'RecentSales' ya que no son la prioridad.
 
   return (
     <AuthenticatedLayout>
       
+      {/* --- 1. SECCIÓN DE BIENVENIDA Y NOTIFICACIÓN --- */}
       <div className="bg-white overflow-hidden shadow-sm rounded-2xl border border-gray-300 mb-6">
-        
         <div className="px-4 pt-5 sm:px-6 sm:pt-6 pb-0">
           <h2 className="text-2xl font-bold text-gray-900 mb-4">
-            ¡Bienvenido {user?.nombre || ""}!
+            ¡Bienvenido {user?.nombre || "Usuario"}!
           </h2>
           <p className="text-gray-600 mb-4">
             Resumen general de tu sistema de ventas
           </p>
         </div>
-        
         <div className="px-4 pb-5 sm:px-6 sm:pb-6">
           <div className="bg-green-50 border border-green-200 rounded-lg p-4 flex">
             <svg
@@ -93,6 +90,7 @@ export default function Dashboard() {
         </div>
       </div>
 
+      {/* --- 2. TARJETAS DE ESTADÍSTICAS RÁPIDAS (KPIs) --- */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <CardStat title="Ventas del día" value="$0.00" color="text-blue-600" icon={<IconShoppingBag className="h-4 w-4" />} />
         <CardStat title="Stock Bajo" value="0" color="text-red-600" icon={<IconAlert className="h-4 w-4" />} />
@@ -100,30 +98,12 @@ export default function Dashboard() {
         <CardStat title="Clientes Registrados" value="0" color="text-indigo-600" icon={<IconUsers className="h-4 w-4" />} />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
-        <div className="lg:col-span-2 bg-white shadow-sm rounded-2xl border border-gray-300">
-          <div className="px-4 py-5 sm:p-6">
-            <h3 className="text-xl font-semibold text-gray-900 mb-4">Ventas por Categoría</h3>
-            <div className="h-80 bg-gray-50 flex items-center justify-center text-gray-500 border border-dashed rounded-md">
-              [Espacio para Gráfico de Ventas por Categoría]
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white shadow-sm rounded-2xl border border-gray-300">
-          <div className="px-4 py-5 sm:p-6">
-            <h3 className="text-xl font-semibold text-gray-900 mb-4">Productos Más Vendidos</h3>
-            <div className="h-80 bg-gray-50 flex items-center justify-center text-gray-500 border border-dashed rounded-md">
-              [Espacio para Lista o Tabla de Productos]
-            </div>
-          </div>
-        </div>
+      {/* --- 3. SECCIÓN PRINCIPAL: RESUMEN FINANCIERO --- */}
+      {/* Ocupamos todo el ancho disponible (lg:col-span-full) para darle máxima prioridad al reporte Excel */}
+      <div className="grid grid-cols-1 gap-6">
+        <FinancialSummary />
       </div>
-
-      <div className="mt-6">
-        <RecentSales sales={sales} />
-      </div>
+      
     </AuthenticatedLayout>
   );
 }

@@ -20,7 +20,7 @@ const navigation = [
   {
     title: "INICIO",
     items: [
-      { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+      { name: "RESUMEN", href: "/dashboard", icon: LayoutDashboard },
     ],
   },
   {
