@@ -226,7 +226,7 @@ export default function ListaProductosPage() {
             <div>
               <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
                 <Package className="w-6 h-6 text-green-600" />
-                Lista de Productos
+                Lista de Inventario
               </h1>
               <p className="text-gray-600 mt-2">
                 Gestiona tu catálogo de productos

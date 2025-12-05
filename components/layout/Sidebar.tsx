@@ -36,7 +36,7 @@ const navigation = [
     title: "INVENTARIO Y PRODUCTOS",
     items: [
       { name: "INVENTARIO", href: "/admin/lista-productos", icon: Box },
-      { name: "BD LISTA PRODUCTOS", href: "/admin/bd-lista", icon: DollarSign },
+      { name: "LISTA PRODUCTOS", href: "/admin/bd-lista", icon: DollarSign },
       //{ name: "l", href: "/admin/precios", icon: DollarSign },
     ],
   },
