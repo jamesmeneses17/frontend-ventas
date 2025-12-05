@@ -186,7 +186,7 @@ export const useCrudCatalog = <T extends CrudItem, C extends ItemForm, U extends
       fetchInProgressRef.current = false;
       setLoading(false);
     }
-  }, [currentPage, pageSize, searchTerm, itemKey, customDepsKey, customDependencies]);
+  }, [currentPage, pageSize, searchTerm, itemKey, customDependencies]);
 
 
   useEffect(() => {

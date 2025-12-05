@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import Image from 'next/image';
 import { useForm, SubmitHandler } from "react-hook-form";
 import FormInput from "../common/form/FormInput";
 import FormSelect from "../common/form/FormSelect";
@@ -317,10 +318,21 @@ export default function ListaForm({ initialData, onSubmit, onCancel, formError }
 
           <div className="mt-3 flex items-center gap-4">
             {imagePreview && (
-              <img
-                src={imagePreview}
-                className="h-20 w-20 object-cover rounded-md border"
-              />
+              (imagePreview.startsWith?.('blob:') || imagePreview.startsWith?.('data:')) ? (
+                <img
+                  src={imagePreview}
+                  className="h-20 w-20 object-cover rounded-md border"
+                  alt={selectedImageName ? `Vista previa: ${selectedImageName}` : 'Vista previa del producto'}
+                />
+              ) : (
+                <Image
+                  src={imagePreview}
+                  alt={selectedImageName ? `Vista previa: ${selectedImageName}` : 'Vista previa del producto'}
+                  width={80}
+                  height={80}
+                  className="h-20 w-20 object-cover rounded-md border"
+                />
+              )
             )}
             {selectedImageName && (
               <span className="text-sm">{selectedImageName}</span>

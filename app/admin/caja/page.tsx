@@ -186,7 +186,7 @@ export default function CajaPage() {
                 Registro de Caja y Movimientos
               </h1>
               <p className="text-gray-600 mt-2">
-                Ingreso de Ingresos, Egresos y Gastos diarios (Según Excel: "INGRESOS Y EGRESOS")
+                Ingreso de Ingresos, Egresos y Gastos diarios (Según Excel: &quot;INGRESOS Y EGRESOS&quot;)
               </p>
             </div>
             

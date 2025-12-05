@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import Image from 'next/image';
 import CrudTable from "../common/CrudTable";
 import ActionButton from "../common/ActionButton";
 import { Producto, Categoria, Estado } from "../services/productosService";
@@ -103,9 +104,9 @@ function RowFiles({ producto, uploadAsFicha }: { producto: Producto; uploadAsFic
     <div className="flex items-center gap-2">
       {!uploadAsFicha ? (
         preview ? (
-          isImageUrl(preview) ? (
+            isImageUrl(preview) ? (
             <a href={preview} target="_blank" rel="noreferrer">
-              <img src={preview} alt="preview" className="w-12 h-12 object-cover rounded border cursor-pointer" />
+              <Image src={preview} alt={`Imagen producto ${producto.nombre || producto.id}`} width={48} height={48} className="w-12 h-12 object-cover rounded border cursor-pointer" />
             </a>
           ) : (
             <a href={preview} target="_blank" rel="noreferrer" className="text-sm text-gray-700">Ver archivo</a>

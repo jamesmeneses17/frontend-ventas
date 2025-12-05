@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import Image from 'next/image';
 import { useForm, SubmitHandler } from "react-hook-form";
 import FormInput from "../common/form/FormInput";
 import FormSelect from "../common/form/FormSelect";
@@ -276,7 +277,11 @@ useEffect(() => {
           {preview && (
             <div className="pt-2">
               {isImageUrl(preview) ? (
-                <img src={preview} alt="Preview" className="w-32 h-32 object-cover rounded border" />
+                (preview.startsWith?.('blob:') || preview.startsWith?.('data:')) ? (
+                  <img src={preview} alt={`Imagen producto ${initialData?.nombre || initialData?.id}`} className="w-32 h-32 object-cover rounded border" />
+                ) : (
+                  <Image src={preview} alt={`Imagen producto ${initialData?.nombre || initialData?.id}`} width={128} height={128} className="w-32 h-32 object-cover rounded border" />
+                )
               ) : (
                 <a href={preview} target="_blank" rel="noreferrer" className="text-sm text-gray-700">Archivo adjunto (no es imagen) — Ver</a>
               )}

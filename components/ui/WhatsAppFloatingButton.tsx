@@ -2,6 +2,7 @@
 
 import React from "react";
 import { usePathname } from "next/navigation";
+import Image from 'next/image';
 
 const BUSINESS_PHONE = "573206197545";
 // Mensaje predefinido enfocado en la necesidad de información en un e-commerce
@@ -34,14 +35,7 @@ const WhatsAppFloatingButton: React.FC = () => {
         para que la imagen se muestre tal cual.
       */}
       <div className="w-12 h-12 md:w-16 md:h-16 flex items-center justify-center transition-transform transform hover:scale-105 p-0">
-        <img
-          src="/images/logo-wasap.png"
-          alt="WhatsApp"
-          // Mantenemos w-full h-full para que la imagen ocupe todo el espacio del div
-          className="w-full h-full object-cover"
-          width={64}
-          height={64}
-        />
+        <Image src="/images/logo-wasap.png" alt="WhatsApp" width={64} height={64} className="w-full h-full object-cover" />
       </div>
     </a>
   );
