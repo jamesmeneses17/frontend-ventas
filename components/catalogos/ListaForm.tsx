@@ -5,7 +5,7 @@ import { useForm, SubmitHandler } from "react-hook-form";
 import FormInput from "../common/form/FormInput";
 import FormSelect from "../common/form/FormSelect";
 import Button from "../ui/button"; 
-import { Producto, CreateProductoData } from "../services/productosService";
+import { Producto, CreateProductoData, uploadImagen } from "../services/productosService";
 import { getCategorias, Categoria } from "../services/categoriasService";
 import { getEstados, Estado } from "../services/estadosService";
 import { formatCurrency } from "../../utils/formatters"; 
@@ -106,7 +106,49 @@ export default function ListaForm({ initialData, onSubmit, onCancel, formError }
 
   const submitForm: SubmitHandler<FormData> = (data) => {
     data.precio = Number(String(data.precio).replace(/[^\d]/g, ""));
-    onSubmit(data);
+
+    const isEditing = Boolean(initialData?.id);
+
+    const run = async () => {
+      const payload: any = { ...data };
+
+      try {
+        if (isEditing) {
+          const id = Number(initialData!.id);
+
+          // Subir imagen si existe
+          const imagenFile = (data as any).imagenProducto as File | undefined;
+          if (imagenFile instanceof File) {
+            const res = await uploadImagen(id, imagenFile);
+            const url = res?.url || res?.producto?.imagen_url;
+            if (url) payload.imagen_url = url;
+          }
+
+          // Subir PDF si existe
+          const pdfFile = (data as any).pdfFichaTecnica as File | undefined;
+          if (pdfFile instanceof File) {
+            const res = await uploadImagen(id, pdfFile);
+            const url = res?.url || res?.producto?.ficha_tecnica_url;
+            if (url) payload.ficha_tecnica_url = url;
+          }
+
+          delete payload.imagenProducto;
+          delete payload.pdfFichaTecnica;
+
+          await onSubmit(payload as FormData);
+        } else {
+          // En creación no subimos archivos aquí: se debe crear primero y luego subir desde edición
+          delete (payload as any).imagenProducto;
+          delete (payload as any).pdfFichaTecnica;
+          await onSubmit(payload as FormData);
+        }
+      } catch (err) {
+        console.error('[ListaForm] Error en submit:', err);
+        throw err;
+      }
+    };
+
+    void run();
   };
 
   const handleChange = (
@@ -137,10 +179,22 @@ export default function ListaForm({ initialData, onSubmit, onCancel, formError }
   }));
 
   return (
-    <form onSubmit={handleSubmit(submitForm)} className="space-y-4">
-    
-      {/* Nombre y Código */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <form 
+      onSubmit={handleSubmit(submitForm)}
+      className="
+        space-y-6 
+        max-w-3xl 
+        mx-auto 
+        px-4 
+        bg-white 
+        rounded-xl 
+        max-h-[80vh] 
+        overflow-y-auto
+      "
+    >
+
+      {/* Sección: Nombre y Código */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <FormInput
           label="Nombre del Producto"
           name="nombre"
@@ -148,6 +202,7 @@ export default function ListaForm({ initialData, onSubmit, onCancel, formError }
           onChange={handleChange}
           required
         />
+
         <FormInput
           label="Código"
           name="codigo"
@@ -157,19 +212,29 @@ export default function ListaForm({ initialData, onSubmit, onCancel, formError }
         />
       </div>
 
-      {/* Categoría */}
-      <FormSelect
-        label="Categoría"
-        name="categoriaId"
-        value={String(formValues.categoriaId)}
-        onChange={handleChange}
-        options={categoriaOptions}
-        disabled={loadingLookups}
-        required
-      />
+      {/* Sección: Categoría */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <FormSelect
+          label="Categoría"
+          name="categoriaId"
+          value={String(formValues.categoriaId)}
+          onChange={handleChange}
+          options={categoriaOptions}
+          disabled={loadingLookups}
+          required
+        />
 
-      {/* Precio y Stock */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <FormInput
+          label="Descripción"
+          name="descripcion"
+          value={formValues.descripcion}
+          onChange={handleChange}
+          placeholder="Descripción del producto"
+        />
+      </div>
+
+      {/* Sección: Precio y Stock */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <FormInput
           label="Precio"
           name="precio"
@@ -178,6 +243,7 @@ export default function ListaForm({ initialData, onSubmit, onCancel, formError }
           onChange={handleChange}
           required
         />
+
         <FormInput
           label="Stock"
           name="stock"
@@ -188,80 +254,78 @@ export default function ListaForm({ initialData, onSubmit, onCancel, formError }
         />
       </div>
 
-      {/* Descripción */}
-      <FormInput
-        label="Descripción"
-        name="descripcion"
-        value={formValues.descripcion}
-        onChange={handleChange}
-      />
-
-      {/* ARCHIVO PDF */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
+      {/* Sección: PDF */}
+      <div className="grid grid-cols-1 gap-4">
+        <label className="block text-sm font-medium text-gray-700">
           PDF Ficha Técnica (Opcional)
         </label>
 
-        <input
-          type="file"
-          id="pdfFichaTecnica"
-          accept=".pdf"
-          className="hidden"
-          onChange={(e) => {
-            const file = e.target.files?.[0];
-            setSelectedPdfName(file ? file.name : null);
-            setValue("pdfFichaTecnica", file as any);
-          }}
-        />
+        <div className="flex flex-col">
+          <input
+            type="file"
+            id="pdfFichaTecnica"
+            accept=".pdf"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              setSelectedPdfName(file ? file.name : null);
+              setValue("pdfFichaTecnica", file as any);
+            }}
+          />
 
-        <label
-          htmlFor="pdfFichaTecnica"
-          className="inline-flex items-center px-4 py-2 border rounded-md bg-white cursor-pointer"
-        >
-          Seleccionar PDF
-        </label>
+          <label
+            htmlFor="pdfFichaTecnica"
+            className="px-4 py-2 border rounded-md bg-white cursor-pointer w-fit"
+          >
+            Seleccionar PDF
+          </label>
 
-        <div className="mt-2 text-sm text-gray-600">
-          {selectedPdfName ? `Archivo: ${selectedPdfName}` : "Ningún archivo seleccionado"}
+          <span className="mt-2 text-sm text-gray-600">
+            {selectedPdfName || "Ningún archivo seleccionado"}
+          </span>
         </div>
       </div>
 
-      {/* Imagen */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
+      {/* Sección: Imagen */}
+      <div className="grid grid-cols-1 gap-4">
+        <label className="block text-sm font-medium text-gray-700">
           Imagen del producto (Opcional)
         </label>
 
-        <input
-          type="file"
-          id="imagenProducto"
-          accept="image/*"
-          className="hidden"
-          onChange={(e) => {
-            const f = e.target.files?.[0];
-            if (f) {
-              setSelectedImageName(f.name);
-              setImagePreview(URL.createObjectURL(f));
-              setValue("imagenProducto", f as any);
-            }
-          }}
-        />
+        <div className="flex flex-col">
+          <input
+            type="file"
+            id="imagenProducto"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) {
+                setSelectedImageName(f.name);
+                setImagePreview(URL.createObjectURL(f));
+                setValue("imagenProducto", f as any);
+              }
+            }}
+          />
 
-        <label
-          htmlFor="imagenProducto"
-          className="inline-flex items-center px-4 py-2 border rounded-md bg-white cursor-pointer"
-        >
-          Seleccionar Imagen
-        </label>
+          <label
+            htmlFor="imagenProducto"
+            className="px-4 py-2 border rounded-md bg-white cursor-pointer w-fit"
+          >
+            Seleccionar Imagen
+          </label>
 
-        <div className="mt-2 flex items-center gap-3">
-          {imagePreview && (
-            <img
-              src={imagePreview}
-              className="h-16 w-16 object-cover rounded-md border"
-            />
-          )}
-          {selectedImageName && <span className="text-sm">{selectedImageName}</span>}
+          <div className="mt-3 flex items-center gap-4">
+            {imagePreview && (
+              <img
+                src={imagePreview}
+                className="h-20 w-20 object-cover rounded-md border"
+              />
+            )}
+            {selectedImageName && (
+              <span className="text-sm">{selectedImageName}</span>
+            )}
+          </div>
         </div>
       </div>
 
@@ -276,7 +340,7 @@ export default function ListaForm({ initialData, onSubmit, onCancel, formError }
       </div>
 
       {formError && (
-        <div className="text-red-600 text-sm mt-2 text-center">{formError}</div>
+        <p className="text-red-600 text-center text-sm">{formError}</p>
       )}
     </form>
   );
