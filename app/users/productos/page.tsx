@@ -13,6 +13,7 @@ import {
 import { ProductCardData } from "@/utils/ProductUtils";
 
 // ----------------------------------------------------------------------
+import { isImageUrl } from "@/utils/ProductUtils";
 // 1. Imágenes aleatorias de respaldo
 // ----------------------------------------------------------------------
 
@@ -119,7 +120,7 @@ function ProductosClientePageContent() {
     () =>
       displayedProducts.map((product: ProductCardData) => ({
         ...product,
-        imageSrc: product.imageSrc || mapProductToImage(product.id),
+        imageSrc: product.imageSrc || ((product as any).imagen_url && isImageUrl((product as any).imagen_url) ? (product as any).imagen_url : mapProductToImage(product.id)),
       })),
     [displayedProducts]
   );

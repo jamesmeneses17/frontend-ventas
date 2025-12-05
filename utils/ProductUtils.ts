@@ -67,6 +67,20 @@ export const mapProductToImage = (nombre: string, id?: number): string => {
 	return "/images/imagen.webp";
 };
 
+/**
+ * Simple helper para detectar si una URL apunta a una imagen por su extensión.
+ * No es 100% fiable (no consulta el Content-Type), pero evita pasar PDFs a next/image.
+ */
+export const isImageUrl = (url?: string | null): boolean => {
+	if (!url || typeof url !== 'string') return false;
+	try {
+		const lower = url.split('?')[0].toLowerCase();
+		return /\.(png|jpe?g|webp|gif|svg|avif|bmp)(#.*)?$/.test(lower);
+	} catch (e) {
+		return false;
+	}
+};
+
 
 import { formatCurrency } from './formatters';
 

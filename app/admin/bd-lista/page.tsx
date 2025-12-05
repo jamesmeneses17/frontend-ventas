@@ -38,6 +38,7 @@ import { Package, AlertTriangle, Box, Upload } from "lucide-react";
 import ActionButton from "../../../components/common/ActionButton";
 import FilterBar from "../../../components/common/FilterBar";
 import ListaTable from "../../../components/catalogos/ListaTable";
+import ListaForm from "../../../components/catalogos/ListaForm";
 
 // Tipos para el resumen de widgets
 interface ProductSummary {
@@ -88,7 +89,21 @@ export default function ListaProductosPage() {
       loadItems: async (all, page, size, searchTerm, stockFiltro) => {
         // El useCrudCatalog pasa (all: boolean, page: number, size: number, searchTerm, ...customDependencies)
         // Ahora el filtro de estado se pasa correctamente
-        return await getProductos(page, size, stockFiltro, searchTerm);
+      try {
+        return await getProductos(page, size, stockFiltro, searchTerm);
+      } catch (err: any) {
+        console.error('[ListaProductos.loadItems] Error cargando productos:', err);
+        if (err?.response) {
+          console.error('[ListaProductos.loadItems] response.data:', err.response.data);
+        }
+        // Mostrar notificación en UI si el hook expone setNotification
+        try { 
+          // import dinámico para evitar ciclos
+          const mod = await import('../../../components/services/productosService');
+        } catch(e){}
+        // Devolver lista vacía para no romper la UI
+        return { data: [], total: 0 };
+      }
       },
       createItem: createProducto,
       updateItem: updateProducto,
@@ -279,7 +294,7 @@ export default function ListaProductosPage() {
     onClose={handleCloseModal}
     title={editingProducto ? "Editar Producto" : "Nuevo Producto"}
   >
-    <ProductosForm
+    <ListaForm
       initialData={editingProducto}
       onSubmit={handleFormSubmitWithStats}
       onCancel={handleCloseModal}

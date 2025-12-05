@@ -8,7 +8,7 @@ import {
   Producto as ProductoType,
 } from "@/components/services/productosService";
 import { createSlug } from "@/utils/slug"; // Importamos la utilidad
-import { mapProductToImage } from '@/utils/ProductUtils';
+import { mapProductToImage, isImageUrl } from '@/utils/ProductUtils';
 import { formatPrice } from '@/utils/ProductUtils';
 import ImageLinkCard from "./ImageLinkCard";
 import ProductCard from "./ProductCard";
@@ -65,7 +65,7 @@ const FeaturedProductsSection: React.FC = () => {
 
     return {
       ...p,
-      imageSrc: mapProductToImage(p.nombre, p.id),
+      imageSrc: ((p as any).imagen_url && isImageUrl((p as any).imagen_url)) ? (p as any).imagen_url : mapProductToImage(p.nombre, p.id),
       // 🛑 La URL de producto es por ID, no requiere slugging del nombre
       href: `/producto/${p.id}`,
       displayPrice: displayPrice,

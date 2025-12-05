@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import { getProductoById, Producto } from "@/components/services/productosService";
 import Image from 'next/image';
-import { mapProductToImage } from "@/utils/ProductUtils";
+import { mapProductToImage, isImageUrl } from "@/utils/ProductUtils";
 import { formatCurrency } from '@/utils/formatters';
 import { useCart } from "../../../../components/hooks/CartContext";
 
@@ -167,7 +167,7 @@ function ProductDetailPageContent({ productId }: { productId: string }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [quantity, setQuantity] = useState(1);
-    const [imgSrc, setImgSrc] = useState<string>("/images/placeholder.webp");
+    const [imgSrc, setImgSrc] = useState<string>("/images/imagen.webp");
   const id = parseInt(productId, 10);
 
 
@@ -199,12 +199,8 @@ function ProductDetailPageContent({ productId }: { productId: string }) {
 
   useEffect(() => {
     if (!product) return;
-    const initialImage =
-      (product as any).image ||
-      (product as any).imagen ||
-      (product as any).imagenes?.[0]?.url ||
-      mapProductToImage(product.nombre, product.id) ||
-      "/images/placeholder.webp";
+    const candidate = (product as any).imagen_url || (product as any).image || (product as any).imagen || (product as any).imagenes?.[0]?.url;
+    const initialImage = isImageUrl(candidate) ? candidate : mapProductToImage(product.nombre, product.id) || "/images/imagen.webp";
     setImgSrc(initialImage);
   }, [product]);
 
@@ -430,7 +426,7 @@ function ProductDetailPageContent({ productId }: { productId: string }) {
                       alt={nombre}
                       fill
                       className="object-contain"
-                      onError={() => setImgSrc('/images/placeholder.webp')}
+                      onError={() => setImgSrc('/images/imagen.webp')}
                     />
                   </div>
                 </div>

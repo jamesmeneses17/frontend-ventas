@@ -91,6 +91,7 @@ export interface Producto {
     codigo: string;
     descripcion?: string; 
     ficha_tecnica_url?: string;
+    imagen_url?: string;
     
     // ✅ Campos aplanados/calculados que vienen del backend
     stock: number;             // DEBE SER OBLIGATORIO si siempre viene del backend
@@ -125,6 +126,7 @@ export type CreateProductoData = {
     codigo: string;
     descripcion: string;
     ficha_tecnica_url?: string;
+    imagen_url?: string;
     
     // Se espera que el DTO reciba estos datos
     stock: number;
@@ -152,26 +154,21 @@ export const getProductos = async (
     subcategoriaId?: number,
     categoriaId?: number
 ): Promise<PaginacionResponse<Producto>> => {
-    const params = new URLSearchParams();
-    params.append("page", page.toString());
-    params.append("limit", size.toString());
-    if (stockFiltro) params.append("estado_stock", stockFiltro);
-    if (searchTerm) params.append("search", searchTerm);
-    if (typeof subcategoriaId !== 'undefined') params.append('subcategoriaId', String(subcategoriaId));
-    if (typeof categoriaId !== 'undefined') params.append('categoriaId', String(categoriaId));
-
-    const endpoint = `${ENDPOINT_BASE}?${params.toString()}`;
-    // Log para depuración del filtro de estado
-    console.log('[getProductos] Endpoint:', endpoint);
-    console.log('[getProductos] Parámetros:', {
+    const params = {
         page,
-        size,
-        estado_stock: stockFiltro,
-        search: searchTerm
-    });
+        limit: size,
+        ...(stockFiltro ? { estado_stock: stockFiltro } : {}),
+        ...(searchTerm ? { search: searchTerm } : {}),
+        ...(typeof subcategoriaId !== 'undefined' ? { subcategoriaId } : {}),
+        ...(typeof categoriaId !== 'undefined' ? { categoriaId } : {}),
+    } as any;
+
+    // Log para depuración del filtro de estado
+    console.log('[getProductos] Endpoint:', ENDPOINT_BASE);
+    console.log('[getProductos] Params:', params);
 
     try {
-        const res = await axios.get(endpoint);
+        const res = await axios.get(ENDPOINT_BASE, { params });
         // Si el servidor responde con un código HTTP de error, registrar y devolver vacío
         if (res.status >= 400) {
             console.error('[getProductos] HTTP error', res.status, res.data);
@@ -218,9 +215,10 @@ export const getProductos = async (
                 ...it,
                 // 🛑 CAMBIO CRÍTICO: la columna 'precio' que muestra la tabla
                 // debe tomar el valor de 'precio_costo' proporcionado por el backend.
-                precio: finalPrice,
-                stock: finalStock,
-                stockMinimo: finalStockMinimo,
+                    precio: finalPrice,
+                    stock: finalStock,
+                    stockMinimo: finalStockMinimo,
+                    imagen_url: it.imagen_url ?? it.image_url ?? it.url ?? null,
             };
         });
 
@@ -228,7 +226,11 @@ export const getProductos = async (
     } catch (err: any) {
         // Mostrar detalles del error para el desarrollador y relanzarlo para que
         // el hook useCrudCatalog pueda mostrar la notificación en la UI.
-        console.error("Error al obtener productos:", err?.message ?? err, err?.response?.data ?? err);
+        console.error("Error al obtener productos:", err?.message ?? err);
+        if (err?.response) {
+            console.error('[getProductos] response status:', err.response.status);
+            console.error('[getProductos] response data:', err.response.data);
+        }
         // Lanzamos el error para que la capa superior (useCrudCatalog) lo capture y muestre notificación
         throw err;
     }
@@ -251,6 +253,7 @@ export const getProductoById = async (id: number): Promise<Producto> => {
     data.precio = precioVentaNum > 0 ? precioVentaNum : (precioCostoNum > 0 ? precioCostoNum : precioNum);
         data.stock = Number(data.stock) || 0;
         data.stockMinimo = Number(data.stockMinimo) || 5;
+        data.imagen_url = data.imagen_url ?? data.image_url ?? data.url ?? null;
         return data as Producto;
     } catch (err: any) {
         lastError = err;
@@ -264,6 +267,7 @@ export const getProductoById = async (id: number): Promise<Producto> => {
             data.precio = precioVentaNum > 0 ? precioVentaNum : (precioCostoNum > 0 ? precioCostoNum : precioNum);
             data.stock = Number(data.stock) || 0;
             data.stockMinimo = Number(data.stockMinimo) || 5;
+            data.imagen_url = data.imagen_url ?? data.image_url ?? data.url ?? null;
             return data as Producto;
         } catch (err2: any) {
             console.error(`[getProductoById] Falló obtener producto id=${id} en ambos endpoints:`, lastError?.message ?? lastError, err2?.message ?? err2);
@@ -271,6 +275,21 @@ export const getProductoById = async (id: number): Promise<Producto> => {
             throw lastError || err2;
         }
     }
+};
+
+/**
+ * Subir una imagen para un producto (usa el endpoint POST /productos/:id/upload-imagen)
+ * Retorna el body tal como lo entrega el backend (por ejemplo { url, producto })
+ */
+export const uploadImagen = async (id: number, file: File | Blob) => {
+    const endpoint = `${ENDPOINT_BASE}/${id}/upload-imagen`;
+    const form = new FormData();
+    // En el backend el FileInterceptor usa el campo 'file'
+    form.append('file', file as any, (file as any).name || 'upload');
+
+    // NO forzar Content-Type: el navegador/axios establecerá el boundary correctamente
+    const res = await axios.post(endpoint, form);
+    return res.data;
 };
 
 // --------------------------------------------------

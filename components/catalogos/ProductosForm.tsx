@@ -6,7 +6,8 @@ import FormInput from "../common/form/FormInput";
 import FormSelect from "../common/form/FormSelect";
 import Button from "../ui/button";
 
-import { Producto, CreateProductoData } from "../services/productosService";
+import { Producto, CreateProductoData, uploadImagen } from "../services/productosService";
+import { isImageUrl } from "../../utils/ProductUtils";
 import { getCategorias, Categoria } from "../services/categoriasService";
 import { getEstados, Estado } from "../services/estadosService";
 import { formatCurrency } from "../../utils/formatters"; // ✅ IMPORTAMOS EL FORMATEADOR
@@ -46,6 +47,11 @@ export default function ProductosForm({ initialData, onSubmit, onCancel, formErr
   const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [estados, setEstados] = useState<Estado[]>([]);
   const [loadingLookups, setLoadingLookups] = useState(false);
+  const [file, setFile] = useState<File | null>(null);
+  const [preview, setPreview] = useState<string | null>(
+    (initialData as any)?.imagen_url || null
+  );
+  const [uploading, setUploading] = useState(false);
 useEffect(() => {
   const loadLookups = async () => {
     setLoadingLookups(true);
@@ -110,6 +116,45 @@ useEffect(() => {
     // ✅ Aseguramos que el precio se envíe como número limpio (sin comas ni $)
     data.precio = Number(String(data.precio).replace(/[^\d]/g, ""));
     onSubmit(data);
+  };
+
+  // Manejo del input file y preview
+  useEffect(() => {
+    setPreview((initialData as any)?.imagen_url || null);
+  }, [initialData]);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files && e.target.files[0];
+    if (f) {
+      setFile(f);
+      setPreview(URL.createObjectURL(f));
+    }
+  };
+
+  const handleUploadImage = async () => {
+    if (!file) return alert("Selecciona un archivo antes de subir.");
+    if (!initialData?.id) return alert("Guarda el producto primero antes de subir la imagen.");
+    try {
+      setUploading(true);
+      const res = await uploadImagen(Number(initialData.id), file);
+      // el backend retorna { url, producto }
+      const url = res?.url || res?.producto?.imagen_url;
+      if (url) {
+        setPreview(url);
+        // Emitir evento global para que listas se refresquen (ya lo escucha la página)
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(new CustomEvent('producto:updated', { detail: { id: initialData.id, url } }));
+        }
+        alert("Imagen subida correctamente.");
+      } else {
+        alert("Imagen subida pero no se obtuvo URL de respuesta.");
+      }
+    } catch (err: any) {
+      console.error('Error subiendo imagen:', err);
+      alert(err?.response?.data?.message || err?.message || 'Error subiendo la imagen.');
+    } finally {
+      setUploading(false);
+    }
   };
 
   const handleChange = (
@@ -217,6 +262,28 @@ useEffect(() => {
         onChange={handleChange}
         placeholder="https://ejemplo.com/ficha.pdf"
       />
+
+      {/* Subir imagen (solo en edición) */}
+      {initialData?.id && (
+        <div className="space-y-2">
+          <label className="block text-sm font-medium text-gray-700">Imagen del producto (Opcional)</label>
+          <div className="flex items-center gap-3">
+            <input type="file" accept="image/*" onChange={handleFileChange} />
+            <Button type="button" onClick={handleUploadImage} disabled={uploading || !file}>
+              {uploading ? 'Subiendo...' : 'Subir Imagen'}
+            </Button>
+          </div>
+          {preview && (
+            <div className="pt-2">
+              {isImageUrl(preview) ? (
+                <img src={preview} alt="Preview" className="w-32 h-32 object-cover rounded border" />
+              ) : (
+                <a href={preview} target="_blank" rel="noreferrer" className="text-sm text-gray-700">Archivo adjunto (no es imagen) — Ver</a>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Botones */}
       <div className="flex justify-end gap-3 pt-4">

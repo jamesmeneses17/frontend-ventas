@@ -10,6 +10,7 @@ import {
     getNumericPrice,
     formatPrice,
     mapProductToImage,
+    isImageUrl,
 } from '@/utils/ProductUtils'; 
 
 // --- Tipos de Ordenamiento (Exportable) ---
@@ -125,7 +126,7 @@ export const useProductListLogic = (initialSort: SortOption = 'relevancia') => {
                 nombre: p.nombre,
                 displayPrice: formatPrice(priceValue), // Desde utils
                 numericPrice: getNumericPrice(priceValue), // Desde utils
-                imageSrc: mapProductToImage(p.nombre, p.id), // Desde utils (ahora variamos por id si hace falta)
+                imageSrc: ( (p as any).imagen_url && isImageUrl((p as any).imagen_url) ? (p as any).imagen_url : ((p as any).imageSrc || mapProductToImage(p.nombre, p.id)) ), // Preferir imagen del producto sólo si es imagen
                 // Navegar a la página de especificaciones en la app de usuarios
                 href: `/users/especificaciones/${p.id}`,
                 brand: "DISEM SAS", // Valor fijo (mockeado)

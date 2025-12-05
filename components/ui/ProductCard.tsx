@@ -1,6 +1,7 @@
 // /components/ProductCard.tsx
 import React from "react";
 import Image from 'next/image';
+import { isImageUrl } from '@/utils/ProductUtils';
 import Link from "next/link";
 
 interface ProductCardProps {
@@ -31,6 +32,10 @@ const ProductCard: React.FC<ProductCardProps> = ({
   viewMode = "grid",
   lowStockThreshold = 5,
 }) => {
+  const [src, setSrc] = React.useState<string>(isImageUrl(imageSrc) ? imageSrc : "/images/imagen.webp");
+  React.useEffect(() => {
+    setSrc(isImageUrl(imageSrc) ? imageSrc : "/images/imagen.webp");
+  }, [imageSrc]);
   // href objetivo: si se pasa 'href' usarlo, si no construir la ruta por id
   const targetHref = href ?? `/users/especificaciones/${id}`;
   // 🔹 Determina el estado del stock (solo bajo o agotado)
@@ -76,8 +81,8 @@ const ProductCard: React.FC<ProductCardProps> = ({
           <Link href={targetHref} className="block relative h-48 sm:h-56 overflow-hidden flex items-center justify-center bg-white p-4">
           <DiscountBadge />
           <StockBadge />
-          <div className="relative w-full h-full max-w-[260px] md:max-w-[320px]">
-            <Image src={imageSrc} alt={nombre} fill className="object-contain transition-transform duration-300 group-hover:scale-105 z-10" />
+            <div className="relative w-full h-full max-w-[260px] md:max-w-[320px]">
+            <Image src={src} alt={nombre} fill onError={() => setSrc('/images/imagen.webp')} className="object-contain transition-transform duration-300 group-hover:scale-105 z-10" />
           </div>
         </Link>
 
@@ -134,8 +139,8 @@ const ProductCard: React.FC<ProductCardProps> = ({
       >
         <DiscountBadge />
         <StockBadge />
-        <div className="relative w-full h-full max-w-[220px] md:max-w-[280px]">
-          <Image src={imageSrc} alt={nombre} fill className="object-contain transition-transform duration-300 hover:scale-105 z-10" />
+          <div className="relative w-full h-full max-w-[220px] md:max-w-[280px]">
+          <Image src={src} alt={nombre} fill onError={() => setSrc('/images/imagen.webp')} className="object-contain transition-transform duration-300 hover:scale-105 z-10" />
         </div>
       </Link>
 
