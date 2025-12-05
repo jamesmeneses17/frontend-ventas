@@ -10,3 +10,13 @@ export const formatCurrency = (value: number, currencyLabel = 'COP'): string => 
 
 export const formatNumber = (value: number): string =>
   new Intl.NumberFormat('en-US', { minimumFractionDigits: 0 }).format(value);
+
+export const formatDate = (value?: string | Date | null): string => {
+  if (!value) return "-";
+  try {
+    const d = typeof value === 'string' ? new Date(value) : value;
+    return d.toLocaleDateString('es-CO');
+  } catch (e) {
+    return String(value);
+  }
+};

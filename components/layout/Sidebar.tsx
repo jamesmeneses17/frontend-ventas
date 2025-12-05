@@ -1,3 +1,5 @@
+"use client";
+
 import {
   LayoutDashboard,
   Users,
@@ -7,20 +9,21 @@ import {
   Box,
   Package,
   ShoppingCart,
-  Wallet,
   Scale,
   FileText,
   User,
+  Wallet,
 } from "lucide-react";
+
 import Link from "next/link";
-// ***** CAMBIO CLAVE 1: IMPORTAR usePathname *****
-import { usePathname } from "next/navigation"; 
+import { usePathname } from "next/navigation";
 
 const navigation = [
   {
     title: "INICIO",
     items: [
-      { name: "RESUMEN", href: "/dashboard", icon: LayoutDashboard },
+      // RESUMEN DIARIO / ANUAL
+      { name: "RESUMEN ANUAL Y DIARIO", href: "/dashboard", icon: LayoutDashboard },
     ],
   },
   {
@@ -35,45 +38,28 @@ const navigation = [
   {
     title: "INVENTARIO Y PRODUCTOS",
     items: [
-      { name: "INVENTARIO", href: "/admin/lista-productos", icon: Box },
-      { name: "LISTA PRODUCTOS", href: "/admin/bd-lista", icon: DollarSign },
-      //{ name: "l", href: "/admin/precios", icon: DollarSign },
+      { name: "BD LISTA PRODUCTOS", href: "/admin/bd-lista", icon: Package },
+      { name: "Control de Inventario", href: "/admin/lista-productos", icon: Box },
     ],
   },
   {
     title: "OPERACIONES",
     items: [
-            { name: "Compras", href: "/admin/compras", icon: ShoppingCart },
-
+      { name: "Compras", href: "/admin/compras", icon: ShoppingCart },
       { name: "Ventas", href: "/admin/ventas", icon: ShoppingCart },
     ],
   },
   {
     title: "FINANZAS Y CAJA",
     items: [
-     // { name: "Ingresos y Egresos", href: "/admin/ingresos-egresos", icon: Wallet },
       { name: "Cuentas por Cobrar", href: "/admin/cuentas-cobrar", icon: Scale },
+      { name: "Ingresos y Egresos", href: "/admin/caja", icon: Wallet },
     ],
   },
-  /*{
-    //title: "REPORTES",
-    items: [
-     // { name: "Resumen Financiero", href: "/admin/resumen-financiero", icon: FileText },
-    ],
-  },*/
-  /*{
-    //title: "CONFIGURACIÓN",
-    items: [
-     // { name: "Usuarios Admin", href: "/admin/usuarios", icon: User },
-    ],
-  },*/
 ];
 
 export default function Sidebar() {
-  // ***** CAMBIO CLAVE 2: USAR EL HOOK *****
   const pathname = usePathname();
-  // Se elimina la simulación con 'window.location.pathname'
-  
   const activeColor = "#8BC34A";
 
   return (
@@ -81,22 +67,21 @@ export default function Sidebar() {
       <div className="p-3 text-lg font-bold border-b border-gray-700">
         Sistema Ventas
       </div>
+
       <nav className="flex-1 p-2 overflow-y-auto hide-scrollbar">
         {navigation.map((section) => (
           <div key={section.title} className="mb-4">
             <h3 className="text-xs font-semibold uppercase text-gray-400 mt-2 mb-1 px-2">
               {section.title}
             </h3>
-            
+
             {section.items.map((item) => {
-              
               let isActive = false;
-              if (item.href === '/dashboard') {
-                  // Coincidencia exacta solo para el dashboard
-                  isActive = pathname === item.href; 
+
+              if (item.href === "/dashboard") {
+                isActive = pathname === item.href;
               } else {
-                  // Coincidencia 'startsWith' para el resto de los módulos
-                  isActive = pathname.startsWith(item.href) && pathname !== '/dashboard';
+                isActive = pathname.startsWith(item.href) && pathname !== "/dashboard";
               }
 
               return (
@@ -104,10 +89,7 @@ export default function Sidebar() {
                   key={item.name}
                   href={item.href}
                   className={`flex items-center gap-2 p-2 rounded transition text-sm 
-                    ${isActive 
-                      ? 'text-gray-900 font-semibold'
-                      : 'text-white'
-                    }
+                    ${isActive ? "text-gray-900 font-semibold" : "text-white"}
                     hover:bg-[#8BC34A] hover:text-gray-900
                   `}
                   style={{
