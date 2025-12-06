@@ -42,10 +42,10 @@ const HeaderPublic: React.FC = () => {
     inline-flex items-center h-full px-1 border-b-2 transition duration-150 text-sm font-medium
     ${
       pathname.startsWith(href)
-        ? "border-amber-500 text-amber-700"
-        : "border-transparent text-gray-500"
+        ? "border-blue-500 text-blue-700"
+        : "border-transparent text-gray-600"
     } 
-    hover:border-amber-300 hover:text-amber-700
+    hover:border-blue-400 hover:text-blue-700
   `;
 
   return (

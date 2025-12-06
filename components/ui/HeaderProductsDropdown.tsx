@@ -211,10 +211,10 @@ const HeaderProductsDropdown: React.FC = () => {
         className={`inline-flex items-center h-full px-1 border-b-2 transition text-sm font-medium
         ${
           isProductsActive
-            ? "border-amber-500 text-amber-700"
-            : "border-transparent text-gray-500"
+            ? "border-blue-500 text-blue-700"
+            : "border-transparent text-gray-600"
         }
-        hover:border-amber-300 hover:text-amber-700`}
+        hover:border-blue-400 hover:text-blue-700`}
       >
         Productos
         <svg
@@ -254,7 +254,7 @@ const HeaderProductsDropdown: React.FC = () => {
                           className={`w-full text-left px-3 py-2 rounded-md text-sm font-semibold transition
                           ${
                             activeGroup === idx
-                              ? "bg-amber-50 text-amber-700 border-l-2 border-amber-600"
+                              ? "bg-blue-50 text-blue-700 border-l-2 border-blue-600"
                               : "text-gray-700 hover:bg-gray-50 border-l-2 border-transparent"
                           }`}
                         >
@@ -280,7 +280,7 @@ const HeaderProductsDropdown: React.FC = () => {
                         className={`w-full text-left px-3 py-2 rounded-md text-sm font-semibold transition
                         ${
                           activeGroup === grouped.length
-                            ? "bg-amber-50 text-amber-700 border-l-2 border-amber-600"
+                            ? "bg-blue-50 text-blue-700 border-l-2 border-blue-600"
                             : "text-gray-700 hover:bg-gray-50 border-l-2 border-transparent"
                         }`}
                       >
@@ -320,7 +320,7 @@ const HeaderProductsDropdown: React.FC = () => {
                             <Link
                               href={`/users/productos?categoriaId=${cat.id}`}
                               onClick={() => setIsMenuOpen(false)}
-                              className="block font-semibold text-gray-800 hover:text-amber-600 transition mb-1"
+                              className="block font-semibold text-gray-800 hover:text-blue-600 transition mb-1"
                             >
                               {cat.nombre}
                             </Link>
@@ -335,18 +335,14 @@ const HeaderProductsDropdown: React.FC = () => {
                                       <Link
                                         href={`/users/productos?subcategoriaId=${sub.id}&categoriaId=${cat.id}`}
                                         onClick={() => setIsMenuOpen(false)}
-                                        className="hover:text-amber-600 transition text-xs"
+                                        className="hover:text-blue-600 transition text-xs"
                                       >
                                         • {sub.nombre}
                                       </Link>
                                     </li>
                                   ))}
                                 </ul>
-                              ) : (
-                                <p className="text-xs text-gray-400 ml-2 italic">
-                                  Sin subcategorías
-                                </p>
-                              );
+                              ) : null;
                             })()}
                           </div>
                         ))}
