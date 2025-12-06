@@ -38,11 +38,11 @@ const navigation = [
     id: "configuracion-web",
     isCollapsible: true, 
     items: [
-      // RUTAS DE DESARROLLO
-      { name: "Información de Empresa", href: "/admin/configuracion-empresa", icon: FileText },
-      { name: "Banners y Carrusel", href: "/admin/banners", icon: Image },
-      { name: "Sedes y Direcciones", href: "/admin/sedes", icon: MapPin },
-      { name: "Secciones de Contenido", href: "/admin/secciones-contenido", icon: Type },
+      // Marcamos individualmente qué rutas están en desarrollo (dev: true)
+      { name: "Información de Empresa", href: "/admin/info_empresa", icon: FileText },
+      { name: "Banners y Carrusel", href: "/admin/banners", icon: Image, dev: true },
+      { name: "Sedes y Direcciones", href: "/admin/sedes", icon: MapPin, dev: true },
+      { name: "Secciones de Contenido", href: "/admin/secciones-contenido", icon: Type, dev: true },
     ],
   },
   {
@@ -133,7 +133,7 @@ export default function Sidebar() {
               {/* Contenido (Visible si isOpen es verdadero) */}
               {isOpen && (
                 <div className="pl-2 pt-1 pb-1">
-                  {section.items.map((item) => {
+                  {section.items.map((item: any) => {
                     let isLinkActive = false;
 
                     if (item.href === "/dashboard") {
@@ -142,13 +142,13 @@ export default function Sidebar() {
                       isLinkActive = pathname.startsWith(item.href) && pathname !== "/dashboard";
                     }
                     
-                    // Asignamos el manejador de click condicionalmente
-                    const clickHandler = isDevelopmentSection
+                    // Asignamos el manejador de click condicionalmente por item.dev
+                    const clickHandler = item.dev
                       ? (e: MouseEvent) => handleDevelopmentClick(e, item.name)
                       : undefined;
-                      
-                    // Agregamos una clase visual para las rutas en desarrollo
-                    const devClass = isDevelopmentSection ? 'opacity-75' : '';
+
+                    // Agregamos una clase visual para las rutas en desarrollo (por item.dev)
+                    const devClass = item.dev ? 'opacity-75' : '';
 
 
                     return (
