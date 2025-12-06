@@ -44,3 +44,29 @@ export interface CreateInformacionEmpresaData {
   urlLinkedIn?: string;
   urlFavicon?: string;
 }
+
+// Tipos para Banners (usados en formularios y servicios)
+export interface Banner {
+  id?: number;
+  titulo: string;
+  subtitulo?: string;
+  urlLink?: string;
+  textoBoton?: string;
+  urlImagen: string;
+  orden?: number;
+  activo?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface CreateBannerData {
+  titulo: string;
+  subtitulo?: string;
+  urlLink?: string;
+  textoBoton?: string;
+  urlImagen: string;
+  orden?: number;
+  activo?: boolean;
+}
+
+export type UpdateBannerData = Partial<CreateBannerData>;

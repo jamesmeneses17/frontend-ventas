@@ -70,16 +70,7 @@ export default function InformacionEmpresaPage() {
         <AuthenticatedLayout>
             <div className="space-y-6">
                 
-                {/* Stats (Opcional - Puedes usarlo para mostrar el estado del servidor si quieres) */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <CardStat 
-                        title="Estado de Configuración" 
-                        value={isNewRecord ? "PENDIENTE" : "CONFIGURADA"} 
-                        color={isNewRecord ? "text-red-600" : "text-green-600"} 
-                        icon={<Settings className="w-5 h-5"/>} 
-                    />
-                    {/* Puedes agregar otros CardStat aquí si son relevantes */}
-                </div>
+              
 
                 {/* Main container: Contiene el Formulario Único */}
                 <div className="bg-white shadow rounded-2xl p-6 border border-gray-300">

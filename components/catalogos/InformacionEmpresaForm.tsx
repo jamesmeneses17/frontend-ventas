@@ -99,10 +99,7 @@ export default function InformacionEmpresaForm({ initialData, isCreation, onSave
                     {...register('nombreEmpresa')}
                     required
                 />
-                <FormInput
-                    label="Razón Social"
-                    {...register('razonSocial')}
-                />
+                
                 <FormInput
                     label="NIT/RUC"
                     {...register('nit')}
