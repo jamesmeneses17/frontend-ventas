@@ -4,82 +4,187 @@ import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-// Servicios: categorías y categorías principales (grupos)
 import { getCategorias, Categoria } from "../services/categoriasService";
 import {
   getCategoriasPrincipales,
   CategoriaPrincipal,
 } from "../services/categoriasPrincipalesService";
+import { getSubcategorias, Subcategoria } from "../services/subcategoriasService";
 
-// --- INTERFACES para la estructura del filtro ---
-interface FilterCategory {
-  id: number;
-  nombre: string;
-}
+// Tipo extendido de categoría que puede incluir subcategorías
+type CategoriaConSubcategorias = Categoria & {
+  subcategorias?: any[];
+  sub?: any[];
+};
 
 const HeaderProductsDropdown: React.FC = () => {
-  const [categories, setCategories] = useState<Categoria[]>([]);
+  const [categories, setCategories] = useState<CategoriaConSubcategorias[]>([]);
   const [mainCategories, setMainCategories] = useState<CategoriaPrincipal[]>([]);
+  const [subcategories, setSubcategories] = useState<Subcategoria[]>([]);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [activeGroup, setActiveGroup] = useState<number>(0);
+  const [isLoading, setIsLoading] = useState(true);
 
   const pathname = usePathname();
-
-  // ref para timeout de cierre
   const closeTimeout = useRef<number | null>(null);
 
-  // Cargar categorías y categorías principales desde la API
   useEffect(() => {
     const fetchAll = async () => {
       try {
-        const [apiCategorias, apiMainResponse] = await Promise.all([
-          getCategorias(false, 1, 1000, ''),
-          getCategoriasPrincipales(1, 1000, ''),
-        ]);
-        // getCategorias ahora devuelve { data, total }
-        const cats = Array.isArray((apiCategorias as any)?.data) 
-          ? (apiCategorias as any).data 
-          : (apiCategorias as any) || [];
+        setIsLoading(true);
+        const [apiCategorias, apiMainResponse, apiSubcategorias] =
+          await Promise.all([
+            getCategorias(false, 1, 1000, ""),
+            getCategoriasPrincipales(1, 1000, ""),
+            getSubcategorias(1, 1000, ""),
+          ]);
+
+        // Normalizar respuestas - manejar tanto arrays como objetos con .data
+        const cats = Array.isArray(apiCategorias?.data)
+          ? apiCategorias.data
+          : Array.isArray(apiCategorias)
+            ? apiCategorias
+            : [];
+
+        const mains = Array.isArray(apiMainResponse?.data)
+          ? apiMainResponse.data
+          : Array.isArray(apiMainResponse)
+            ? apiMainResponse
+            : [];
+
+        const subs = Array.isArray(apiSubcategorias?.data)
+          ? apiSubcategorias.data
+          : Array.isArray(apiSubcategorias)
+            ? apiSubcategorias
+            : [];
+
         setCategories(cats);
-        // getCategoriasPrincipales devuelve { data, total }
-        const apiMain = Array.isArray((apiMainResponse as any)?.data) 
-          ? (apiMainResponse as any).data 
-          : (apiMainResponse as any) || [];
-        setMainCategories(apiMain);
-        // por defecto activar el primer grupo si existe
-        if (apiMain && apiMain.length > 0) setActiveGroup(0);
-      } catch (error) {
-        console.error("Error al cargar categorías o categorías principales:", error);
+        setMainCategories(mains);
+        setSubcategories(subs);
+
+        // Logs de debugging detallados
+        console.log("📦 Categorías cargadas:", cats.length, cats);
+        console.log("📂 Categorías principales cargadas:", mains.length, mains);
+        console.log("🏷️ Subcategorías cargadas:", subs.length, subs);
+
+        // Validación de relaciones
+        console.log("🔗 VALIDACIÓN DE RELACIONES:");
+        
+        // Mostrar estructura de una subcategoría de ejemplo
+        if (subs.length > 0) {
+          console.log("📝 Ejemplo de subcategoría:", subs[0]);
+          console.log(
+            `   - Campos disponibles: categoria_id=${subs[0].categoria_id}, categoriaId=${(subs[0] as any).categoriaId}`
+          );
+          console.log(
+            `   - El campo correcto es: ${(subs[0] as any).categoriaId ? "categoriaId ✅" : "categoria_id ❌ (NaN)"}`
+          );
+        }
+
+        // Mostrar estructura de una categoría de ejemplo
+        if (cats.length > 0) {
+          console.log("📝 Ejemplo de categoría:", cats[0]);
+          console.log(`   - ID de la categoría: ${cats[0].id}`);
+        }
+
+        // Test de coincidencias
+        if (subs.length > 0 && cats.length > 0) {
+          const testCat = cats[0];
+          const matchesByCategoria_id = subs.filter(
+            (sub) => sub.categoria_id === testCat.id
+          );
+          const matchesByCategoria_Id = subs.filter(
+            (sub) => (sub as any).categoriaId === testCat.id
+          );
+          console.log(
+            `   ✓ Usando categoria_id: ${matchesByCategoria_id.length} matches`
+          );
+          console.log(
+            `   ✓ Usando categoriaId: ${matchesByCategoria_Id.length} matches`
+          );
+        }
+
+        if (Array.isArray(mains) && mains.length > 0) setActiveGroup(0);
+      } catch (e) {
+        console.error("❌ Error cargando categorías/subcategorías:", e);
+      } finally {
+        setIsLoading(false);
       }
     };
+
     fetchAll();
   }, []);
 
-  // limpiar timeout al desmontar
-  useEffect(() => {
-    return () => {
-      if (closeTimeout.current) {
-        window.clearTimeout(closeTimeout.current);
-        closeTimeout.current = null;
-      }
-    };
-  }, []);
-
-  // Agrupar categorías por la categoría principal (relación por id)
-  const grouped = (mainCategories || []).map((m) => ({
+  // Agrupar categorías por categoría principal y asignar subcategorías a cada una
+  const grouped = mainCategories.map((m) => ({
     id: m.id,
     nombre: m.nombre,
-    categorias: (categories || []).filter((c) => c.categoriaPrincipalId === m.id),
+    categorias: categories
+      .filter((c) => c.categoriaPrincipalId === m.id)
+      .map((cat) => {
+        // Las subcategorías pueden estar en 3 lugares posibles:
+        // 1. En el campo 'subcategorias' de la categoría
+        // 2. En el campo 'sub' de la categoría
+        // 3. Filtradas desde el estado de subcategorías globales
+        
+        let catSubs = [];
+        
+        // Opción 1: Subcategorías incluidas en la categoría misma
+        if ((cat as any).subcategorias && Array.isArray((cat as any).subcategorias)) {
+          catSubs = (cat as any).subcategorias;
+        } 
+        // Opción 2: Subcategorías en campo 'sub'
+        else if ((cat as any).sub && Array.isArray((cat as any).sub)) {
+          catSubs = (cat as any).sub;
+        } 
+        // Opción 3: Filtrar desde subcategorías globales usando AMBOS campos (categoria_id y categoriaId)
+        else {
+          catSubs = subcategories.filter(
+            (sub) => sub.categoria_id === cat.id || (sub as any).categoriaId === cat.id
+          );
+        }
+        
+        if (catSubs.length > 0) {
+          console.log(
+            `  📌 Categoría "${cat.nombre}" (ID: ${cat.id}) contiene ${catSubs.length} subcategoría(s): [${catSubs
+              .map((s: any) => `"${s.nombre}"`)
+              .join(", ")}]`
+          );
+        }
+        
+        return {
+          ...cat,
+          subcategorias: catSubs,
+        };
+      }),
   }));
 
-  const uncategorized = (categories || []).filter((c) => !c.categoriaPrincipalId);
-
-  const isProductsActive = pathname.startsWith("/users/productos");
+  // Categorías sin categoría principal asignada
+  const uncategorized = categories
+    .filter((c) => !c.categoriaPrincipalId)
+    .map((cat) => {
+      // Misma lógica de búsqueda de subcategorías
+      let catSubs = [];
+      
+      if ((cat as any).subcategorias && Array.isArray((cat as any).subcategorias)) {
+        catSubs = (cat as any).subcategorias;
+      } else if ((cat as any).sub && Array.isArray((cat as any).sub)) {
+        catSubs = (cat as any).sub;
+      } else {
+        catSubs = subcategories.filter(
+          (sub) => sub.categoria_id === cat.id || (sub as any).categoriaId === cat.id
+        );
+      }
+      
+      return {
+        ...cat,
+        subcategorias: catSubs,
+      };
+    });
 
   const handleMouseEnter = () => {
-    // cancelar cierre pendiente y abrir
     if (closeTimeout.current) {
-      window.clearTimeout(closeTimeout.current);
+      clearTimeout(closeTimeout.current);
       closeTimeout.current = null;
     }
     setActiveGroup(0);
@@ -87,14 +192,13 @@ const HeaderProductsDropdown: React.FC = () => {
   };
 
   const handleMouseLeave = () => {
-    if (closeTimeout.current) window.clearTimeout(closeTimeout.current);
+    if (closeTimeout.current) clearTimeout(closeTimeout.current);
     closeTimeout.current = window.setTimeout(() => {
       setIsMenuOpen(false);
-      closeTimeout.current = null;
-    }, 160);
+    }, 150);
   };
 
-  const baseLinkClasses = `inline-flex items-center h-full px-1 border-b-2 transition duration-150 text-sm font-medium`;
+  const isProductsActive = pathname.startsWith("/users/productos");
 
   return (
     <div
@@ -102,107 +206,156 @@ const HeaderProductsDropdown: React.FC = () => {
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
-      {/* Enlace principal "Productos" */}
       <Link
         href="/users/productos"
-        className={`${baseLinkClasses}
-                  ${
-                    isProductsActive
-                      ? "border-amber-500 text-amber-700"
-                      : "border-transparent text-gray-500"
-                  }
-                  hover:border-amber-300 hover:text-amber-700
-                `}
+        className={`inline-flex items-center h-full px-1 border-b-2 transition text-sm font-medium
+        ${
+          isProductsActive
+            ? "border-amber-500 text-amber-700"
+            : "border-transparent text-gray-500"
+        }
+        hover:border-amber-300 hover:text-amber-700`}
       >
         Productos
-        {/* Icono de flecha */}
         <svg
-          className={`ml-1 -mr-0.5 h-4 w-4 transform ${
+          className={`ml-1 h-4 w-4 transform ${
             isMenuOpen ? "rotate-180" : "rotate-0"
           }`}
-          xmlns="http://www.w3.org/2000/svg"
           viewBox="0 0 20 20"
           fill="currentColor"
-          aria-hidden="true"
         >
           <path
             fillRule="evenodd"
             d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.25 4.25a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.06z"
-            clipRule="evenodd"
           />
         </svg>
       </Link>
 
-      {/* Mega-menu: columnas, centrado y scroll si hay muchas categorías */}
       {isMenuOpen && (categories.length > 0 || mainCategories.length > 0) && (
         <div
-          className="absolute z-50 top-full left-1/2 transform -translate-x-1/2 mt-2 w-[900px] max-w-[calc(100vw-2rem)] rounded-lg bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none"
-          role="menu"
-          aria-label="Categorías de productos"
+          className="absolute z-50 top-full left-1/2 -translate-x-1/2 mt-2 w-[900px] max-w-[calc(100vw-2rem)] rounded-lg bg-white shadow-lg ring-1 ring-black ring-opacity-5"
         >
-          <div className="p-4 max-h-80 overflow-hidden">
-            <div className="flex gap-6">
-              {/* Columna izquierda: grupos (categorías principales) */}
-              <div className="w-1/3">
-                <div className="space-y-1">
-                  {grouped.map((g, idx) => (
-                    <button
-                      key={g.id}
-                      onMouseEnter={() => setActiveGroup(idx)}
-                      onFocus={() => setActiveGroup(idx)}
-                      className={`w-full text-left px-3 py-2 rounded-md text-sm font-semibold transition ${
-                        activeGroup === idx ? "bg-gray-100 text-amber-700" : "text-gray-700 hover:bg-gray-50"
-                      }`}
-                    >
-                      {g.nombre}
-                      <div className="text-xs font-normal text-gray-500">
-                        {g.categorias.length} categorías
+          <div className="p-4 max-h-96 overflow-y-auto">
+            {isLoading ? (
+              <div className="text-center py-8 text-gray-500">
+                Cargando categorías...
+              </div>
+            ) : (
+              <div className="flex gap-6">
+                {/* IZQUIERDA - Categoría Principal */}
+                <div className="w-1/3 border-r pr-4">
+                  <div className="space-y-1">
+                    {grouped.length > 0 ? (
+                      grouped.map((g, idx) => (
+                        <button
+                          key={g.id}
+                          onMouseEnter={() => setActiveGroup(idx)}
+                          onFocus={() => setActiveGroup(idx)}
+                          className={`w-full text-left px-3 py-2 rounded-md text-sm font-semibold transition
+                          ${
+                            activeGroup === idx
+                              ? "bg-amber-50 text-amber-700 border-l-2 border-amber-600"
+                              : "text-gray-700 hover:bg-gray-50 border-l-2 border-transparent"
+                          }`}
+                        >
+                          {g.nombre}
+                          <div className="text-xs text-gray-500 font-normal">
+                            {g.categorias.length}{" "}
+                            {g.categorias.length === 1
+                              ? "categoría"
+                              : "categorías"}
+                          </div>
+                        </button>
+                      ))
+                    ) : (
+                      <div className="text-sm text-gray-500 py-2">
+                        Sin grupos
                       </div>
-                    </button>
-                  ))}
+                    )}
 
-                  {/* Si hay categorías sin agrupar, mostrar un botón "Otros" */}
-                  {uncategorized.length > 0 && (
-                    <button
-                      onMouseEnter={() => setActiveGroup(grouped.length)}
-                      onFocus={() => setActiveGroup(grouped.length)}
-                      className={`w-full text-left px-3 py-2 rounded-md text-sm font-semibold transition ${
-                        activeGroup === grouped.length ? "bg-gray-100 text-amber-700" : "text-gray-700 hover:bg-gray-50"
-                      }`}
-                    >
-                      Otros
-                      <div className="text-xs font-normal text-gray-500">
-                        {uncategorized.length} categorías
+                    {uncategorized.length > 0 && (
+                      <button
+                        onMouseEnter={() => setActiveGroup(grouped.length)}
+                        onFocus={() => setActiveGroup(grouped.length)}
+                        className={`w-full text-left px-3 py-2 rounded-md text-sm font-semibold transition
+                        ${
+                          activeGroup === grouped.length
+                            ? "bg-amber-50 text-amber-700 border-l-2 border-amber-600"
+                            : "text-gray-700 hover:bg-gray-50 border-l-2 border-transparent"
+                        }`}
+                      >
+                        Otros
+                        <div className="text-xs text-gray-500 font-normal">
+                          {uncategorized.length}{" "}
+                          {uncategorized.length === 1
+                            ? "categoría"
+                            : "categorías"}
+                        </div>
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* DERECHA - Categorías con subcategorías */}
+                <div className="w-2/3 pl-4">
+                  {(() => {
+                    const active =
+                      activeGroup < grouped.length
+                        ? grouped[activeGroup].categorias
+                        : uncategorized;
+
+                    if (!active || active.length === 0) {
+                      return (
+                        <div className="text-sm text-gray-500 py-4">
+                          No hay categorías en este grupo
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <div className="grid grid-cols-2 gap-6">
+                        {active.map((cat) => (
+                          <div key={cat.id} className="pb-3">
+                            {/* Nombre de la categoría como enlace */}
+                            <Link
+                              href={`/users/productos?categoriaId=${cat.id}`}
+                              onClick={() => setIsMenuOpen(false)}
+                              className="block font-semibold text-gray-800 hover:text-amber-600 transition mb-1"
+                            >
+                              {cat.nombre}
+                            </Link>
+
+                            {/* Subcategorías */}
+                            {(() => {
+                              const subs = cat.subcategorias || [];
+                              return subs.length > 0 ? (
+                                <ul className="text-sm text-gray-600 space-y-0.5 ml-2">
+                                  {subs.map((sub: any) => (
+                                    <li key={sub.id}>
+                                      <Link
+                                        href={`/users/productos?subcategoriaId=${sub.id}&categoriaId=${cat.id}`}
+                                        onClick={() => setIsMenuOpen(false)}
+                                        className="hover:text-amber-600 transition text-xs"
+                                      >
+                                        • {sub.nombre}
+                                      </Link>
+                                    </li>
+                                  ))}
+                                </ul>
+                              ) : (
+                                <p className="text-xs text-gray-400 ml-2 italic">
+                                  Sin subcategorías
+                                </p>
+                              );
+                            })()}
+                          </div>
+                        ))}
                       </div>
-                    </button>
-                  )}
+                    );
+                  })()}
                 </div>
               </div>
-
-              {/* Columna derecha: categorías del grupo activo */}
-              <div className="w-2/3 border-l pl-6 max-h-64 overflow-auto">
-                {(() => {
-                  const showCats = activeGroup < grouped.length ? grouped[activeGroup].categorias : uncategorized;
-                  if (!showCats || showCats.length === 0) {
-                    return <div className="text-sm text-gray-500">No hay categorías en este grupo.</div>;
-                  }
-                  return (
-                    <div className="grid grid-cols-2 gap-x-6 gap-y-1">
-                      {showCats.map((category) => (
-                        <Link
-                          key={category.id}
-                          href={`/users/productos?categoriaId=${category.id}`}
-                          onClick={() => setIsMenuOpen(false)}
-                          className="block px-0 py-1 text-sm text-gray-700 hover:text-amber-700"
-                        >
-                          {category.nombre}
-                        </Link>
-                      ))}
-                    </div>
-                  );
-                })()}
-              </div>
-            </div>
+            )}
           </div>
         </div>
       )}
