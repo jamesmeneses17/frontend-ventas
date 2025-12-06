@@ -27,7 +27,11 @@ const navigation = [
     id: "configuracion-base", 
     isCollapsible: true, 
     items: [
-      { name: "Categorías", href: "/admin/productos", icon: Settings },
+            { name: "Categorías Principal", href: "/admin/categorias_principales", icon: Settings },
+
+      { name: "Categoría", href: "/admin/productos", icon: Settings },
+      { name: "Subcategoria", href: "/admin/subcategorias", icon: Settings },
+
       { name: "Clientes", href: "/admin/clientes", icon: Users },
       { name: "Tipos de Documento", href: "/admin/tipos-documento", icon: ListChecks },
       { name: "Métodos de Pago", href: "/admin/metodos-pago", icon: DollarSign },

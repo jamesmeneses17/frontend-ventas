@@ -1,7 +1,6 @@
 // components/services/ventasService.ts
 import axios from "axios";
-
-const API_URL = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000").replace(/\/+$/g, "");
+import { API_URL } from "./apiConfig";
 const ENDPOINT_BASE = `${API_URL}/ventas`;
 
 // ------------------------------------------------------

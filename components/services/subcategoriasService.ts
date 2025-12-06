@@ -1,75 +1,184 @@
-// /components/services/subcategoriasService.ts
+// components/services/subcategoriasService.ts
 
 import axios from "axios";
+import { Estado } from "./estadosService"; // Reutilizamos el tipo Estado
+import { Categoria } from "./categoriasService"; // Reutilizamos el tipo Categoria
 
-// Reutiliza la lógica de URL y la interfaz Estado si es compartida
-const API_URL = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000").replace(/\/+$/g, "");
+// Configuración de la URL base
+// Nota: 'apiClient' (usado antes) es reemplazado por axios configurado aquí
+import { API_URL } from "./apiConfig";
+const ENDPOINT_BASE = `${API_URL}/subcategorias`;
 
-// Definición del objeto Estado que viene del backend
-// NOTA: Asumo que esta interfaz (Estado) ya está definida o importada en tu proyecto.
-export interface Estado {
-    id: number;
-    nombre: string;
-}
-
-// Interfaz para la Categoría (necesaria para la relación de Subcategoría)
-// 🛑 AJUSTE CLAVE: Agregamos estadoId y estado al objeto Categoria, ya que tu API lo devuelve anidado.
-export interface Categoria {
-    id: number;
-    nombre: string;
-    estadoId?: number; // Agregado para coincidir con la respuesta del backend
-    estado?: Estado;   // Agregado para coincidir con la respuesta del backend
-}
-
-// 1. INTERFAZ SUBCATEGORIA (Incluye las relaciones Categoria y Estado)
-export interface Subcategoria {
-    id: number;
-    nombre: string;
-    // Campos para la relación de estado
-    estadoId: number;
-    estado: Estado;
-    // Campos para la relación con Categoría Padre
-    categoriaId: number;
-    categoria: Categoria; // Usa tu interfaz Categoria con las nuevas propiedades
-}
-
-// 2. TIPO DE DATOS PARA CREACIÓN
-export type CreateSubcategoriaData = {
-    nombre: string;
-    categoriaId: number; // Requerido al crear una subcategoría
-    estadoId?: number; // Es opcional porque el backend le pone 1 por defecto
-};
-
-// 3. TIPO DE DATOS PARA ACTUALIZACIÓN
-export type UpdateSubcategoriaData = Partial<CreateSubcategoriaData>;
-
+// --- Interfaces de Datos ---
+// -----------------------------------------------------
 
 /**
- * Obtener subcategorías.
- * @param all 
- */
-export const getSubcategorias = async (all: boolean = false): Promise<Subcategoria[]> => {
-    // NOTE: En esta aplicación las "subcategorias" ya no existen en la base de datos.
-    // Para evitar llamadas 404 desde múltiples componentes, devolvemos un arreglo
-    // vacío y mostramos un aviso en consola. Si en el futuro se agregan
-    // subcategorías en el backend, se puede restaurar la implementación.
-    console.warn('[getSubcategorias] El backend no expone /subcategorias — devolviendo arreglo vacío');
-    return [];
+ * Representación de la Entidad Subcategoría
+ * Incluye el nombre de la Categoría Padre para la tabla/vista
+ */
+export interface Subcategoria {
+    id: number;
+    nombre: string;
+    categoria_id: number; // Clave Foránea al Nivel 2
+    categoria_nombre?: string; // Nombre de la categoría padre (para mostrar en la tabla, via JOIN)
+    estado_id?: number; 
+    estado?: Estado; 
+    categoria?: Categoria;
+}
+
+/**
+ * Datos requeridos para crear una nueva Subcategoría (Nivel 3).
+ * Basado en CreateSubcategoriaDto.
+ */
+export interface CreateSubcategoriaData {
+    nombre: string;
+    categoria_id: number; 
+}
+
+/**
+ * Datos para actualizar una Subcategoría.
+ * Basado en UpdateSubcategoriaDto.
+ */
+export type UpdateSubcategoriaData = Partial<CreateSubcategoriaData>;
+
+/**
+ * Interfaz para la respuesta de paginación del backend.
+ */
+export interface PaginacionResponse<T> {
+    data: T[];
+    total: number;
+}
+
+/**
+ * Respuesta esperada para las estadísticas.
+ */
+export interface SubcategoriaStats {
+    total: number;
+    porCategoria: {
+        categoriaId: number;
+        categoriaNombre: string;
+        count: number;
+    }[];
+    // Se pueden añadir más estadísticas si el backend las proporciona
+}
+
+// --------------------------------------------------------------------------------
+// --- FUNCIONES DE API ---
+// --------------------------------------------------------------------------------
+
+/**
+ * Obtener estadísticas de subcategorías.
+ * Ejemplo de respuesta esperada del backend:
+ * { total: 10, porCategoria: [{ categoriaId: 1, categoriaNombre: 'Electrónica', count: 5 }] }
+ */
+export const getSubcategoriasStats = async (): Promise<SubcategoriaStats> => {
+    const endpoint = `${ENDPOINT_BASE}/stats`;
+    try {
+        const res = await axios.get(endpoint);
+        return res.data;
+    } catch (err: any) {
+        console.error("Error al obtener estadísticas de subcategorías:", err);
+        return { total: 0, porCategoria: [] };
+    }
 };
 
-export const getSubcategoriaById = async (id: number): Promise<Subcategoria> => {
-    throw new Error('getSubcategoriaById: subcategorías no soportadas por el backend');
+/**
+ * Obtener subcategorías con paginación y filtro.
+ */
+export const getSubcategorias = async (
+    page: number = 1,
+    size: number = 10,
+    searchTerm: string = "",
+    categoriaId?: number
+): Promise<PaginacionResponse<Subcategoria>> => {
+    const params = {
+        page,
+        limit: size,
+        ...(searchTerm ? { search: searchTerm } : {}),
+        ...(typeof categoriaId !== 'undefined' ? { categoriaId } : {}),
+    } as any;
+
+    try {
+        const res = await axios.get(ENDPOINT_BASE, { params });
+        
+        let items: any = res.data;
+        let subcategorias: Subcategoria[] = [];
+        let total = 0;
+
+        // Manejar la respuesta paginada o simple
+        if (items && Array.isArray(items.data)) {
+            subcategorias = items.data;
+            total = items.total || subcategorias.length;
+        } else if (Array.isArray(items)) {
+            subcategorias = items;
+            total = subcategorias.length;
+        }
+
+        // Normalización básica (asegurar tipos si fuera necesario)
+        const normalized: Subcategoria[] = subcategorias.map((it: any) => ({
+            ...it,
+            id: Number(it.id),
+            categoria_id: Number(it.categoria_id),
+            // Asegurar que el nombre de la categoría esté disponible
+            categoria_nombre: it.categoria_nombre ?? it.categoria?.nombre ?? 'N/A',
+        }));
+
+        return { data: normalized, total };
+    } catch (err: any) {
+        console.error("Error al obtener subcategorías:", err?.message ?? err);
+        throw err; // Relanzar para que el hook lo capture
+    }
 };
 
+/**
+ * Crea una nueva subcategoría.
+ */
 export const createSubcategoria = async (data: CreateSubcategoriaData): Promise<Subcategoria> => {
-    throw new Error('createSubcategoria: subcategorías no soportadas por el backend');
+    try {
+        const res = await axios.post(ENDPOINT_BASE, data);
+        return res.data as Subcategoria;
+    } catch (err: any) {
+        const message = normalizeSubcategoriaError(err);
+        throw new Error(message);
+    }
 };
 
-// ✅ ACTUALIZACIÓN: data espera Partial<{ nombre: string, categoriaId: number, estadoId: number }>
+/**
+ * Actualiza una subcategoría existente.
+ */
 export const updateSubcategoria = async (id: number, data: UpdateSubcategoriaData): Promise<Subcategoria> => {
-    throw new Error('updateSubcategoria: subcategorías no soportadas por el backend');
+    const endpoint = `${ENDPOINT_BASE}/${id}`;
+    try {
+        const res = await axios.patch(endpoint, data);
+        return res.data as Subcategoria;
+    } catch (err: any) {
+        const message = normalizeSubcategoriaError(err);
+        throw new Error(message);
+    }
 };
 
+/**
+ * Elimina una subcategoría.
+ */
 export const deleteSubcategoria = async (id: number): Promise<void> => {
-    throw new Error('deleteSubcategoria: subcategorías no soportadas por el backend');
+    await axios.delete(`${ENDPOINT_BASE}/${id}`);
 };
+
+// Normaliza mensajes de error para surfacerlos en el toast del hook
+function normalizeSubcategoriaError(err: any): string {
+    const status = err?.response?.status;
+    const raw = err?.response?.data?.message || err?.message || "Error al procesar la solicitud.";
+    const text = Array.isArray(raw) ? raw.join(" | ") : String(raw);
+    const lower = text.toLowerCase();
+
+    if (lower.includes("duplicate") || lower.includes("duplicado") || lower.includes("ya existe")) {
+        return "Ya existe una subcategoría con ese nombre.";
+    }
+    if (status === 409 || status === 400) {
+        return "Ya existe una subcategoría con ese nombre.";
+    }
+    if (status === 500 && lower.includes("internal server error")) {
+        return "No se pudo procesar la subcategoría. Revisa los datos o intenta de nuevo.";
+    }
+    return text || "No se pudo procesar la subcategoría.";
+}

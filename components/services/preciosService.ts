@@ -1,10 +1,9 @@
 // /components/services/preciosService.ts
 
 import axios from "axios";
+import { API_URL } from "./apiConfig";
 // Asumiendo que tienes tu Producto interface importable o definida.
 import { Producto, Categoria, getProductos, updateProducto } from "./productosService"; 
-
-const API_URL = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000").replace(/\/+$/g, "");
 const ENDPOINT_BASE = `${API_URL}/precios`;
 
 // --- Interfaces Necesarias ---

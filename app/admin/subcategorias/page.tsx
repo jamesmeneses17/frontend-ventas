@@ -1,30 +1,33 @@
-// /app/admin/productos/page.tsx (CategoriasPage.tsx)
+// /app/admin/subcategorias/page.tsx
 
 "use client";
 
 import React from "react";
-// Importamos el Hook y los componentes
+// Importamos el Hook y los componentes genéricos
 import { useCrudCatalog } from "../../../components/hooks/useCrudCatalog";
 import AuthenticatedLayout from "../../../components/layout/AuthenticatedLayout";
 import ActionButton from "../../../components/common/ActionButton";
-import CategoriasTable from "../../../components/catalogos/CategoriasTable";
-import CategoriasForm from "../../../components/catalogos/CategoriasForm";
 import Paginator from "../../../components/common/Paginator";
 import ModalVentana from "../../../components/ui/ModalVentana";
 import Alert from "../../../components/ui/Alert";
 import SearchInput from "../../../components/common/form/SearchInput";
-import {
-  getCategorias,
-  createCategoria,
-  updateCategoria,
-  deleteCategoria,
-  Categoria,
-  CreateCategoriaData,
-  UpdateCategoriaData,
-} from "../../../components/services/categoriasService";
 
-// 1. COMPONENTE PRINCIPAL (Simplificado)
-export default function CategoriasPage() {
+// 🚀 IMPORTACIONES ESPECÍFICAS DE SUBCATEGORÍAS
+import SubcategoriasTable from "../../../components/catalogos/SubcategoriasTable"; // ¡DEBEMOS CREAR ESTE!
+import SubcategoriasForm from "../../../components/catalogos/SubcategoriasForm"; // ¡DEBEMOS CREAR ESTE!
+import {
+  getSubcategorias,
+  createSubcategoria,
+  updateSubcategoria,
+  deleteSubcategoria,
+  Subcategoria, // El tipo de la entidad
+  CreateSubcategoriaData, // Tipo de datos para crear (el DTO)
+  UpdateSubcategoriaData, // Tipo de datos para actualizar (el DTO)
+} from "../../../components/services/subcategoriasService"; // ¡DEBEMOS CREAR ESTE ARCHIVO DE SERVICIO!
+
+// 1. COMPONENTE PRINCIPAL
+export default function SubcategoriasPage() {
+  // 2. USAMOS EL HOOK GENÉRICO
   const {
     currentItems,
     loading,
@@ -44,56 +47,50 @@ export default function CategoriasPage() {
     handleFormSubmit,
     handleCloseModal,
     setNotification,
-  } = useCrudCatalog<Categoria, CreateCategoriaData, UpdateCategoriaData>(
+  } = useCrudCatalog<Subcategoria, CreateSubcategoriaData, UpdateSubcategoriaData>(
     {
+      // Adaptamos la firma al hook: (all, page, size, searchTerm, categoriaId?)
       loadItems: async (_all, page, size, searchTerm) =>
-        getCategorias(_all, page, size, searchTerm),
-      createItem: createCategoria,
-      updateItem: updateCategoria,
-      deleteItem: deleteCategoria,
+        getSubcategorias(page, size, searchTerm),
+      createItem: createSubcategoria,
+      updateItem: updateSubcategoria,
+      deleteItem: deleteSubcategoria,
     },
-    "Categoría"
+    "Subcategoría" // Nombre usado para las notificaciones
   );
 
   // Tipado explícito para la edición
-  const editingCategoria = editingItem as Categoria | null;
-
-  // Corregimos la ruta base para que apunte a la ruta real de Next.js: /admin/productos
-  const currentPath =
-    typeof window !== "undefined"
-      ? window.location.pathname
-      : "/admin/productos"; // Usar la ruta base correcta del proyecto
+  const editingSubcategoria = editingItem as Subcategoria | null;
 
   return (
     <AuthenticatedLayout>
       <div className="space-y-6">
-        {/* ... (Header - Se mantiene) ... */}
+        {/* Encabezado de la página */}
         <div className="bg-white shadow rounded-lg p-6">
           <div className="flex justify-between items-center">
-            {/* ... (Título y descripción) ... */}
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Categorias</h1>
+              <h1 className="text-2xl font-bold text-gray-900">Subcategorías</h1>
               <p className="text-gray-600 mt-2">
-                Gestiona las configuraciones básicas del sistema
+                Gestiona las subcategorías que dependen de una categoría principal.
               </p>
             </div>
           </div>
         </div>
 
-        {/* Contenido principal */}
+        {/* Contenido principal: Buscador y Tabla */}
         <div className="bg-white shadow rounded-lg p-6">
-          {/* Header tabla */}
           <div className="w-full space-y-3">
             <h3 className="text-xl font-semibold text-gray-900 mb-0 text-left">
-              Lista de Categorías
+              Lista de Subcategorías
             </h3>
-            {/* ... (Buscador y botón se mantienen) ... */}
+            
+            {/* Buscador y botón de acción */}
             <div className="flex justify-between items-center w-full">
               <div className="w-full max-w-sm">
                 <SearchInput
                   searchTerm={searchTerm}
-                  placeholder="Buscar categorías..."
-                  onSearchChange={setSearchTerm} // Usamos el handler del hook
+                  placeholder="Buscar subcategorías..."
+                  onSearchChange={setSearchTerm}
                 />
               </div>
               <ActionButton
@@ -110,26 +107,27 @@ export default function CategoriasPage() {
                     />
                   </svg>
                 }
-                label="Nueva Categoría"
-                onClick={handleAdd} // Usamos el handler del hook
+                label="Nueva Subcategoría"
+                onClick={handleAdd}
               />
             </div>
           </div>
 
-          {/* TABLA MODULARIZADA */}
+          {/* TABLA DE SUBCATEGORÍAS */}
           <div className="mt-6">
-            <CategoriasTable
-              data={currentItems as Categoria[]} // Casteo al tipo específico
+            <SubcategoriasTable
+              data={currentItems as Subcategoria[]} // Casteo al tipo específico
               loading={loading}
-              totalItems={totalItems}
-              onEdit={handleEdit} // Usamos el handler del hook
-              onDelete={handleDelete} // Usamos el handler del hook
+              onEdit={handleEdit}
+              onDelete={handleDelete}
             />
           </div>
 
-          {/* SECCIÓN DE INFORMACIÓN Y PAGINADOR */}
+          {/* Paginador */}
           <div className="flex justify-between items-center mt-4">
-            <p className="text-sm text-gray-600"></p>
+            <p className="text-sm text-gray-600">
+              Mostrando {currentItems.length} de {totalItems} resultados
+            </p>
             {!loading && totalItems > 0 && (
               <Paginator
                 total={totalItems}
@@ -147,19 +145,20 @@ export default function CategoriasPage() {
           <ModalVentana
             isOpen={showModal}
             onClose={handleCloseModal}
-            title={editingCategoria ? "Editar Categoría" : "Nueva Categoría"}
+            title={editingSubcategoria ? "Editar Subcategoría" : "Nueva Subcategoría"}
           >
-            <CategoriasForm
+            <SubcategoriasForm
               initialData={
-                editingCategoria
+                editingSubcategoria
                   ? {
-                      nombre: editingCategoria.nombre,
-                      estadoId: editingCategoria.estadoId, // Asumiendo que existe en Categoria
-                      categoriaPrincipalId: (editingCategoria as any).categoriaPrincipalId ?? (editingCategoria as any).categoriaPrincipal?.id ?? null,
+                      id: editingSubcategoria.id,
+                      nombre: editingSubcategoria.nombre,
+                      // Necesitamos el ID de la Categoría padre para editar
+                      categoria_id: editingSubcategoria.categoria_id, 
                     }
                   : {
                       nombre: "",
-                      estadoId: 1,
+                      categoria_id: 0, // Se reemplaza con el primer valor disponible al cargar el form
                     }
               }
               onSubmit={handleFormSubmit}
@@ -168,6 +167,7 @@ export default function CategoriasPage() {
           </ModalVentana>
         )}
 
+        {/* Notificaciones */}
         {notification && (
           <div className="fixed top-10 right-4 z-[9999]">
             <Alert

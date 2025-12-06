@@ -2,9 +2,9 @@ import axios from "axios";
 
 // 🛑 IMPORTANTE: Asumo que la interfaz Estado ya existe y es re-utilizable.
 import { Estado } from "./subcategoriasService"; // O donde la tengas definida
+import { API_URL } from "./apiConfig";
 
 // La URL base de tu API
-const API_URL = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000").replace(/\/+$/g, "");
 const ENDPOINT = `${API_URL}/marcas`;
 
 // 1. INTERFAZ MARCA

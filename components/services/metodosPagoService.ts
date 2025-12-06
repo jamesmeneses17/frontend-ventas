@@ -4,7 +4,7 @@ import axios from "axios";
 
 // 1. CONFIGURACIÓN BASE
 // Asume que NEXT_PUBLIC_API_URL está disponible
-const API_URL = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000").replace(/\/+$/g, "");
+import { API_URL } from "./apiConfig";
 // El endpoint en el backend es 'metodos-pago'
 const METODOS_PAGO_BASE_URL = `${API_URL}/metodos-pago`; 
 

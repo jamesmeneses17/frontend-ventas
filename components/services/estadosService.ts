@@ -1,9 +1,9 @@
 // components/services/estadosService.ts
 
 import axios from "axios";
+import { API_URL } from "./apiConfig";
 
 // Configuración de la URL base de la API
-const API_URL = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000").replace(/\/+$/g, "");
 
 // --- Interfaces de Soporte ---
 // Alineado con tu entidad de TypeORM

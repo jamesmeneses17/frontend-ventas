@@ -12,6 +12,7 @@ interface Props {
   categorias: Categoria[];
   estados: Estado[];
   loading?: boolean;
+  totalItems?: number; // <-- IMPORTANTE: para el paginador
   onEdit: (producto: Producto) => void;
   onDelete: (id: number) => void;
 }
@@ -21,10 +22,11 @@ export default function ProductosTable({
   categorias,
   estados,
   loading,
+  totalItems = 0,
   onEdit,
   onDelete,
 }: Props) {
-  // ✅ Estilo según el estado de venta (catálogo)
+  // Estado visual de productos
   const getEstadoVentaClasses = (estadoStock: string) => {
     switch (estadoStock) {
       case "Agotado":
@@ -38,7 +40,7 @@ export default function ProductosTable({
     }
   };
 
-  // ✅ Columnas de la tabla
+  // Columnas de la tabla (idéntico a tu versión)
   const columns = [
     { key: "codigo", label: "Código" },
     { key: "nombre", label: "Nombre" },
@@ -53,20 +55,14 @@ export default function ProductosTable({
     {
       key: "compras",
       label: "Compras",
-      render: (row: Producto) => (
-        <span className="text-sm text-gray-700">
-          {typeof row.compras !== "undefined" ? row.compras : 0}
-        </span>
-      ),
+      render: (row: Producto) =>
+        <span className="text-sm text-gray-700">{row.compras ?? 0}</span>,
     },
     {
       key: "ventas",
       label: "Ventas",
-      render: (row: Producto) => (
-        <span className="text-sm text-gray-700">
-          {typeof row.ventas !== "undefined" ? row.ventas : 0}
-        </span>
-      ),
+      render: (row: Producto) =>
+        <span className="text-sm text-gray-700">{row.ventas ?? 0}</span>,
     },
     { key: "stock", label: "Stock" },
 
@@ -88,9 +84,7 @@ export default function ProductosTable({
             row.precio ??
             0
         );
-        return (
-          <span className="font-semibold">{formatCurrency(precioVenta)}</span>
-        );
+        return <span className="font-semibold">{formatCurrency(precioVenta)}</span>;
       },
     },
     {
@@ -98,16 +92,16 @@ export default function ProductosTable({
       label: "Utilidad / Producto",
       render: (row: Producto) => {
         const costo = Number((row as any).precio_costo ?? 0);
-        const precioVenta = Number(
+        const pv = Number(
           (row as any).precio_venta ??
             (row as any).precioVenta ??
             row.precio ??
             0
         );
-        const utilidad = precioVenta - costo;
-        const className = utilidad < 0 ? "text-red-600" : "text-green-600";
+        const utilidad = pv - costo;
+
         return (
-          <span className={`font-semibold ${className}`}>
+          <span className={`font-semibold ${utilidad < 0 ? "text-red-600" : "text-green-600"}`}>
             {formatCurrency(utilidad)}
           </span>
         );
@@ -119,23 +113,14 @@ export default function ProductosTable({
       render: (row: Producto) => {
         const costo = Number((row as any).precio_costo ?? 0);
         const stock = Number(row.stock ?? 0);
-        const valor = costo * stock;
-        return (
-          <span className="text-sm text-gray-700">{formatCurrency(valor)}</span>
-        );
+        return <span className="text-sm text-gray-700">{formatCurrency(costo * stock)}</span>;
       },
     },
-
-    // ✅ SOLO una columna para el estado dinámico del producto
     {
       key: "estado_stock",
       label: "Estado de Venta",
       render: (row: Producto) => (
-        <span
-          className={`inline-flex items-center ${getEstadoVentaClasses(
-            row.estado_stock || "Disponible"
-          )}`}
-        >
+        <span className={`inline-flex items-center ${getEstadoVentaClasses(row.estado_stock || "Disponible")}`}>
           {row.estado_stock || "Disponible"}
         </span>
       ),
@@ -143,23 +128,36 @@ export default function ProductosTable({
   ];
 
   return (
-    <CrudTable
-      columns={columns}
-      data={data}
-      loading={loading}
-      renderRowActions={(row: Producto) => (
-        <div className="flex items-center justify-end gap-2">
-          <ActionButton
-            icon={<Pencil className="w-4 h-4" />}
-            onClick={() => onEdit(row)}
-          />
-          <ActionButton
-            icon={<Trash className="w-4 h-4" />}
-            onClick={() => onDelete(row.id)}
-            color="danger"
-          />
-        </div>
+    <div className="w-full">
+      <CrudTable
+        columns={columns}
+        data={data}
+        loading={loading}
+        renderRowActions={(row: Producto) => (
+          <div className="flex items-center justify-end gap-2">
+            <ActionButton
+              icon={<Pencil className="w-4 h-4" />}
+              onClick={() => onEdit(row)}
+            />
+            <ActionButton
+              icon={<Trash className="w-4 h-4" />}
+              onClick={() => onDelete(row.id)}
+              color="danger"
+            />
+          </div>
+        )}
+      />
+
+      {/* FOOTER EXACTO DEL MOLDE */}
+      {!loading && (
+        <p className="text-sm text-gray-600 mt-4">
+          Mostrando {data.length} de {totalItems} productos
+        </p>
       )}
-    />
+
+      {loading && (
+        <p className="text-sm text-gray-600 mt-4">Cargando...</p>
+      )}
+    </div>
   );
 }

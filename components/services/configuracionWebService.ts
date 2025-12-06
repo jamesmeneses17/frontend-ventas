@@ -1,14 +1,12 @@
 // /components/services/configuracionWebService.ts
 
 import axios from "axios";
+import { API_URL } from "./apiConfig";
 import { 
     InformacionEmpresa, 
     UpdateInformacionEmpresaData, 
     CreateInformacionEmpresaData 
 } from "../../types/configuracion";
-
-const API_URL = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000")
-  .replace(/\/+$/g, "");
 
 // La URL base para el controlador de InfoEmpresa
 const BASE_URL = `${API_URL}/configuracion/empresa`; 

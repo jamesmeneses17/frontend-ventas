@@ -1,15 +1,13 @@
 // src/components/services/bannerService.ts
 
 import axios from "axios";
+import { API_URL } from "./apiConfig";
 // Importamos las interfaces específicas de Banner
 import { Banner, CreateBannerData, UpdateBannerData } from "../../types/configuracion";
 
 // ===================================================================
 // BASE DE CONEXIÓN
 // ===================================================================
-
-const API_URL = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000")
-  .replace(/\/+$/g, "");
 
 // Usaremos un cliente axios genérico
 const api = axios; 

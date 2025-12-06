@@ -1,8 +1,7 @@
 // /components/services/categoriasService.ts
 
 import axios from "axios";
-
-const API_URL = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000").replace(/\/+$/g, "");
+import { API_URL } from "./apiConfig";
 
 // Definición del objeto Estado que viene del backend
 export interface Estado {
@@ -34,55 +33,50 @@ export type CreateCategoriaData = {
 // 3. TIPO DE DATOS PARA ACTUALIZACIÓN (Ahora incluye estadoId)
 export type UpdateCategoriaData = Partial<CreateCategoriaData>;
 
+export interface PaginacionResponse<T> {
+  data: T[];
+  total: number;
+}
 
 /**
- * Obtener categorías.
- * @param all - si true, pide todas las categorías (incluye inactivas) añadiendo `?all=true`.
- * Si no se pasa, se usa la ruta por defecto (normalmente devuelve sólo activos según el backend).
+ * Obtener categorías con paginación y búsqueda.
+ * @param all - ignorado (mantenido por compatibilidad)
+ * @param page - página actual (1-indexed)
+ * @param size - tamaño de página
+ * @param searchTerm - término de búsqueda
  */
-export const getCategorias = async (all: boolean = false): Promise<Categoria[]> => {
-  if (!all) {
-    const res = await axios.get(`${API_URL}/categorias`);
-    // Normalizar claves snake_case -> camelCase
-    const data = Array.isArray(res.data)
-      ? res.data.map(normalizeCategoria)
-      : res.data;
-    return data as Categoria[];
-  }
+export const getCategorias = async (
+  all: boolean = false,
+  page: number = 1,
+  size: number = 10,
+  searchTerm: string = ""
+): Promise<PaginacionResponse<Categoria>> => {
+  const params: any = {
+    page,
+    limit: size,
+    ...(searchTerm ? { search: searchTerm } : {}),
+  };
 
-  // Cuando pedimos todas las categorías, probamos varias convenciones de query
-  const attempts = [
-    "?all=true",
-    "?all=1",
-    "?include_inactive=true",
-    "?includeInactive=true",
-    "?activo=false",
-    "?per_page=1000",
-    "?limit=1000",
-  ];
+  try {
+    const res = await axios.get(`${API_URL}/categorias`, { params });
+    let items: any = res.data;
+    let categorias: Categoria[] = [];
+    let total = 0;
 
-  for (const q of attempts) {
-    try {
-      const url = `${API_URL}/categorias${q}`;
-      const res = await axios.get(url);
-      // Si la respuesta parece contener más de 0 elementos, devolvemos
-      if (Array.isArray(res.data) && res.data.length > 0) {
-        // Log de diagnóstico: indicar qué intento funcionó
-        console.debug(`[getCategorias] intento "${q}" devolvió ${res.data.length} elementos`);
-        return res.data.map(normalizeCategoria);
-      } else {
-        console.debug(`[getCategorias] intento "${q}" devolvió 0 elementos`);
-      }
-    } catch (err) {
-      // Ignoramos y probamos la siguiente variante
-      const e: any = err;
-      console.debug(`[getCategorias] intento "${q}" fallo:`, e?.message ?? e);
+    // Manejar respuesta paginada o simple
+    if (items && Array.isArray(items.data)) {
+      categorias = items.data.map(normalizeCategoria);
+      total = items.total || categorias.length;
+    } else if (Array.isArray(items)) {
+      categorias = items.map(normalizeCategoria);
+      total = categorias.length;
     }
-  }
 
-  // Fallback: petición sin query
-  const fallback = await axios.get(`${API_URL}/categorias`);
-  return (fallback.data || []).map(normalizeCategoria);
+    return { data: categorias, total };
+  } catch (err: any) {
+    console.error('[getCategorias] error:', err);
+    throw err;
+  }
 };
 
 export const getCategoriaById = async (id: number): Promise<Categoria> => {

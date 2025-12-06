@@ -260,11 +260,12 @@ export const useCrudCatalog = <T extends CrudItem, C extends ItemForm, U extends
       handleCloseModal();
       await fetchItems(); // Recargar datos después de la operación
     } catch (error) {
-            const err: any = error;
-            const message = err?.response?.data?.message || err?.message || "Error al procesar la solicitud.";
-            setNotification({ message: Array.isArray(message) ? message.join(', ') : String(message), type: "error" });
-            throw error; 
-        }
+        const err: any = error;
+        const message = err?.response?.data?.message || err?.message || "Error al procesar la solicitud.";
+        setNotification({ message: Array.isArray(message) ? message.join(', ') : String(message), type: "error" });
+        // Evitar volver a lanzar el error para no mostrar el overlay rojo de Next en modo dev.
+        return;
+      }
   };
 
   const handleDelete = async (id: number) => {

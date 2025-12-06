@@ -57,19 +57,21 @@ export default function FilterBar({
 
       {/* 2. Filtros Select (Estado de Stock y opcionalmente filtro de Promoción) */}
       <div className="flex items-center gap-3">
-        <div className="flex-shrink-0">
-          <select
-            value={selectFilterValue}
-            onChange={(e) => onSelectFilterChange(e.target.value)}
-            className="p-2 border border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500 text-sm"
-          >
-            {(selectOptions || []).map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </div>
+        {selectOptions && selectOptions.length > 0 && (
+          <div className="flex-shrink-0">
+            <select
+              value={selectFilterValue}
+              onChange={(e) => onSelectFilterChange(e.target.value)}
+              className="p-2 border border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500 text-sm"
+            >
+              {(selectOptions || []).map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
 
         {selectOptions2 && selectOptions2.length > 0 && onSelectFilterChange2 && (
           <div className="flex-shrink-0">

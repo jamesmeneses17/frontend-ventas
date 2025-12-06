@@ -15,6 +15,7 @@ interface FormSelectProps {
   required?: boolean;
   className?: string;
   disabled?: boolean;
+  error?: string;
 }
 
 export default function FormSelect({
@@ -26,8 +27,12 @@ export default function FormSelect({
   placeholder = "Seleccionar...",
   required = false,
   className = '',
-  disabled = false
+  disabled = false,
+  error
 }: FormSelectProps) {
+  const baseClasses = "w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-gray-50 disabled:cursor-not-allowed";
+  const borderClass = error ? "border-red-500" : "border-gray-300";
+
   return (
     <div className={`space-y-1 ${className}`}>
       <label htmlFor={name} className="block text-sm font-medium text-gray-700">
@@ -41,7 +46,7 @@ export default function FormSelect({
         onChange={onChange}
         required={required}
         disabled={disabled}
-        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-gray-50 disabled:cursor-not-allowed"
+        className={`${baseClasses} ${borderClass}`}
       >
         <option value="">{placeholder}</option>
         {options.map((option) => (
@@ -50,6 +55,7 @@ export default function FormSelect({
           </option>
         ))}
       </select>
+      {error && <p className="text-xs text-red-600">{error}</p>}
     </div>
   );
 }

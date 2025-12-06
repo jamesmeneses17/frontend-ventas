@@ -5,7 +5,7 @@ import axios from "axios";
 // =====================================
 // CONFIGURACIÓN DE URL BASE DEL API
 // =====================================
-const API_URL = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000").replace(/\/+$/g, "");
+import { API_URL } from "./apiConfig";
 const INVENTARIO_BASE_URL = `${API_URL}/inventario`;
 
 // =====================================

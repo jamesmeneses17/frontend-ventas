@@ -32,11 +32,19 @@ const HeaderProductsDropdown: React.FC = () => {
   useEffect(() => {
     const fetchAll = async () => {
       try {
-        const [apiCategorias, apiMain] = await Promise.all([
-          getCategorias(),
-          getCategoriasPrincipales(),
+        const [apiCategorias, apiMainResponse] = await Promise.all([
+          getCategorias(false, 1, 1000, ''),
+          getCategoriasPrincipales(1, 1000, ''),
         ]);
-        setCategories(apiCategorias);
+        // getCategorias ahora devuelve { data, total }
+        const cats = Array.isArray((apiCategorias as any)?.data) 
+          ? (apiCategorias as any).data 
+          : (apiCategorias as any) || [];
+        setCategories(cats);
+        // getCategoriasPrincipales devuelve { data, total }
+        const apiMain = Array.isArray((apiMainResponse as any)?.data) 
+          ? (apiMainResponse as any).data 
+          : (apiMainResponse as any) || [];
         setMainCategories(apiMain);
         // por defecto activar el primer grupo si existe
         if (apiMain && apiMain.length > 0) setActiveGroup(0);
@@ -58,13 +66,13 @@ const HeaderProductsDropdown: React.FC = () => {
   }, []);
 
   // Agrupar categorías por la categoría principal (relación por id)
-  const grouped = mainCategories.map((m) => ({
+  const grouped = (mainCategories || []).map((m) => ({
     id: m.id,
     nombre: m.nombre,
-    categorias: categories.filter((c) => c.categoriaPrincipalId === m.id),
+    categorias: (categories || []).filter((c) => c.categoriaPrincipalId === m.id),
   }));
 
-  const uncategorized = categories.filter((c) => !c.categoriaPrincipalId);
+  const uncategorized = (categories || []).filter((c) => !c.categoriaPrincipalId);
 
   const isProductsActive = pathname.startsWith("/users/productos");
 

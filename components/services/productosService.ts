@@ -1,3 +1,8 @@
+import axios from "axios";
+import { API_URL } from "./apiConfig";
+
+const ENDPOINT_BASE = `${API_URL}/productos`;
+
 /**
  * Obtener estadísticas de productos por estado.
  * Ejemplo de respuesta esperada del backend:
@@ -58,11 +63,6 @@ export const deleteProducto = async (id: number): Promise<void> => {
     await axios.delete(`${ENDPOINT_BASE}/${id}`);
 };
 // components/services/productosService.ts
-
-import axios from "axios";
-
-const API_URL = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000").replace(/\/+$/g, "");
-const ENDPOINT_BASE = `${API_URL}/productos`;
 
 // --- Interfaces de Soporte ---
 export interface Estado {

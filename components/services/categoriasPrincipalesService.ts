@@ -1,9 +1,7 @@
 // /components/services/categoriasPrincipalesService.ts
 
 import axios from "axios";
-
-const API_URL = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000")
-  .replace(/\/+$/g, "");
+import { API_URL } from "./apiConfig";
 
 // ----------------------
 // INTERFACES
@@ -35,33 +33,62 @@ export interface CreateCategoriaPrincipalData {
 export type UpdateCategoriaPrincipalData = Partial<CreateCategoriaPrincipalData>;
 
 // ======================================
+// OBTENER ESTADOS
+// ======================================
+export const getEstados = async (): Promise<Estado[]> => {
+  try {
+    const res = await axios.get(`${API_URL}/estados`);
+    return res.data;
+  } catch (err: any) {
+    console.error('[getEstados] error:', err);
+    // Fallback si no carga
+    return [
+      { id: 1, nombre: 'Activo' },
+      { id: 2, nombre: 'Inactivo' }
+    ];
+  }
+};
+
+// ======================================
 // OBTENER TODAS LAS CATEGORÍAS PRINCIPALES
 // ======================================
+export interface PaginacionResponse<T> {
+  data: T[];
+  total: number;
+}
+
 export const getCategoriasPrincipales = async (
-  all: boolean = false
-): Promise<CategoriaPrincipal[]> => {
-  if (!all) {
-    const res = await axios.get(`${API_URL}/categorias-principales`);
-    return res.data;
+  page: number = 1,
+  size: number = 10,
+  searchTerm: string = ""
+): Promise<PaginacionResponse<CategoriaPrincipal>> => {
+  const params = {
+    page,
+    limit: size,
+    ...(searchTerm ? { search: searchTerm } : {}),
+  } as any;
+
+  try {
+    const res = await axios.get(`${API_URL}/categorias-principales`, { params });
+    
+    let items: any = res.data;
+    let categorias: CategoriaPrincipal[] = [];
+    let total = 0;
+
+    // Handle paginated or simple response
+    if (items && Array.isArray(items.data)) {
+      categorias = items.data;
+      total = items.total || categorias.length;
+    } else if (Array.isArray(items)) {
+      categorias = items;
+      total = categorias.length;
+    }
+
+    return { data: categorias, total };
+  } catch (err: any) {
+    console.error('[getCategoriasPrincipales] error:', err);
+    throw err;
   }
-
-  const variants = [
-    "?all=true",
-    "?all=1",
-    "?include_inactive=true",
-    "?includeInactive=true",
-    "?limit=1000",
-  ];
-
-  for (const q of variants) {
-    try {
-      const res = await axios.get(`${API_URL}/categorias-principales${q}`);
-      if (Array.isArray(res.data) && res.data.length > 0) return res.data;
-    } catch {}
-  }
-
-  const fallback = await axios.get(`${API_URL}/categorias-principales`);
-  return fallback.data;
 };
 
 // ======================================
@@ -87,7 +114,8 @@ export const createCategoriaPrincipal = async (
     return res.data;
   } catch (err: any) {
     console.error("[createCategoriaPrincipal] error:", err?.response?.data ?? err);
-    throw err;
+    const message = extractDuplicateMessage(err) ?? err?.response?.data?.message;
+    throw new Error(message || "No se pudo crear la categoría principal.");
   }
 };
 
@@ -108,9 +136,29 @@ export const updateCategoriaPrincipal = async (
     return res.data;
   } catch (err: any) {
     console.error("[updateCategoriaPrincipal] error:", err?.response?.data ?? err);
-    throw err;
+    const message = extractDuplicateMessage(err) ?? err?.response?.data?.message;
+    throw new Error(message || "No se pudo actualizar la categoría principal.");
   }
 };
+
+// Normaliza errores de duplicado para mostrar un mensaje claro en UI
+function extractDuplicateMessage(err: any): string | null {
+  const raw = err?.response?.data?.message || err?.message || "";
+  const text = Array.isArray(raw) ? raw.join(" ") : String(raw);
+  const lower = text.toLowerCase();
+  if (lower.includes("duplicate") || lower.includes("duplicado") || lower.includes("ya existe")) {
+    return "Ya existe una categoría principal con ese nombre.";
+  }
+  // Algunos backends retornan código 409 o 400 con detalle personalizado
+  if (err?.response?.status === 409 || err?.response?.status === 400) {
+    return "Ya existe una categoría principal con ese nombre.";
+  }
+  // En algunos entornos de Nest/Nginx se devuelve 500 con mensaje genérico
+  if (err?.response?.status === 500 && lower.includes("internal server error")) {
+    return "Ya existe una categoría principal con ese nombre.";
+  }
+  return null;
+}
 
 // ======================================
 // ELIMINAR

@@ -33,8 +33,11 @@ const CategoriasForm: React.FC<Props> = ({ initialData, onSuccess, onCancel, onS
     let mounted = true;
     (async () => {
       try {
-        const cats = await getCategoriasPrincipales();
-        if (mounted) setAllCategories(cats);
+        const cats = await getCategoriasPrincipales(1, 1000, '');
+        const list = Array.isArray((cats as any)?.data)
+          ? (cats as any).data as CategoriaPrincipal[]
+          : (cats as any) as CategoriaPrincipal[];
+        if (mounted) setAllCategories(list ?? []);
       } catch (err) {
         // no crítico: dejamos el select con opciones vacías
         console.debug("No se pudieron cargar categorías para el select de padre", err);
@@ -157,21 +160,7 @@ const extractErrorMessage = (err: any): string => {
             </select>
           </div>
 
-        <div>
-          <label htmlFor="estadoId" className="block text-sm font-medium text-gray-700">
-            Estado
-          </label>
-          <select
-            id="estadoId"
-            name="estadoId"
-            value={values.estadoId}
-            onChange={(e: React.ChangeEvent<HTMLSelectElement>) => handleChange('estadoId', Number(e.target.value))}
-            className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
-          >
-            <option value={1}>Activo</option>
-            <option value={2}>Inactivo</option>
-          </select>
-        </div>
+     
 
         <div className="flex items-center justify-end gap-4">
           <button
