@@ -278,7 +278,7 @@ useEffect(() => {
             <div className="pt-2">
               {isImageUrl(preview) ? (
                 (preview.startsWith?.('blob:') || preview.startsWith?.('data:')) ? (
-                  <img src={preview} alt={`Imagen producto ${initialData?.nombre || initialData?.id}`} className="w-32 h-32 object-cover rounded border" />
+                  <Image src={preview} alt={`Imagen producto ${initialData?.nombre || initialData?.id}`} width={128} height={128} className="w-32 h-32 object-cover rounded border" />
                 ) : (
                   <Image src={preview} alt={`Imagen producto ${initialData?.nombre || initialData?.id}`} width={128} height={128} className="w-32 h-32 object-cover rounded border" />
                 )

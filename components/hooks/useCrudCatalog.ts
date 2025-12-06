@@ -73,14 +73,12 @@ export const useCrudCatalog = <T extends CrudItem, C extends ItemForm, U extends
     }
   }, [notification]);
 
-  // Normalizar y memoizar las dependencias personalizadas para evitar referencias
-  // nuevas en cada render que provoquen que `fetchItems` cambie constantemente.
-  const customDepsKey = useMemo(
-    () => (options.customDependencies || []).map((d: any) => String(d)).join('|'),
+  // Memoizar las dependencias personalizadas; incluirlas directamente
+  // en el array de dependencias para que ESLint no lo marque como faltante.
+  const customDependencies = useMemo(
+    () => options.customDependencies || [],
     [options.customDependencies]
   );
-
-  const customDependencies = useMemo(() => options.customDependencies || [], [customDepsKey]);
 
   // Función de carga de datos (memoizada para usar en el efecto)
   // Mantener una referencia estable al servicio para evitar que cambios de

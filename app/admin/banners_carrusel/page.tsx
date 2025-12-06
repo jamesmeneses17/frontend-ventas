@@ -137,7 +137,7 @@ export default function BannersPage() {
 
                     {/* Footer de la tabla */}
                     {!loading && banners.length > 0 && (
-                        <p className="text-sm text-gray-600 mt-4">Mostrando {banners.length} de {total} banners (Ordenados por campo 'Orden').</p>
+                        <p className="text-sm text-gray-600 mt-4">Mostrando {banners.length} de {total} banners (Ordenados por campo &apos;Orden&apos;).</p>
                     )}
                     {loading && <p className="text-sm text-gray-600 mt-4">Cargando...</p>}
                 </div>

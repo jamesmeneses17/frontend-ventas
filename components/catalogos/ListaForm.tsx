@@ -319,10 +319,12 @@ export default function ListaForm({ initialData, onSubmit, onCancel, formError }
           <div className="mt-3 flex items-center gap-4">
             {imagePreview && (
               (imagePreview.startsWith?.('blob:') || imagePreview.startsWith?.('data:')) ? (
-                <img
+                <Image
                   src={imagePreview}
-                  className="h-20 w-20 object-cover rounded-md border"
                   alt={selectedImageName ? `Vista previa: ${selectedImageName}` : 'Vista previa del producto'}
+                  width={80}
+                  height={80}
+                  className="h-20 w-20 object-cover rounded-md border"
                 />
               ) : (
                 <Image
