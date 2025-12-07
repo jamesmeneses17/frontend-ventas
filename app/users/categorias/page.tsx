@@ -144,7 +144,7 @@ function CategoriasClientePageContent() {
     id: cat.id,
     nombre: cat.nombre,
     imageSrc: mapCategoryToImage(cat.nombre, cat.id),
-    href: `/users/productos?categoriaPrincipalId=${cat.id}`,
+    href: `/users/categorias-principales?categoriaPrincipalId=${cat.id}`,
   }));
 
   return (
