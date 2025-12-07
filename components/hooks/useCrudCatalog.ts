@@ -95,9 +95,18 @@ export const useCrudCatalog = <T extends CrudItem, C extends ItemForm, U extends
   // requests si algo provoca re-render rápido (por ejemplo, cambios de estado
   // externos). Usamos un ref booleano para no depender de `loading` en las deps.
   const fetchInProgressRef = useRef(false);
+  
+  // 🔥 DEBUG: Log para detectar cambios en dependencias
+  useEffect(() => {
+    console.log('[useCrudCatalog] customDependencies changed:', customDependencies);
+  }, [customDependencies]);
 
   const fetchItems = useCallback(async () => {
-    if (fetchInProgressRef.current) return;
+    if (fetchInProgressRef.current) {
+      console.log('[useCrudCatalog] ⚠️ fetchItems ya en progreso, ignorando llamada');
+      return;
+    }
+    console.log('[useCrudCatalog] 🔵 fetchItems INICIADO:', { currentPage, pageSize, searchTerm, customDeps: customDependencies });
     fetchInProgressRef.current = true;
     setLoading(true);
     try {
