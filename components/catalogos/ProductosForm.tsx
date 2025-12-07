@@ -388,9 +388,9 @@ export default function ProductosForm({ initialData, onSubmit, onCancel, formErr
       
       {/* Alerta si el código ya existe */}
       {!initialData?.id && codeExists && formValues.codigo && (
-        <div className="bg-red-50 border border-red-300 rounded p-3">
-          <p className="text-sm text-red-800 font-semibold">
-            ⚠️ Ya existe un producto con el código &quot;{formValues.codigo}&quot;. Por favor, usa un código diferente.
+        <div className="bg-yellow-50 border border-yellow-300 rounded p-3">
+          <p className="text-sm text-yellow-800 font-semibold">
+            Ya existe un producto con el código &quot;{formValues.codigo}&quot; en la base de datos. No es necesario agregarlo nuevamente.
           </p>
         </div>
       )}
@@ -442,15 +442,6 @@ export default function ProductosForm({ initialData, onSubmit, onCancel, formErr
 
      
 
-
-      {/* Nota informativa para nuevos productos */}
-      {!initialData?.id && (
-        <div className="bg-green-50 border border-green-200 rounded p-3">
-          <p className="text-sm text-green-800">
-            ✅ El formulario permanece abierto para que puedas subir imagen y ficha técnica después de crear.
-          </p>
-        </div>
-      )}
 
       {/* Botones */}
       <div className="flex justify-end gap-3 pt-4">
