@@ -60,9 +60,16 @@ export default function ProductosTable({
     {
       key: "nombre",
       label: "Nombre",
-      // AÑADIMOS 'whitespace-normal' para forzar el salto de línea.
-      // max-w-xs (ancho máximo pequeño) y break-words (salto de palabras)
-      cellClass: "px-6 py-4 text-sm text-gray-900 max-w-xs break-words whitespace-normal",
+      // Se muestra completo en hover con title y se permite salto de línea.
+      render: (row: Producto) => (
+        <div
+          className="px-6 py-4 text-sm text-gray-900 max-w-xs break-words whitespace-normal"
+          title={row.nombre}
+        >
+          {row.nombre}
+        </div>
+      ),
+      cellClass: "px-0 py-0", // padding interno viene en el render
     },
     {
       key: "categoria",

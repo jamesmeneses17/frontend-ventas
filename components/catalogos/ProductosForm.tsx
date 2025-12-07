@@ -1,20 +1,26 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import Image from 'next/image';
 import { useForm, SubmitHandler } from "react-hook-form";
 import FormInput from "../common/form/FormInput";
 import FormSelect from "../common/form/FormSelect";
 import Button from "../ui/button";
 
-import { Producto, CreateProductoData, uploadImagen } from "../services/productosService";
+import { Producto, CreateProductoData, uploadImagen, getProductos } from "../services/productosService";
 import { isImageUrl } from "../../utils/ProductUtils";
 import { getSubcategorias, Subcategoria } from "../services/subcategoriasService";
 import { getEstados, Estado } from "../services/estadosService";
 import { getCategorias, Categoria } from "../services/categoriasService";
 import { formatCurrency } from "../../utils/formatters";
 
-type FormData = CreateProductoData & { id?: number; categoriaId?: number; precio_venta?: number | string; precio?: number | string };
+// Redefinimos precios como string|number para permitir el formateo en inputs
+type FormData = Omit<CreateProductoData, "precio" | "precio_venta"> & {
+  precio?: number | string;
+  precio_venta?: number | string;
+  id?: number;
+  categoriaId?: number;
+};
 
 // Formatea un valor numérico a string con separador de miles y sin decimales
 const formatThousands = (val: any): string => {
@@ -27,7 +33,7 @@ const formatThousands = (val: any): string => {
 
 interface Props {
   initialData?: Partial<Producto> | null;
-  onSubmit: (data: FormData) => void;
+  onSubmit: (data: FormData) => void | Promise<void>;
   onCancel: () => void;
   formError?: string;
 }
@@ -56,6 +62,7 @@ export default function ProductosForm({ initialData, onSubmit, onCancel, formErr
   });
 
   const formValues = watch();
+  const nameManuallyChanged = useRef(false);
 
   const [subcategorias, setSubcategorias] = useState<Subcategoria[]>([]);
   const [categorias, setCategorias] = useState<Categoria[]>([]);
@@ -69,6 +76,8 @@ export default function ProductosForm({ initialData, onSubmit, onCancel, formErr
     (initialData as any)?.imagen_url || null
   );
   const [uploading, setUploading] = useState(false);
+  const lastCodeLookup = useRef<string>("");
+  const [nameLocked, setNameLocked] = useState(false);
 
   // Cargar lookups (categorías, subcategorías, estados)
   useEffect(() => {
@@ -102,21 +111,23 @@ export default function ProductosForm({ initialData, onSubmit, onCancel, formErr
   useEffect(() => {
     const isEditing = Boolean(initialData?.id);
 
-    // Determinar la categoría correcta
-    let categoriaIdValue = 0;
-    let subcategoriaIdValue = 0;
+    // En creación: solo asignar estado por defecto la primera vez, sin resetear el resto del formulario
+    if (!isEditing) {
+      if (isInitialLoad && estados.length > 0) {
+        setValue("estadoId", estados[0].id, { shouldValidate: true });
+      }
+      setIsInitialLoad(false);
+      return;
+    }
+
+    // Determinar la categoría correcta para edición
+    let categoriaIdValue = (initialData as any)?.categoriaId || 0;
+    let subcategoriaIdValue = initialData?.subcategoriaId || 0;
     
-    if (isEditing) {
-      // Primero obtener valores del producto
-      categoriaIdValue = (initialData as any)?.categoriaId || 0;
-      subcategoriaIdValue = initialData?.subcategoriaId || 0;
-      
-      // Si no hay categoriaId en el producto, intentar obtenerlo de la subcategoría
-      if (!categoriaIdValue && subcategoriaIdValue > 0) {
-        const subcat = subcategorias.find((s: any) => s.id === subcategoriaIdValue);
-        if (subcat) {
-          categoriaIdValue = subcat.categoria_id || subcat.categoria?.id || 0;
-        }
+    if (!categoriaIdValue && subcategoriaIdValue > 0) {
+      const subcat = subcategorias.find((s: any) => s.id === subcategoriaIdValue);
+      if (subcat) {
+        categoriaIdValue = subcat.categoria_id || subcat.categoria?.id || 0;
       }
     }
 
@@ -133,9 +144,8 @@ export default function ProductosForm({ initialData, onSubmit, onCancel, formErr
       estadoId: isEditing ? initialData?.estadoId : estados.length > 0 ? estados[0].id : 0,
     });
 
-    // Marcar que ya no es carga inicial
     setIsInitialLoad(false);
-  }, [initialData, subcategorias, estados, reset]);
+  }, [initialData, subcategorias, estados, reset, setValue, isInitialLoad]);
 
   // 🔥 Cuando el usuario cambia subcategoría → actualizar categoría
   // SOLO si cambió desde el valor inicial
@@ -280,6 +290,17 @@ export default function ProductosForm({ initialData, onSubmit, onCancel, formErr
       return;
     }
 
+    if (name === "nombre") {
+      nameManuallyChanged.current = true;
+    }
+
+    if (name === "codigo" && !initialData?.id) {
+      const shouldAutofillName = !nameManuallyChanged.current || !formValues.nombre;
+      if (shouldAutofillName) {
+        setValue("nombre", value, { shouldValidate: true });
+      }
+    }
+
     // Si cambia subcategoría, marcar que fue cambio explícito
     if (name === "subcategoriaId" && !isInitialLoad) {
       setSubcategoriaChanged(true);
@@ -298,6 +319,41 @@ export default function ProductosForm({ initialData, onSubmit, onCancel, formErr
 
     setValue(name as keyof FormData, parsedValue as any, { shouldValidate: true });
   };
+
+  // Buscar producto existente por código para autocompletar el nombre en creación
+  useEffect(() => {
+    if (initialData?.id) return; // no autofill en edición
+
+    const code = (formValues.codigo || "").trim();
+    const shouldAutofillName = !nameManuallyChanged.current; // permitir actualizar mientras no haya edición manual
+    if (!code) {
+      lastCodeLookup.current = "";
+      setNameLocked(false);
+      return;
+    }
+    if (!shouldAutofillName) return;
+
+    const timer = setTimeout(async () => {
+      try {
+        const res = await getProductos(1, 10, "", code);
+        const normalized = code.toLowerCase();
+        const match =
+          res?.data?.find((p) => p.codigo?.toLowerCase() === normalized) ||
+          res?.data?.find((p) => p.codigo?.toLowerCase().startsWith(normalized)) ||
+          res?.data?.[0];
+
+        if (match && !nameManuallyChanged.current) {
+          setValue("nombre", match.nombre, { shouldValidate: true });
+          setNameLocked(true);
+        } else {
+          setNameLocked(false);
+        }
+      } catch (err) {
+        console.error("Auto-completar nombre por código falló", err);
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [formValues.codigo, formValues.nombre, initialData?.id, setValue]);
 
   // Filtrar subcategorías por la categoría seleccionada
   // Si no hay categoría seleccionada O estamos editando (para poder cambiar de subcategoría), mostrar TODAS
@@ -334,6 +390,7 @@ export default function ProductosForm({ initialData, onSubmit, onCancel, formErr
           value={formValues.nombre}
           onChange={handleChange}
           placeholder="Ej: Teclado Mecánico RGB"
+          readOnly={nameLocked && !initialData?.id}
           required
         />
       </div>
