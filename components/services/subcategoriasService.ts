@@ -119,6 +119,13 @@ export const getSubcategorias = async (
             ...it,
             id: Number(it.id),
             categoria_id: Number(it.categoria_id),
+            categoriaId: Number(it.categoriaId || it.categoria_id),
+            // Extraer categoriaPrincipalId desde la relación anidada
+            categoriaPrincipalId: it.categoria?.categoria_principal?.id 
+              ? Number(it.categoria.categoria_principal.id)
+              : it.categoriaPrincipalId 
+                ? Number(it.categoriaPrincipalId)
+                : undefined,
             // Asegurar que el nombre de la categoría esté disponible
             categoria_nombre: it.categoria_nombre ?? it.categoria?.nombre ?? 'N/A',
         }));
