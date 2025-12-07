@@ -325,7 +325,7 @@ export default function PreciosPage() {
               data.fecha_inicio || new Date().toISOString().substring(0, 10),
             fecha_fin: data.fecha_fin ?? null,
             producto,
-          } as PrecioConProducto;
+          } as unknown as PrecioConProducto;
         } catch (err) {
           console.error("[PreciosPage.createItem] error creando precio:", err);
           throw err;
@@ -364,7 +364,14 @@ export default function PreciosPage() {
               (data as any).fecha_inicio ||
               new Date().toISOString().substring(0, 10),
             fecha_fin: (data as any).fecha_fin ?? null,
-            producto: producto,
+            producto: producto
+              ? {
+                  ...producto,
+                  categoria: "categoria" in producto && producto.categoria
+                    ? (producto as any).categoria
+                    : { id: 0, nombre: "Sin categoría" }
+                }
+              : { id: 0, nombre: "Sin producto", codigo: "", categoria: { id: 0, nombre: "Sin categoría" } },
           } as PrecioConProducto;
         } catch (err) {
           console.error(

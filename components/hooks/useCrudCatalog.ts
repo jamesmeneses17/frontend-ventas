@@ -75,14 +75,11 @@ export const useCrudCatalog = <T extends CrudItem, C extends ItemForm, U extends
 
   // Memoizar dependencias custom por valor para evitar recrear el callback en cada render
   // cuando el componente padre pasa un array nuevo pero con el mismo contenido.
-  const customDepsKey = useMemo(
-    () => JSON.stringify(options.customDependencies ?? []),
-    [options.customDependencies]
-  );
+ 
 
   const customDependencies = useMemo(
     () => options.customDependencies ?? [],
-    [customDepsKey]
+    [ options.customDependencies]
   );
 
   // Función de carga de datos (memoizada para usar en el efecto)

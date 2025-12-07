@@ -1,7 +1,6 @@
 import axios from "axios";
 
 // 🛑 IMPORTANTE: Asumo que la interfaz Estado ya existe y es re-utilizable.
-import { Estado } from "./subcategoriasService"; // O donde la tengas definida
 import { API_URL } from "./apiConfig";
 
 // La URL base de tu API
@@ -14,7 +13,6 @@ export interface Marca {
     nombre: string;
     // La Marca probablemente tiene una relación de estado para activarla/desactivarla.
     estadoId: number; 
-    estado: Estado; // Objeto anidado del estado
 }
 
 // 2. TIPO DE DATOS PARA CREACIÓN (Suficiente con nombre y el estado es opcional)

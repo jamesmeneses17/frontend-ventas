@@ -225,7 +225,8 @@ function ProductDetailPageContent({ productId }: { productId: string }) {
   }
 
 
-  const { nombre, precio, stock, codigo, categoria } = product;
+  const { nombre, precio, stock, codigo } = product;
+  const categoria = (product as any).categoria ?? { id: 0, nombre: "Sin categoría" };
   const descripcion =
     (product as any).descripcion_larga ??
     (product as any).descripcion ??
