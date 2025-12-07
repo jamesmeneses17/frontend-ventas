@@ -7,7 +7,7 @@ import FormInput from "../common/form/FormInput";
 import FormSelect from "../common/form/FormSelect";
 import Button from "../ui/button";
 
-import { Producto, CreateProductoData, uploadImagen, getProductos } from "../services/productosService";
+import { Producto, CreateProductoData, UpdateProductoData, uploadImagen, getProductos } from "../services/productosService";
 import { isImageUrl } from "../../utils/ProductUtils";
 import { getSubcategorias, Subcategoria } from "../services/subcategoriasService";
 import { getEstados, Estado } from "../services/estadosService";
@@ -78,6 +78,7 @@ export default function ProductosForm({ initialData, onSubmit, onCancel, formErr
   const [uploading, setUploading] = useState(false);
   const lastCodeLookup = useRef<string>("");
   const [nameLocked, setNameLocked] = useState(false);
+  const [codeExists, setCodeExists] = useState(false);
 
   // Cargar lookups (categorías, subcategorías, estados)
   useEffect(() => {
@@ -169,24 +170,24 @@ export default function ProductosForm({ initialData, onSubmit, onCancel, formErr
   }, [formValues.subcategoriaId, subcategorias, setValue, initialData]);
 
   const submitForm: SubmitHandler<FormData> = async (data) => {
-    const parsePrecio = (val: any) => {
+    const parsePrecio = (val: any): number | undefined => {
       if (val === undefined || val === null || val === "") return undefined;
-      // remover separadores de miles, conservar punto decimal
       const str = String(val).replace(/,/g, "");
       const num = parseFloat(str);
       return Number.isFinite(num) ? num : undefined;
     };
 
-    data.precio = parsePrecio(data.precio) as any;
-    if ((data as any).precio_venta !== undefined) {
-      (data as any).precio_venta = parsePrecio((data as any).precio_venta) as any;
-    }
-    
+    // Convertir los campos a number si es necesario
+    const precio = parsePrecio(data.precio);
+    const precio_venta = parsePrecio(data.precio_venta);
+
     const isEditing = Boolean(initialData?.id);
-    
+
     // Construir payload según las reglas
     const submittedData: any = {
       ...data,
+      precio,
+      precio_venta,
     };
 
     // Limpiar campos vacíos de precios para no sobrescribir con undefined
@@ -219,11 +220,10 @@ export default function ProductosForm({ initialData, onSubmit, onCancel, formErr
       // En edición y realmente NO cambió, no incluir el campo
       delete submittedData.subcategoriaId;
     }
-    
+
     // Crear el producto primero
     try {
-      await onSubmit(submittedData as FormData);
-      
+      await onSubmit(submittedData);
       // Si es creación (no tiene ID inicial) y se cargó exitosamente,
       // el ID vendrá en los datos retornados por onSubmit
       // Aquí solo hacemos que el formulario permanezca disponible para subir archivos
@@ -295,10 +295,9 @@ export default function ProductosForm({ initialData, onSubmit, onCancel, formErr
     }
 
     if (name === "codigo" && !initialData?.id) {
-      const shouldAutofillName = !nameManuallyChanged.current || !formValues.nombre;
-      if (shouldAutofillName) {
-        setValue("nombre", value, { shouldValidate: true });
-      }
+      // 🔥 RESETEAR el flag cuando el usuario cambia el código para permitir nueva búsqueda
+      nameManuallyChanged.current = false;
+      setNameLocked(false);
     }
 
     // Si cambia subcategoría, marcar que fue cambio explícito
@@ -343,13 +342,26 @@ export default function ProductosForm({ initialData, onSubmit, onCancel, formErr
           res?.data?.[0];
 
         if (match && !nameManuallyChanged.current) {
-          setValue("nombre", match.nombre, { shouldValidate: true });
-          setNameLocked(true);
+          // Verificar si es una coincidencia exacta (producto ya existe)
+          const exactMatch = match.codigo?.toLowerCase() === normalized;
+          
+          if (exactMatch) {
+            setCodeExists(true);
+            setValue("nombre", match.nombre, { shouldValidate: true });
+            setNameLocked(true);
+          } else {
+            // Solo autocompleta si no es coincidencia exacta
+            setCodeExists(false);
+            setValue("nombre", match.nombre, { shouldValidate: true });
+            setNameLocked(true);
+          }
         } else {
+          setCodeExists(false);
           setNameLocked(false);
         }
       } catch (err) {
         console.error("Auto-completar nombre por código falló", err);
+        setCodeExists(false);
       }
     }, 300);
     return () => clearTimeout(timer);
@@ -373,6 +385,15 @@ export default function ProductosForm({ initialData, onSubmit, onCancel, formErr
 
   return (
     <form onSubmit={handleSubmit(submitForm)} className="space-y-4">
+      
+      {/* Alerta si el código ya existe */}
+      {!initialData?.id && codeExists && formValues.codigo && (
+        <div className="bg-red-50 border border-red-300 rounded p-3">
+          <p className="text-sm text-red-800 font-semibold">
+            ⚠️ Ya existe un producto con el código "{formValues.codigo}". Por favor, usa un código diferente.
+          </p>
+        </div>
+      )}
       
       {/* Fila 1 */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -436,7 +457,10 @@ export default function ProductosForm({ initialData, onSubmit, onCancel, formErr
         <Button type="button" onClick={onCancel} disabled={isSubmitting || loadingLookups}>
           Cancelar
         </Button>
-        <Button type="submit" disabled={isSubmitting || loadingLookups}>
+        <Button 
+          type="submit" 
+          disabled={isSubmitting || loadingLookups || (!initialData?.id && codeExists)}
+        >
           {initialData?.id ? "Guardar Cambios" : "Crear Producto"}
         </Button>
       </div>

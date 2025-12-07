@@ -154,8 +154,15 @@ export default function ListaProductosPage() {
       updateStats();
     } catch (error: any) {
       // Intenta extraer el mensaje del backend
-      const msg = error?.response?.data?.message || error?.message || "Error al guardar el producto.";
+      let msg = error?.response?.data?.message || error?.message || "Error al guardar el producto.";
+      
+      // Mejorar mensajes específicos
+      if (msg.toLowerCase().includes("ya existe") || msg.toLowerCase().includes("already exists")) {
+        msg = `⚠️ Ya existe un producto con el código "${data.codigo}". Por favor, usa un código diferente.`;
+      }
+      
       setFormError(msg);
+      throw error; // Re-lanzar para que el formulario no se cierre
     }
   };
 
