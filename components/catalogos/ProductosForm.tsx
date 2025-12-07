@@ -390,7 +390,8 @@ export default function ProductosForm({ initialData, onSubmit, onCancel, formErr
       {!initialData?.id && codeExists && formValues.codigo && (
         <div className="bg-yellow-50 border border-yellow-300 rounded p-3">
           <p className="text-sm text-yellow-800 font-semibold">
-            Ya existe un producto con el código &quot;{formValues.codigo}&quot; en la base de datos. No es necesario agregarlo nuevamente.
+            Ya existe un producto con el código &quot;{formValues.codigo}&quot; en la base de datos. 
+            Solo debes actualizar el precio de venta si es necesario y continuar con el registro de compra.
           </p>
         </div>
       )}
