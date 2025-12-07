@@ -46,7 +46,9 @@ export const createProducto = async (data: CreateProductoData): Promise<Producto
 export const updateProducto = async (id: number, data: UpdateProductoData): Promise<Producto> => {
     const payload: any = { ...data };
     
-    console.log('[updateProducto] Datos originales:', data);
+    console.log('==========================================');
+    console.log('[updateProducto] 🔵 Datos recibidos:', data);
+    console.log('[updateProducto] 🔵 ID del producto:', id);
 
     // Convertir camelCase a lo que espera el backend, respetando los tres casos
     if ('categoriaId' in data) {
@@ -60,29 +62,37 @@ export const updateProducto = async (id: number, data: UpdateProductoData): Prom
         }
     }
 
+    // 🔥 MANEJO MEJORADO DE SUBCATEGORÍA
     if ('subcategoriaId' in data) {
         const subcat = data.subcategoriaId;
-        if (subcat === null || subcat === 0) {
+        console.log('[updateProducto] subcategoriaId detectado en data:', subcat, 'tipo:', typeof subcat);
+        
+        if (subcat === null) {
+            // Explícitamente null → desvincular subcategoría
             payload.subcategoriaId = null;
-            console.log('[updateProducto] subcategoriaId=null o 0 → enviando null para sin subcategoría');
-        } else if (typeof subcat === 'number') {
+            console.log('[updateProducto] ✅ subcategoriaId=null → DESVINCULAR subcategoría');
+        } else if (subcat === 0) {
+            // 0 también significa desvincular
+            payload.subcategoriaId = null;
+            console.log('[updateProducto] ✅ subcategoriaId=0 → convertido a null para DESVINCULAR');
+        } else if (typeof subcat === 'number' && subcat > 0) {
+            // Número válido → vincular
             payload.subcategoriaId = subcat;
-            console.log('[updateProducto] subcategoriaId numérico → enviando:', subcat);
+            console.log('[updateProducto] ✅ subcategoriaId numérico → vincular:', subcat);
         }
-    } else {
-        // No tocar la relación si no viene subcategoriaId
-        delete payload.subcategoriaId;
     }
-
-    // No mapear precio a precio_costo: enviamos solo los campos del formulario
 
     // Eliminar claves con undefined para no enviar campos de más ni sobreescribir
     Object.keys(payload).forEach((k) => payload[k] === undefined && delete payload[k]);
 
     const endpoint = `${ENDPOINT_BASE}/${id}`;
-        console.log('[updateProducto] PATCH', endpoint, 'payload final:', payload);
+    console.log('[updateProducto] 🚀 PATCH', endpoint);
+    console.log('[updateProducto] 🚀 PAYLOAD ENVIADO AL BACKEND:', JSON.stringify(payload, null, 2));
+    console.log('==========================================');
+    
     const res = await axios.patch(endpoint, payload);
-    console.log('[updateProducto] respuesta:', res?.data);
+    
+    console.log('[updateProducto] ✅ Respuesta del backend:', res?.data);
     return res.data as Producto;
 };
 

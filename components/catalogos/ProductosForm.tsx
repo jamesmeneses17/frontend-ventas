@@ -51,9 +51,8 @@ export default function ProductosForm({ initialData, onSubmit, onCancel, formErr
   const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [estados, setEstados] = useState<Estado[]>([]);
   const [loadingLookups, setLoadingLookups] = useState(false);
-
-  // 🔥 Categoría inicia VACÍA
-  const [categoriaSeleccionada, setCategoriaSeleccionada] = useState<string>("");
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const [subcategoriaChanged, setSubcategoriaChanged] = useState(false);
 
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(
@@ -98,19 +97,16 @@ export default function ProductosForm({ initialData, onSubmit, onCancel, formErr
     let subcategoriaIdValue = 0;
     
     if (isEditing) {
+      // Primero obtener valores del producto
+      categoriaIdValue = (initialData as any)?.categoriaId || 0;
       subcategoriaIdValue = initialData?.subcategoriaId || 0;
       
-      if (subcategoriaIdValue > 0) {
-        // Si hay subcategoría, obtener la categoría padre
+      // Si no hay categoriaId en el producto, intentar obtenerlo de la subcategoría
+      if (!categoriaIdValue && subcategoriaIdValue > 0) {
         const subcat = subcategorias.find((s: any) => s.id === subcategoriaIdValue);
         if (subcat) {
           categoriaIdValue = subcat.categoria_id || subcat.categoria?.id || 0;
-        } else if ((initialData as any)?.categoriaId) {
-          categoriaIdValue = (initialData as any).categoriaId;
         }
-      } else if ((initialData as any)?.categoriaId) {
-        // Si no hay subcategoría pero hay categoriaId
-        categoriaIdValue = (initialData as any).categoriaId;
       }
     }
 
@@ -127,15 +123,20 @@ export default function ProductosForm({ initialData, onSubmit, onCancel, formErr
       estadoId: isEditing ? initialData?.estadoId : estados.length > 0 ? estados[0].id : 0,
     });
 
-    // Actualizar el estado local
-    setCategoriaSeleccionada(String(categoriaIdValue || ""));
+    // Marcar que ya no es carga inicial
+    setIsInitialLoad(false);
   }, [initialData, subcategorias, estados, reset]);
 
   // 🔥 Cuando el usuario cambia subcategoría → actualizar categoría
+  // SOLO si cambió desde el valor inicial
   useEffect(() => {
-    if (formValues.subcategoriaId && subcategorias.length > 0) {
+    const initialSubcategoryId = (initialData as any)?.subcategoriaId || 0;
+    const currentSubcategoryId = Number(formValues.subcategoriaId) || 0;
+    
+    // Si la subcategoría cambió desde su valor inicial y hay una nueva seleccionada
+    if (currentSubcategoryId !== initialSubcategoryId && currentSubcategoryId > 0 && subcategorias.length > 0) {
       const subcatSeleccionada = subcategorias.find(
-        (s) => s.id === Number(formValues.subcategoriaId)
+        (s) => s.id === currentSubcategoryId
       );
       if (subcatSeleccionada) {
         const categoriaId =
@@ -144,18 +145,49 @@ export default function ProductosForm({ initialData, onSubmit, onCancel, formErr
           setValue("categoriaId", categoriaId, { shouldValidate: true });
         }
       }
-    } else if (formValues.subcategoriaId === 0) {
-      // Solo limpiar si el usuario explícitamente selecciona "sin subcategoría"
-      // No limpiar en la carga inicial
     }
-  }, [formValues.subcategoriaId, subcategorias, setValue]);
+  }, [formValues.subcategoriaId, subcategorias, setValue, initialData]);
 
   const submitForm: SubmitHandler<FormData> = async (data) => {
     data.precio = Number(String(data.precio).replace(/[^\d]/g, ""));
     
+    const isEditing = Boolean(initialData?.id);
+    
+    // Construir payload según las reglas
+    const submittedData: any = {
+      ...data,
+    };
+
+    // Detectar si la subcategoría cambió desde su valor original
+    const originalSubcategoryId = (initialData as any)?.subcategoriaId || 0;
+    const newSubcategoryId = data.subcategoriaId && Number(data.subcategoriaId) > 0 
+      ? Number(data.subcategoriaId) 
+      : 0;
+    const hasSubcategoryChanged = originalSubcategoryId !== newSubcategoryId;
+
+    // REGLA: Solo incluir subcategoriaId si:
+    // 1. En CREACIÓN: enviar el valor (o null si no hay)
+    // 2. En EDICIÓN:
+    //    - Si la subcategoría es 0 (vacía): SIEMPRE enviar null (el usuario la limpió o cambió categoría)
+    //    - Si cambió a un valor diferente: enviar el nuevo valor
+    //    - Si NO cambió: NO incluir el campo (mantendrá el actual)
+    if (!isEditing) {
+      // En creación, enviar null si no hay subcategoría
+      submittedData.subcategoriaId = newSubcategoryId > 0 ? newSubcategoryId : null;
+    } else if (newSubcategoryId === 0 && originalSubcategoryId > 0) {
+      // En edición: si la subcategoría ahora es 0 pero antes tenía valor, enviar null (desvincular)
+      submittedData.subcategoriaId = null;
+    } else if (hasSubcategoryChanged) {
+      // En edición: si cambió a un nuevo valor, enviar ese valor
+      submittedData.subcategoriaId = newSubcategoryId > 0 ? newSubcategoryId : null;
+    } else {
+      // En edición y realmente NO cambió, no incluir el campo
+      delete submittedData.subcategoriaId;
+    }
+    
     // Crear el producto primero
     try {
-      await onSubmit(data);
+      await onSubmit(submittedData as FormData);
       
       // Si es creación (no tiene ID inicial) y se cargó exitosamente,
       // el ID vendrá en los datos retornados por onSubmit
@@ -220,9 +252,15 @@ export default function ProductosForm({ initialData, onSubmit, onCancel, formErr
       return;
     }
 
-    // Si cambia la categoría, limpiar subcategoría
-    if (name === "categoriaId" && value !== String(formValues.categoriaId)) {
+    // Si cambia subcategoría, marcar que fue cambio explícito
+    if (name === "subcategoriaId" && !isInitialLoad) {
+      setSubcategoriaChanged(true);
+    }
+
+    // Si cambia la categoría manualmente, limpiar subcategoría
+    if (name === "categoriaId" && !isInitialLoad) {
       setValue("subcategoriaId", 0, { shouldValidate: true });
+      setSubcategoriaChanged(false);
     }
 
     const parsedValue =
@@ -233,9 +271,17 @@ export default function ProductosForm({ initialData, onSubmit, onCancel, formErr
     setValue(name as keyof FormData, parsedValue as any, { shouldValidate: true });
   };
 
+  // Filtrar subcategorías por la categoría seleccionada
+  // Si no hay categoría seleccionada O estamos editando (para poder cambiar de subcategoría), mostrar TODAS
+  const selectedCategoryId = Number(formValues.categoriaId) || 0;
+  const isEditing = Boolean(initialData?.id);
+  const subcategoriasFiltradas = (selectedCategoryId > 0 && !isEditing)
+    ? subcategorias.filter((s: any) => Number(s.categoria_id) === selectedCategoryId)
+    : subcategorias;
+
   const subcategoriaOptions = [
-    { value: "", label: "Seleccione una subcategoría..." },
-    ...subcategorias.map((s) => ({
+    { value: "0", label: "Sin subcategoría" },
+    ...subcategoriasFiltradas.map((s) => ({
       value: String(s.id),
       label: s.nombre,
     })),
@@ -284,7 +330,7 @@ export default function ProductosForm({ initialData, onSubmit, onCancel, formErr
         <FormSelect
           label="Subcategoría"
           name="subcategoriaId"
-          value={String(formValues.subcategoriaId || "")}
+          value={String(formValues.subcategoriaId ?? 0)}
           onChange={handleChange}
           options={subcategoriaOptions}
           required={false}

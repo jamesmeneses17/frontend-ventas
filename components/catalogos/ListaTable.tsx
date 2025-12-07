@@ -100,8 +100,8 @@ export default function ListaTable({
       render: (row: Producto) => {
         const subcategoriaId = (row as any).subcategoriaId ?? (row as any).subcategoria_id;
         
-        // Si tiene subcategoría, mostrar el nombre
-        if (subcategoriaId && subcategoriaId !== 0) {
+        // Si tiene subcategoría válida (mayor a 0), mostrar el nombre
+        if (subcategoriaId && subcategoriaId > 0) {
           const nombreSubcategoria = getNombreSubcategoria(subcategoriaId);
           if (nombreSubcategoria) return nombreSubcategoria;
         }
