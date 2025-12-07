@@ -3,7 +3,7 @@
 import React, { useState, useEffect, Suspense, useMemo } from "react";
 import PublicLayout from "../../../components/layout/PublicLayout";
 import ImageLinkCard from "@/components/ui/ImageLinkCard";
-import { getCategorias, Categoria } from "@/components/services/categoriasService";
+import { getCategoriasPrincipales, CategoriaPrincipal } from "@/components/services/categoriasPrincipalesService";
 import { createSlug } from "@/utils/slug";
 import { useRouter } from 'next/navigation';
 import Link from "next/link";
@@ -13,7 +13,9 @@ import SearchDropdown from "../../../components/common/form/SearchDropdown";
 // 1. Tipos, Mapeo y Fallback de Imágenes
 // ----------------------------------------------------------------------
 
-interface CategoryCardDisplayProps extends Categoria {
+interface CategoryCardDisplayProps {
+  id: number;
+  nombre: string;
   descripcion?: string;
   imageSrc: string;
   href: string;
@@ -36,9 +38,16 @@ const mapCategoryToImage = (nombre: string, id: number): string => {
   const slug = createSlug(nombre);
 
   switch (slug) {
-    case "paneles-solares":
+    case "corriente-alterna":
+    case "energia-ac":
+      return "/images/iluminacion-solar.webp";
     case "energia-solar":
     case "energia-solar-sostenible":
+      return "/images/panel.webp";
+    case "productos-automotriz":
+    case "automotriz":
+      return "/images/bateria.webp";
+    case "paneles-solares":
       return "/images/panel.webp";
     case "baterias-solares":
     case "baterias":
@@ -97,7 +106,7 @@ const CategoryCard: React.FC<CategoryCardDisplayProps> = ({
 // ----------------------------------------------------------------------
 
 function CategoriasClientePageContent() {
-  const [categories, setCategories] = useState<Categoria[]>([]);
+  const [categories, setCategories] = useState<CategoriaPrincipal[]>([]);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
@@ -105,12 +114,24 @@ function CategoriasClientePageContent() {
     const fetchCategories = async () => {
       try {
         setLoading(true);
-        const data = await getCategorias();
+        const response = await getCategoriasPrincipales(1, 1000, "");
+        console.log('[Categorias Page] Datos recibidos:', response);
+        
+        // Verificar si response es un objeto con propiedad 'data' o directamente un array
+        let categoriasArray: CategoriaPrincipal[] = [];
+        if (Array.isArray(response)) {
+          categoriasArray = response;
+        } else if (response && typeof response === 'object' && Array.isArray(response.data)) {
+          categoriasArray = response.data;
+        }
+        
+        console.log('[Categorias Page] Categorías Principales procesadas:', categoriasArray);
+        
         // Ordenar categorías alfabéticamente para una mejor usabilidad
-        const sortedData = data.sort((a, b) => a.nombre.localeCompare(b.nombre));
+        const sortedData = categoriasArray.sort((a, b) => a.nombre.localeCompare(b.nombre));
         setCategories(sortedData);
       } catch (err) {
-        console.error("Error al cargar categorías:", err);
+        console.error("Error al cargar categorías principales:", err);
       } finally {
         setLoading(false);
       }
@@ -118,13 +139,12 @@ function CategoriasClientePageContent() {
     fetchCategories();
   }, []);
 
-  // No filtrar el catálogo en tiempo real (seguimos la especificación):
-  // el desplegable muestra sugerencias, y la acción "Ver todos" lleva
-  // a la página de resultados dedicada.
+  // Mapear categorías principales a formato de display
   const displayedCategories: CategoryCardDisplayProps[] = categories.map((cat) => ({
-    ...cat,
+    id: cat.id,
+    nombre: cat.nombre,
     imageSrc: mapCategoryToImage(cat.nombre, cat.id),
-    href: `/users/productos?categoriaId=${cat.id}`,
+    href: `/users/productos?categoriaPrincipalId=${cat.id}`,
   }));
 
   return (
@@ -164,17 +184,15 @@ function CategoriasClientePageContent() {
                 No hay categorías disponibles en este momento.
               </div>
             ) : (
-              // ⭐️ CAMBIO CLAVE: Diseño de cuadrícula responsiva sin paginación
-              <div 
-                className="grid grid-cols-2 // Móvil (2 columnas)
-                           sm:grid-cols-3 // Tablet (3 columnas)
-                           lg:grid-cols-4 // Desktop (4 columnas)
-                           xl:grid-cols-5 // Desktop Grande (5 columnas)
-                           gap-6"
-              >
-                {displayedCategories.map((category) => (
-                  <CategoryCard key={category.id} {...category} />
-                ))}
+              // ⭐️ Diseño centrado y responsivo
+              <div className="flex justify-center">
+                <div 
+                  className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl"
+                >
+                  {displayedCategories.map((category) => (
+                    <CategoryCard key={category.id} {...category} />
+                  ))}
+                </div>
               </div>
             )}
             
