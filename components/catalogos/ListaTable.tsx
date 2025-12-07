@@ -70,7 +70,7 @@ export default function ListaTable({
     { 
       key: "nombre", 
       label: "Nombre",
-      cellClass: "px-6 py-4 text-sm text-gray-900 max-w-xs break-words"
+      cellClass: "px-6 py-4 text-sm text-gray-900 max-w-xs break-words whitespace-normal"
     },
     {
       key: "categoria",

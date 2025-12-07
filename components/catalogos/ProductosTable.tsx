@@ -1,18 +1,22 @@
 "use client";
 
 import React from "react";
+import Image from "next/image";
 import CrudTable from "../common/CrudTable";
 import ActionButton from "../common/ActionButton";
 import { Producto, Categoria, Estado } from "../services/productosService";
+import { Subcategoria } from "../services/subcategoriasService";
 import { Trash, Pencil } from "lucide-react";
+import { isImageUrl } from "../../utils/ProductUtils";
 import { formatCurrency } from "../../utils/formatters";
 
 interface Props {
   data: Producto[];
   categorias: Categoria[];
+  subcategorias?: Subcategoria[];
   estados: Estado[];
   loading?: boolean;
-  totalItems?: number; // <-- IMPORTANTE: para el paginador
+  totalItems?: number; // Lo mantenemos pero no lo usaremos en el footer de este componente
   onEdit: (producto: Producto) => void;
   onDelete: (id: number) => void;
 }
@@ -20,13 +24,23 @@ interface Props {
 export default function ProductosTable({
   data,
   categorias,
+  subcategorias = [],
   estados,
   loading,
   totalItems = 0,
   onEdit,
   onDelete,
 }: Props) {
-  // Estado visual de productos
+  // ... (Helpers de categorías y estados omitidos por ser idénticos y funcionales) ...
+  const getCategoriaFromSubcategoria = (subcategoriaId: number | undefined) => {
+    if (!subcategoriaId || subcategoriaId === 0) return "";
+    const subcategoria = subcategorias.find((s) => s.id === subcategoriaId);
+    if (!subcategoria) return "";
+    const categoriaId = subcategoria.categoria_id || (subcategoria as any).categoriaPrincipalId;
+    const categoria = categorias.find((c) => c.id === categoriaId);
+    return categoria?.nombre || "";
+  };
+
   const getEstadoVentaClasses = (estadoStock: string) => {
     switch (estadoStock) {
       case "Agotado":
@@ -40,33 +54,55 @@ export default function ProductosTable({
     }
   };
 
-  // Columnas de la tabla (idéntico a tu versión)
+  // ✅ DEFINICIÓN DE COLUMNAS SIMPLIFICADA PARA 'CONTROL DE INVENTARIO'
   const columns = [
     { key: "codigo", label: "Código" },
-    { 
-      key: "nombre", 
+    {
+      key: "nombre",
       label: "Nombre",
-      cellClass: "px-6 py-4 text-sm text-gray-900 max-w-xs break-words"
+      // AÑADIMOS 'whitespace-normal' para forzar el salto de línea.
+      // max-w-xs (ancho máximo pequeño) y break-words (salto de palabras)
+      cellClass: "px-6 py-4 text-sm text-gray-900 max-w-xs break-words whitespace-normal",
     },
     {
       key: "categoria",
       label: "Categoría",
       render: (row: Producto) => {
-        const categoria = categorias.find((c) => c.id === row.subcategoriaId);
-        return categoria?.nombre || "N/A";
+        // Usamos el helper de la otra tabla para obtener la categoría principal
+        const subcategoriaId =
+          (row as any).subcategoriaId ?? (row as any).subcategoria_id;
+        
+        // Si tiene subcategoría, obtener la categoría padre
+        if (subcategoriaId && subcategoriaId !== 0) {
+          return getCategoriaFromSubcategoria(subcategoriaId);
+        }
+        
+        // Si no tiene subcategoría, buscar la categoría directamente
+        const categoriaId =
+          (row as any).categoriaId ?? (row as any).categoria_id;
+        if (categoriaId) {
+          const categoria = categorias.find((c) => c.id === categoriaId);
+          if (categoria?.nombre) return categoria.nombre;
+        }
+        
+        return "N/A";
       },
     },
+    // Eliminamos Subcategoría, Imagen y Ficha Técnica para simplificar la vista de Inventario.
+    
     {
       key: "compras",
       label: "Compras",
-      render: (row: Producto) =>
-        <span className="text-sm text-gray-700">{row.compras ?? 0}</span>,
+      render: (row: Producto) => (
+        <span className="text-sm text-gray-700">{row.compras ?? 0}</span>
+      ),
     },
     {
       key: "ventas",
       label: "Ventas",
-      render: (row: Producto) =>
-        <span className="text-sm text-gray-700">{row.ventas ?? 0}</span>,
+      render: (row: Producto) => (
+        <span className="text-sm text-gray-700">{row.ventas ?? 0}</span>
+      ),
     },
     { key: "stock", label: "Stock" },
 
@@ -83,12 +119,13 @@ export default function ProductosTable({
       label: "Precio Venta",
       render: (row: Producto) => {
         const precioVenta = Number(
-          (row as any).precio_venta ??
-            (row as any).precioVenta ??
-            row.precio ??
-            0
+          (row as any).precio_venta ?? (row as any).precioVenta ?? row.precio ?? 0
         );
-        return <span className="font-semibold">{formatCurrency(precioVenta)}</span>;
+        return (
+          <span className="font-semibold">
+            {formatCurrency(precioVenta)}
+          </span>
+        );
       },
     },
     {
@@ -97,15 +134,16 @@ export default function ProductosTable({
       render: (row: Producto) => {
         const costo = Number((row as any).precio_costo ?? 0);
         const pv = Number(
-          (row as any).precio_venta ??
-            (row as any).precioVenta ??
-            row.precio ??
-            0
+          (row as any).precio_venta ?? (row as any).precioVenta ?? row.precio ?? 0
         );
         const utilidad = pv - costo;
 
         return (
-          <span className={`font-semibold ${utilidad < 0 ? "text-red-600" : "text-green-600"}`}>
+          <span
+            className={`font-semibold ${
+              utilidad < 0 ? "text-red-600" : "text-green-600"
+            }`}
+          >
             {formatCurrency(utilidad)}
           </span>
         );
@@ -117,14 +155,22 @@ export default function ProductosTable({
       render: (row: Producto) => {
         const costo = Number((row as any).precio_costo ?? 0);
         const stock = Number(row.stock ?? 0);
-        return <span className="text-sm text-gray-700">{formatCurrency(costo * stock)}</span>;
+        return (
+          <span className="text-sm text-gray-700">
+            {formatCurrency(costo * stock)}
+          </span>
+        );
       },
     },
     {
       key: "estado_stock",
       label: "Estado de Venta",
       render: (row: Producto) => (
-        <span className={`inline-flex items-center ${getEstadoVentaClasses(row.estado_stock || "Disponible")}`}>
+        <span
+          className={`inline-flex items-center ${getEstadoVentaClasses(
+            row.estado_stock || "Disponible"
+          )}`}
+        >
           {row.estado_stock || "Disponible"}
         </span>
       ),
@@ -152,15 +198,95 @@ export default function ProductosTable({
         )}
       />
 
-      {/* FOOTER EXACTO DEL MOLDE */}
-      {!loading && (
-        <p className="text-sm text-gray-600 mt-4">
-          Mostrando {data.length} de {totalItems} productos
-        </p>
-      )}
+      {/* 🛑 ELIMINAMOS EL RESUMEN DEL FOOTER DE ESTA TABLA */}
+      {/* {!loading && (
+         <p className="text-sm text-gray-600 mt-4">
+           Mostrando {data.length} de {totalItems} productos
+         </p>
+       )}
+       {loading && <p className="text-sm text-gray-600 mt-4">Cargando...</p>}
+      */}
+    </div>
+  );
+}
 
-      {loading && (
-        <p className="text-sm text-gray-600 mt-4">Cargando...</p>
+// ------------------------------------------------------
+// 🔵 Subcomponente RowFiles (Necesario si lo usas en la tabla, aunque la hemos quitado en 'columns')
+// ------------------------------------------------------
+function RowFiles({
+  producto,
+  uploadAsFicha,
+}: {
+  producto: Producto;
+  uploadAsFicha?: boolean;
+}) {
+  const [preview, setPreview] = React.useState<string | null>(
+    producto.imagen_url || null
+  );
+
+  React.useEffect(() => {
+    setPreview(producto.imagen_url || null);
+  }, [producto.imagen_url]);
+
+  return (
+    <div className="flex items-center gap-2">
+      {!uploadAsFicha ? (
+        preview ? (
+          isImageUrl(preview) ? (
+            <a href={preview} target="_blank" rel="noreferrer">
+              <Image
+                src={preview}
+                alt={`Imagen producto ${producto.nombre || producto.id}`}
+                width={48}
+                height={48}
+                className="w-12 h-12 object-cover rounded border cursor-pointer"
+              />
+            </a>
+          ) : (
+            <a href={preview} target="_blank" rel="noreferrer" className="text-sm text-gray-700">
+              Ver archivo
+            </a>
+          )
+        ) : (
+          <div className="w-12 h-12 flex flex-col items-center justify-center bg-gray-100 text-gray-400 rounded border text-xs">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              className="w-6 h-6"
+            >
+              <rect
+                x="3"
+                y="3"
+                width="18"
+                height="18"
+                rx="2"
+                ry="2"
+                strokeWidth="1.5"
+              ></rect>
+              <circle cx="8.5" cy="8.5" r="1.5" strokeWidth="1.5"></circle>
+              <path
+                d="M21 15l-5-5-9 9"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              ></path>
+            </svg>
+            <span className="mt-0.5">Sin Imagen</span>
+          </div>
+        )
+      ) : producto.ficha_tecnica_url ? (
+        <a
+          href={producto.ficha_tecnica_url}
+          target="_blank"
+          rel="noreferrer"
+          className="text-sm text-gray-700"
+        >
+          Ver PDF
+        </a>
+      ) : (
+        <span className="text-sm text-gray-500">Sin Ficha</span>
       )}
     </div>
   );
