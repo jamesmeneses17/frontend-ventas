@@ -43,7 +43,11 @@ export default function ProductosTable({
   // Columnas de la tabla (idéntico a tu versión)
   const columns = [
     { key: "codigo", label: "Código" },
-    { key: "nombre", label: "Nombre" },
+    { 
+      key: "nombre", 
+      label: "Nombre",
+      cellClass: "px-6 py-4 text-sm text-gray-900 max-w-xs break-words"
+    },
     {
       key: "categoria",
       label: "Categoría",

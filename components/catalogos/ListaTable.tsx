@@ -67,7 +67,11 @@ export default function ListaTable({
   // ✅ Columnas de la tabla
   const columns = [
     { key: "codigo", label: "Código" },
-    { key: "nombre", label: "Nombre" },
+    { 
+      key: "nombre", 
+      label: "Nombre",
+      cellClass: "px-6 py-4 text-sm text-gray-900 max-w-xs break-words"
+    },
     {
       key: "categoria",
       label: "Categoría",
