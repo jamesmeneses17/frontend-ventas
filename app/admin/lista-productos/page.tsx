@@ -14,8 +14,6 @@ import CardStat from "../../../components/ui/CardStat";
 import { formatCurrency } from "../../../utils/formatters";
 
 // Componentes específicos del catálogo
-import ProductosTable from "../../../components/catalogos/ProductosTable"; 
-import ProductosForm from "../../../components/catalogos/ProductosForm";
 
 // Servicios
 import { getCategorias } from "../../../components/services/categoriasService";
@@ -37,6 +35,8 @@ import {
 import { Package, AlertTriangle, Box, Upload } from "lucide-react"; 
 import ActionButton from "../../../components/common/ActionButton";
 import FilterBar from "../../../components/common/FilterBar";
+import ProductosTable from "../../../components/catalogos/ProductosTable";
+import ProductosForm from "../../../components/catalogos/ProductosForm";
 
 // Tipos para el resumen de widgets
 interface ProductSummary {
@@ -100,8 +100,12 @@ export default function ListaProductosPage() {
 
   // Cargar catálogos de categorías y estados
   React.useEffect(() => {
-    getCategorias().then(setCategorias).catch(err => console.error("Error cargando categorías:", err));
-    getEstados().then(setEstados).catch(err => console.error("Error cargando estados:", err));
+    getCategorias()
+      .then((res: any) => setCategorias(res.data || res || []))
+      .catch(err => console.error("Error cargando categorías:", err));
+    getEstados()
+      .then((res: any) => setEstados(res.data || res || []))
+      .catch(err => console.error("Error cargando estados:", err));
   }, []);
 
   const editingProducto = editingItem as Producto | null;

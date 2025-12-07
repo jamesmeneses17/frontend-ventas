@@ -26,14 +26,16 @@ export const getProductosStats = async (): Promise<{ total: number; stockBajo: n
  * Crea un nuevo producto.
  */
 export const createProducto = async (data: CreateProductoData): Promise<Producto> => {
-    // Algunos backends esperan el campo 'precio_costo' en lugar de 'precio'.
     const payload: any = { ...data };
-    if (typeof payload.precio !== 'undefined') {
-        payload.precio_costo = payload.precio;
-        // mantener 'precio' por compatibilidad no debería hacer daño, pero
-        // si prefieres enviarlo solo como 'precio_costo' descomenta la siguiente línea:
-        // delete payload.precio;
+
+    // Si subcategoriaId es 0, enviarlo como null (sin subcategoría)
+    if (payload.subcategoriaId === 0) {
+        payload.subcategoriaId = null;
     }
+
+    // Eliminar claves con undefined para no enviar campos de más
+    Object.keys(payload).forEach((k) => payload[k] === undefined && delete payload[k]);
+
     const res = await axios.post(ENDPOINT_BASE, payload);
     return res.data as Producto;
 };
@@ -43,14 +45,42 @@ export const createProducto = async (data: CreateProductoData): Promise<Producto
  */
 export const updateProducto = async (id: number, data: UpdateProductoData): Promise<Producto> => {
     const payload: any = { ...data };
-    if (typeof payload.precio !== 'undefined') {
-        payload.precio_costo = payload.precio;
-            // Enviar SOLO `precio_costo` para evitar ambigüedad en el backend.
-            // Algunos backends pueden ignorar `precio` y solo aceptar `precio_costo`.
-            delete payload.precio;
+    
+    console.log('[updateProducto] Datos originales:', data);
+
+    // Convertir camelCase a lo que espera el backend, respetando los tres casos
+    if ('categoriaId' in data) {
+        const cat = data.categoriaId;
+        if (cat === null) {
+            payload.categoriaId = null;
+            console.log('[updateProducto] categoriaId=null → enviando null');
+        } else if (typeof cat === 'number') {
+            payload.categoriaId = cat;
+            console.log('[updateProducto] categoriaId numérico → enviando:', cat);
+        }
     }
+
+    if ('subcategoriaId' in data) {
+        const subcat = data.subcategoriaId;
+        if (subcat === null || subcat === 0) {
+            payload.subcategoriaId = null;
+            console.log('[updateProducto] subcategoriaId=null o 0 → enviando null para sin subcategoría');
+        } else if (typeof subcat === 'number') {
+            payload.subcategoriaId = subcat;
+            console.log('[updateProducto] subcategoriaId numérico → enviando:', subcat);
+        }
+    } else {
+        // No tocar la relación si no viene subcategoriaId
+        delete payload.subcategoriaId;
+    }
+
+    // No mapear precio a precio_costo: enviamos solo los campos del formulario
+
+    // Eliminar claves con undefined para no enviar campos de más ni sobreescribir
+    Object.keys(payload).forEach((k) => payload[k] === undefined && delete payload[k]);
+
     const endpoint = `${ENDPOINT_BASE}/${id}`;
-        console.log('[updateProducto] PATCH', endpoint, 'payload (enviando precio_costo):', payload);
+        console.log('[updateProducto] PATCH', endpoint, 'payload final:', payload);
     const res = await axios.patch(endpoint, payload);
     console.log('[updateProducto] respuesta:', res?.data);
     return res.data as Producto;
@@ -109,11 +139,13 @@ export interface Producto {
     ventas?: number;
     ubicacion?: string;
 
-    // Campos obligatorios/de relación
-    estadoId: number;
-    categoriaId: number;
-    estado?: Estado;
-    categoria?: Categoria; // Añadido: Útil para mostrar en la tabla o editar
+    // Campos obligatorios/de relación
+    estadoId: number;
+    categoriaId?: number;           // ✅ Categoría (nivel 2)
+    categoriaPrincipalId?: number;  // ✅ Categoría principal (nivel 1)
+    subcategoriaId?: number;        // ✅ Subcategoría (nivel 3)
+    estado?: Estado;
+    subcategoria?: any; // Relación a subcategoría
 }
 export interface PaginacionResponse<T> {
   data: T[];
@@ -128,17 +160,17 @@ export type CreateProductoData = {
     ficha_tecnica_url?: string;
     imagen_url?: string;
     
-    // Se espera que el DTO reciba estos datos
-    stock: number;
-    precio: number;
+    // Se espera que el DTO reciba estos datos
+    stock: number;
+    precio: number;
     stockMinimo?: number; // ✅ Asumiendo que agregaste esto al DTO
-    
-    categoriaId: number;
-    estadoId?: number;
+    
+    categoriaId?: number;           // ✅ Categoría (nivel 2)
+    categoriaPrincipalId?: number;  // ✅ Categoría principal (nivel 1)
+    subcategoriaId?: number;        // ✅ Subcategoría (nivel 3)
+    estadoId?: number;
 };
 export type UpdateProductoData = Partial<CreateProductoData>;
-
-
 // --------------------------------------------------------------------------------
 // --- FUNCIONES CRUD ---
 // --------------------------------------------------------------------------------
@@ -211,6 +243,9 @@ export const getProductos = async (
             // Si no existe, intentar leer `it.inventario?.stock` o `it.inventario?.[0]?.stock`.
             const finalStock = Number(it.stock ?? it.inventario?.[0]?.stock) || 0;
             const finalStockMinimo = Number(it.stockMinimo) || 5;
+            // Normalizar subcategoriaId: aceptar tanto camelCase como snake_case del backend
+            const finalSubcategoriaId = it.subcategoriaId ?? it.subcategoria_id;
+            const finalCategoriaId = it.categoriaId ?? it.categoria_id;
             return {
                 ...it,
                 // 🛑 CAMBIO CRÍTICO: la columna 'precio' que muestra la tabla
@@ -218,6 +253,8 @@ export const getProductos = async (
                     precio: finalPrice,
                     stock: finalStock,
                     stockMinimo: finalStockMinimo,
+                    categoriaId: finalCategoriaId,
+                    subcategoriaId: finalSubcategoriaId,
                     imagen_url: it.imagen_url ?? it.image_url ?? it.url ?? null,
             };
         });
@@ -286,6 +323,20 @@ export const uploadImagen = async (id: number, file: File | Blob) => {
     const form = new FormData();
     // En el backend el FileInterceptor usa el campo 'file'
     form.append('file', file as any, (file as any).name || 'upload');
+    form.append('type', 'imagen');
+
+    // NO forzar Content-Type: el navegador/axios establecerá el boundary correctamente
+    const res = await axios.post(endpoint, form);
+    return res.data;
+};
+
+export const uploadFichaTecnica = async (id: number, file: File | Blob) => {
+    // Usar el mismo endpoint, enviar type para diferenciar
+    const endpoint = `${ENDPOINT_BASE}/${id}/upload-imagen`;
+    const form = new FormData();
+    // En el backend el FileInterceptor usa el campo 'file'
+    form.append('file', file as any, (file as any).name || 'upload');
+    form.append('type', 'ficha_tecnica');
 
     // NO forzar Content-Type: el navegador/axios establecerá el boundary correctamente
     const res = await axios.post(endpoint, form);

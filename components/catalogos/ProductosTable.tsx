@@ -48,7 +48,7 @@ export default function ProductosTable({
       key: "categoria",
       label: "Categoría",
       render: (row: Producto) => {
-        const categoria = categorias.find((c) => c.id === row.categoriaId);
+        const categoria = categorias.find((c) => c.id === row.subcategoriaId);
         return categoria?.nombre || "N/A";
       },
     },

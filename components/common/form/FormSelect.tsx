@@ -48,7 +48,7 @@ export default function FormSelect({
         disabled={disabled}
         className={`${baseClasses} ${borderClass}`}
       >
-        <option value="">{placeholder}</option>
+        {!value && <option value="">{placeholder}</option>}
         {options.map((option) => (
           <option key={option.value} value={option.value}>
             {option.label}

@@ -247,7 +247,7 @@ export const useCrudCatalog = <T extends CrudItem, C extends ItemForm, U extends
       if (isEditing) {
         await serviceRef.current.updateItem(editingItem!.id, formData as U);
       } else {
-        await serviceRef.current.createItem(formData as C);
+        const newItem = await serviceRef.current.createItem(formData as C);
       }
 
       setNotification({
@@ -257,6 +257,7 @@ export const useCrudCatalog = <T extends CrudItem, C extends ItemForm, U extends
         type: "success",
       });
 
+      // Cerrar modal inmediatamente después de guardar (crear o actualizar)
       handleCloseModal();
       await fetchItems(); // Recargar datos después de la operación
     } catch (error) {

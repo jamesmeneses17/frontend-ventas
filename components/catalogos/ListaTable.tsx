@@ -5,6 +5,7 @@ import Image from 'next/image';
 import CrudTable from "../common/CrudTable";
 import ActionButton from "../common/ActionButton";
 import { Producto, Categoria, Estado } from "../services/productosService";
+import { Subcategoria } from "../services/subcategoriasService";
 import { isImageUrl } from "../../utils/ProductUtils";
 import { Trash, Pencil } from "lucide-react";
 import { formatCurrency } from "../../utils/formatters";
@@ -12,6 +13,7 @@ import { formatCurrency } from "../../utils/formatters";
 interface Props {
   data: Producto[];
   categorias: Categoria[];
+  subcategorias?: Subcategoria[];
   estados: Estado[];
   loading?: boolean;
   onEdit: (producto: Producto) => void;
@@ -21,11 +23,33 @@ interface Props {
 export default function ListaTable({
   data,
   categorias,
+  subcategorias = [],
   estados,
   loading,
   onEdit,
   onDelete,
 }: Props) {
+  // ✅ Helper para obtener el nombre de la categoría padre de una subcategoría
+  const getCategoriaFromSubcategoria = (subcategoriaId: number | undefined): string => {
+    if (!subcategoriaId || subcategoriaId === 0) return "";
+    
+    const subcategoria = subcategorias.find((s) => s.id === subcategoriaId);
+    if (!subcategoria) return "";
+    
+    const categoriaId = subcategoria.categoria_id || (subcategoria as any).categoriaPrincipalId;
+    if (!categoriaId) return "";
+    
+    const categoria = categorias.find((c) => c.id === categoriaId);
+    return categoria?.nombre || "";
+  };
+
+  // ✅ Helper para obtener el nombre de la subcategoría
+  const getNombreSubcategoria = (subcategoriaId: number | undefined): string => {
+    if (!subcategoriaId || subcategoriaId === 0) return "";
+    
+    const subcategoria = subcategorias.find((s) => s.id === subcategoriaId);
+    return subcategoria?.nombre || "";
+  };
   // ✅ Estilo según el estado de venta (catálogo)
   const getEstadoVentaClasses = (estadoStock: string) => {
     switch (estadoStock) {
@@ -48,8 +72,37 @@ export default function ListaTable({
       key: "categoria",
       label: "Categoría",
       render: (row: Producto) => {
-        const categoria = categorias.find((c) => c.id === row.categoriaId);
-        return categoria?.nombre || "N/A";
+        const subcategoriaId = (row as any).subcategoriaId ?? (row as any).subcategoria_id;
+        
+        // Si tiene subcategoría, obtener la categoría padre
+        if (subcategoriaId && subcategoriaId !== 0) {
+          const categoriaNombre = getCategoriaFromSubcategoria(subcategoriaId);
+          if (categoriaNombre) return categoriaNombre;
+        }
+        
+        // Si no tiene subcategoría, buscar la categoría directamente
+        const categoriaId = (row as any).categoriaId ?? (row as any).categoria_id;
+        if (categoriaId) {
+          const categoria = categorias.find((c) => c.id === categoriaId);
+          if (categoria?.nombre) return categoria.nombre;
+        }
+        
+        return "Sin categoría";
+      },
+    },
+    {
+      key: "subcategoria",
+      label: "Subcategoría",
+      render: (row: Producto) => {
+        const subcategoriaId = (row as any).subcategoriaId ?? (row as any).subcategoria_id;
+        
+        // Si tiene subcategoría, mostrar el nombre
+        if (subcategoriaId && subcategoriaId !== 0) {
+          const nombreSubcategoria = getNombreSubcategoria(subcategoriaId);
+          if (nombreSubcategoria) return nombreSubcategoria;
+        }
+        
+        return "Sin subcategoría";
       },
     },
     {

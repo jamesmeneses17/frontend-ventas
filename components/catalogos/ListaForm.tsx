@@ -6,9 +6,10 @@ import { useForm, SubmitHandler } from "react-hook-form";
 import FormInput from "../common/form/FormInput";
 import FormSelect from "../common/form/FormSelect";
 import Button from "../ui/button"; 
-import { Producto, CreateProductoData, uploadImagen } from "../services/productosService";
-import { getCategorias, Categoria } from "../services/categoriasService";
+import { Producto, CreateProductoData, uploadImagen, uploadFichaTecnica } from "../services/productosService";
+import { getSubcategorias, Subcategoria } from "../services/subcategoriasService";
 import { getEstados, Estado } from "../services/estadosService";
+import { getCategorias, Categoria } from "../services/categoriasService";
 import { formatCurrency } from "../../utils/formatters"; 
 
 type FormData = Omit<CreateProductoData, "ficha_tecnica_url"> & { 
@@ -39,7 +40,8 @@ export default function ListaForm({ initialData, onSubmit, onCancel, formError }
       precio: (initialData as any)?.precio ?? 0,
       stock: (initialData as any)?.stock ?? 0,
       descripcion: initialData?.descripcion || "",
-      categoriaId: initialData?.categoriaId || 0,
+      categoriaId: (initialData as any)?.categoriaId || 0,
+      subcategoriaId: (initialData as any)?.subcategoriaId || 0,
       estadoId: initialData?.estadoId || 0,
     },
   });
@@ -47,71 +49,141 @@ export default function ListaForm({ initialData, onSubmit, onCancel, formError }
   const formValues = watch();
 
   const [categorias, setCategorias] = useState<Categoria[]>([]);
+  const [subcategorias, setSubcategorias] = useState<Subcategoria[]>([]);
   const [estados, setEstados] = useState<Estado[]>([]);
   const [loadingLookups, setLoadingLookups] = useState(false);
+  const [categoriaSeleccionada, setCategoriaSeleccionada] = useState<string>("");
   
-  const [selectedPdfName, setSelectedPdfName] = useState<string | null>(null); 
+  const [selectedPdfName, setSelectedPdfName] = useState<string | null>(null);
+  const [uploadingPdf, setUploadingPdf] = useState(false);
+  
   const [imagePreview, setImagePreview] = useState<string | null>(initialData?.imagen_url || null);
   const [selectedImageName, setSelectedImageName] = useState<string | null>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
 
+  // Cargar lookups (categorías, subcategorías, estados)
   useEffect(() => {
     const loadLookups = async () => {
       setLoadingLookups(true);
       try {
-        const [catResponse, estResponse] = await Promise.all([
-          getCategorias(),
+        const [subResponse, estResponse, catResponse] = await Promise.all([
+          getSubcategorias(1, 1000, ""),
           getEstados(),
+          getCategorias(false, 1, 1000, ""),
         ]);
 
-        setCategorias(catResponse);
-        setEstados(estResponse);
-
-        const isEditing = Boolean(initialData?.id);
-
-        const defaultCategoriaId = isEditing
-          ? initialData?.categoriaId
-          : catResponse.length > 0 ? catResponse[0].id : 0;
-
-        const defaultEstadoId = isEditing
-          ? initialData?.estadoId
-          : estResponse.length > 0 ? estResponse[0].id : 0;
-
-        reset({
-          id: initialData?.id ?? undefined,
-          nombre: initialData?.nombre ?? "",
-          codigo: initialData?.codigo ?? "",
-          precio: initialData?.precio ?? 0,
-          stock: initialData?.stock ?? 0,
-          descripcion: initialData?.descripcion ?? "",
-          categoriaId: defaultCategoriaId,
-          estadoId: defaultEstadoId,
-        });
+        const subs = Array.isArray(subResponse?.data) ? subResponse.data : Array.isArray(subResponse) ? subResponse : [];
+        const cats = Array.isArray(catResponse?.data) ? catResponse.data : Array.isArray(catResponse) ? catResponse : [];
+        const ests = estResponse || [];
+        
+        setSubcategorias(subs);
+        setEstados(ests);
+        setCategorias(cats);
       } catch (error) {
-        reset({
-          id: initialData?.id ?? undefined,
-          nombre: initialData?.nombre ?? "",
-          codigo: initialData?.codigo ?? "",
-          precio: initialData?.precio ?? 0,
-          stock: initialData?.stock ?? 0,
-          descripcion: initialData?.descripcion ?? "",
-          categoriaId: 0,
-          estadoId: 0,
-        });
+        console.error("Error al cargar datos de lookup:", error);
       } finally {
         setLoadingLookups(false);
       }
     };
 
     loadLookups();
-  }, [initialData, reset]);
+  }, []);
+
+  // Actualizar valores del formulario cuando initialData o lookups cambien
+  useEffect(() => {
+    const isEditing = Boolean(initialData?.id);
+    
+    // Determinar la categoría correcta
+    let categoriaIdValue = 0;
+    let subcategoriaIdValue = 0;
+    
+    if (isEditing) {
+      subcategoriaIdValue = (initialData as any)?.subcategoriaId ?? 0;
+      
+      if (subcategoriaIdValue > 0) {
+        // Si hay subcategoría, obtener la categoría padre
+        const subcat = subcategorias.find((s: any) => s.id === subcategoriaIdValue);
+        if (subcat) {
+          categoriaIdValue = subcat.categoria_id || subcat.categoria?.id || 0;
+        } else if ((initialData as any)?.categoriaId) {
+          // Fallback si no encuentra la subcategoría
+          categoriaIdValue = (initialData as any).categoriaId;
+        }
+      } else if ((initialData as any)?.categoriaId) {
+        // Si no hay subcategoría pero hay categoriaId
+        categoriaIdValue = (initialData as any).categoriaId;
+      }
+    }
+
+    reset({
+      id: initialData?.id ?? undefined,
+      nombre: initialData?.nombre ?? "",
+      codigo: initialData?.codigo ?? "",
+      precio: initialData?.precio ?? 0,
+      stock: initialData?.stock ?? 0,
+      descripcion: initialData?.descripcion ?? "",
+      categoriaId: categoriaIdValue,
+      subcategoriaId: subcategoriaIdValue,
+      estadoId: isEditing ? initialData?.estadoId ?? 0 : estados.length > 0 ? estados[0].id : 0,
+    });
+
+    // Actualizar el estado local
+    setCategoriaSeleccionada(String(categoriaIdValue || ""));
+  }, [initialData, subcategorias, estados, reset]);
+
+  // 🔥 Cuando el usuario cambia subcategoría → actualizar categoría
+  useEffect(() => {
+    if (formValues.subcategoriaId && subcategorias.length > 0) {
+      const subcatSeleccionada = subcategorias.find(
+        (s) => s.id === Number(formValues.subcategoriaId)
+      );
+      if (subcatSeleccionada) {
+        const categoriaId =
+          subcatSeleccionada.categoria_id || subcatSeleccionada.categoria?.id;
+        if (categoriaId) {
+          setValue("categoriaId", categoriaId, { shouldValidate: true });
+        }
+      }
+    } else if (formValues.subcategoriaId === 0) {
+      // Solo limpiar si el usuario explícitamente selecciona "sin subcategoría"
+      // No limpiar en la carga inicial
+    }
+  }, [formValues.subcategoriaId, subcategorias, setValue]);
 
   const submitForm: SubmitHandler<FormData> = (data) => {
     data.precio = Number(String(data.precio).replace(/[^\d]/g, ""));
 
     const isEditing = Boolean(initialData?.id);
+    
+    // Si hay subcategoría seleccionada, usar su categoría padre
+    // Si no hay subcategoría, usar la categoría seleccionada manualmente
+    let resolvedCategoriaId = 0;
+    
+    if (data.subcategoriaId && Number(data.subcategoriaId) > 0) {
+      const subcat = subcategorias.find((s) => s.id === Number(data.subcategoriaId));
+      if (subcat) {
+        resolvedCategoriaId = subcat.categoria_id || (subcat as any).categoria?.id || 0;
+      }
+    } else if (categoriaSeleccionada) {
+      resolvedCategoriaId = Number(categoriaSeleccionada);
+    }
+
+    // Validar que siempre haya una categoría válida
+    if (!resolvedCategoriaId || resolvedCategoriaId === 0) {
+      console.error('[ListaForm] Error: categoria_id es obligatorio');
+      alert('Debes seleccionar una categoría o una subcategoría');
+      return;
+    }
 
     const run = async () => {
-      const payload: any = { ...data };
+      const payload: any = {
+        ...data,
+        categoriaId: resolvedCategoriaId,
+        subcategoriaId: data.subcategoriaId || null,
+      };
+      
+      console.log('[ListaForm] Datos del formulario antes de enviar:', data);
+      console.log('[ListaForm] subcategoriaId en los datos:', (data as any).subcategoriaId);
 
       try {
         if (isEditing) {
@@ -120,17 +192,27 @@ export default function ListaForm({ initialData, onSubmit, onCancel, formError }
           // Subir imagen si existe
           const imagenFile = (data as any).imagenProducto as File | undefined;
           if (imagenFile instanceof File) {
-            const res = await uploadImagen(id, imagenFile);
-            const url = res?.url || res?.producto?.imagen_url;
-            if (url) payload.imagen_url = url;
+            setUploadingImage(true);
+            try {
+              const res = await uploadImagen(id, imagenFile);
+              const url = res?.url || res?.producto?.imagen_url;
+              if (url) payload.imagen_url = url;
+            } finally {
+              setUploadingImage(false);
+            }
           }
 
           // Subir PDF si existe
           const pdfFile = (data as any).pdfFichaTecnica as File | undefined;
           if (pdfFile instanceof File) {
-            const res = await uploadImagen(id, pdfFile);
-            const url = res?.url || res?.producto?.ficha_tecnica_url;
-            if (url) payload.ficha_tecnica_url = url;
+            setUploadingPdf(true);
+            try {
+              const res = await uploadFichaTecnica(id, pdfFile);
+              const url = res?.url || res?.producto?.ficha_tecnica_url;
+              if (url) payload.ficha_tecnica_url = url;
+            } finally {
+              setUploadingPdf(false);
+            }
           }
 
           delete payload.imagenProducto;
@@ -156,13 +238,18 @@ export default function ListaForm({ initialData, onSubmit, onCancel, formError }
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
   ) => {
     const { name, value, type } = e.target;
-    const isIdField = name === "categoriaId" || name === "estadoId";
+    const isIdField = name === "subcategoriaId" || name === "estadoId" || name === "categoriaId";
 
     if (name === "precio") {
       const numericValue = value.replace(/[^\d]/g, "");
       const numberValue = Number(numericValue || 0);
       setValue(name as keyof FormData, numberValue as any, { shouldValidate: true });
       return;
+    }
+
+    // Si cambia la categoría, limpiar subcategoría
+    if (name === "categoriaId" && value !== String(formValues.categoriaId)) {
+      setValue("subcategoriaId", 0, { shouldValidate: true });
     }
 
     const parsedValue = type === "number" || isIdField ? Number(value) : value;
@@ -172,6 +259,11 @@ export default function ListaForm({ initialData, onSubmit, onCancel, formError }
   const categoriaOptions = categorias.map((c) => ({
     value: String(c.id),
     label: c.nombre,
+  }));
+
+  const subcategoriaOptions = subcategorias.map((s) => ({
+    value: String(s.id),
+    label: s.nombre,
   }));
 
   const estadoOptions = estados.map((e) => ({
@@ -196,6 +288,14 @@ export default function ListaForm({ initialData, onSubmit, onCancel, formError }
 
       {/* Sección: Nombre y Código */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+         <FormInput
+          label="Código"
+          name="codigo"
+          value={formValues.codigo}
+          onChange={handleChange}
+          required
+        />
+
         <FormInput
           label="Nombre del Producto"
           name="nombre"
@@ -204,27 +304,36 @@ export default function ListaForm({ initialData, onSubmit, onCancel, formError }
           required
         />
 
-        <FormInput
-          label="Código"
-          name="codigo"
-          value={formValues.codigo}
-          onChange={handleChange}
-          required
-        />
+       
       </div>
 
-      {/* Sección: Categoría */}
+      {/* Sección: Categorías */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <FormSelect
-          label="Categoría"
-          name="categoriaId"
-          value={String(formValues.categoriaId)}
-          onChange={handleChange}
-          options={categoriaOptions}
-          disabled={loadingLookups}
-          required
-        />
+          <FormSelect
+            label="Categoría"
+            name="categoriaId"
+            value={String(formValues.categoriaId || "")}
+            onChange={handleChange}
+            options={[
+              { value: "", label: "Seleccionar..." },
+              ...categoriaOptions,
+            ]}
+            disabled={false}
+            required={false}
+          />        
+          <FormSelect
+            label="Subcategoría (Opcional)"
+            name="subcategoriaId"
+            value={String(formValues.subcategoriaId || "")}
+            onChange={handleChange}
+            options={[{ value: "0", label: "Seleccionar..." }, ...subcategoriaOptions]}
+            disabled={loadingLookups}
+            required={false}
+          />
+      </div>
 
+      {/* Sección: Descripción y Estado */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <FormInput
           label="Descripción"
           name="descripcion"
@@ -232,28 +341,11 @@ export default function ListaForm({ initialData, onSubmit, onCancel, formError }
           onChange={handleChange}
           placeholder="Descripción del producto"
         />
+
+        
       </div>
 
-      {/* Sección: Precio y Stock */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <FormInput
-          label="Precio"
-          name="precio"
-          type="text"
-          value={formatCurrency(formValues.precio as number)}
-          onChange={handleChange}
-          required
-        />
-
-        <FormInput
-          label="Stock"
-          name="stock"
-          type="number"
-          value={formValues.stock}
-          onChange={handleChange}
-          required
-        />
-      </div>
+      
 
       {/* Sección: PDF */}
       <div className="grid grid-cols-1 gap-4">
@@ -272,17 +364,18 @@ export default function ListaForm({ initialData, onSubmit, onCancel, formError }
               setSelectedPdfName(file ? file.name : null);
               setValue("pdfFichaTecnica", file as any);
             }}
+            disabled={uploadingPdf}
           />
 
           <label
             htmlFor="pdfFichaTecnica"
-            className="px-4 py-2 border rounded-md bg-white cursor-pointer w-fit"
+            className="px-4 py-2 border rounded-md bg-white cursor-pointer w-fit disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Seleccionar PDF
+            {uploadingPdf ? "Subiendo PDF..." : "Seleccionar PDF"}
           </label>
 
           <span className="mt-2 text-sm text-gray-600">
-            {selectedPdfName || "Ningún archivo seleccionado"}
+            {uploadingPdf ? "📤 Subiendo PDF..." : selectedPdfName || "Ningún archivo seleccionado"}
           </span>
         </div>
       </div>
@@ -307,13 +400,14 @@ export default function ListaForm({ initialData, onSubmit, onCancel, formError }
                 setValue("imagenProducto", f as any);
               }
             }}
+            disabled={uploadingImage}
           />
 
           <label
             htmlFor="imagenProducto"
-            className="px-4 py-2 border rounded-md bg-white cursor-pointer w-fit"
+            className="px-4 py-2 border rounded-md bg-white cursor-pointer w-fit disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Seleccionar Imagen
+            {uploadingImage ? "Subiendo imagen..." : "Seleccionar Imagen"}
           </label>
 
           <div className="mt-3 flex items-center gap-4">
@@ -337,7 +431,9 @@ export default function ListaForm({ initialData, onSubmit, onCancel, formError }
               )
             )}
             {selectedImageName && (
-              <span className="text-sm">{selectedImageName}</span>
+              <span className="text-sm">
+                {uploadingImage ? "📤 Subiendo..." : selectedImageName}
+              </span>
             )}
           </div>
         </div>
@@ -345,11 +441,11 @@ export default function ListaForm({ initialData, onSubmit, onCancel, formError }
 
       {/* Botones */}
       <div className="flex justify-end gap-3 pt-4">
-        <Button type="button" onClick={onCancel} disabled={isSubmitting || loadingLookups}>
+        <Button type="button" onClick={onCancel} disabled={isSubmitting || loadingLookups || uploadingImage || uploadingPdf}>
           Cancelar
         </Button>
-        <Button type="submit" disabled={isSubmitting || loadingLookups}>
-          {initialData?.id ? "Guardar Cambios" : "Crear Producto"}
+        <Button type="submit" disabled={isSubmitting || loadingLookups || uploadingImage || uploadingPdf}>
+          {uploadingImage || uploadingPdf ? "Subiendo archivos..." : initialData?.id ? "Guardar Cambios" : "Crear Producto"}
         </Button>
       </div>
 
