@@ -34,7 +34,10 @@ const MobileCategoryList: React.FC<MobileCategoryListProps> = ({
         const apiCategorias = await getCategorias();
         const categoryMap = new Map<number, FilterCategory>();
 
-        apiCategorias.forEach((cat) => {
+        // apiCategorias es PaginacionResponse, acceder a .data
+        const categoriasArray = Array.isArray(apiCategorias) ? apiCategorias : (apiCategorias as any)?.data || [];
+        
+        categoriasArray.forEach((cat: any) => {
           categoryMap.set(cat.id, { id: cat.id, nombre: cat.nombre, subcategorias: [] });
         });
 
