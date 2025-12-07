@@ -33,7 +33,7 @@ const formatThousands = (val: any): string => {
 
 interface Props {
   initialData?: Partial<Producto> | null;
-  onSubmit: (data: FormData) => void | Promise<void>;
+  onSubmit: (data: CreateProductoData | UpdateProductoData) => void | Promise<void>;
   onCancel: () => void;
   formError?: string;
 }
@@ -223,7 +223,7 @@ export default function ProductosForm({ initialData, onSubmit, onCancel, formErr
 
     // Crear el producto primero
     try {
-      await onSubmit(submittedData);
+      await onSubmit(submittedData as CreateProductoData | UpdateProductoData);
       // Si es creación (no tiene ID inicial) y se cargó exitosamente,
       // el ID vendrá en los datos retornados por onSubmit
       // Aquí solo hacemos que el formulario permanezca disponible para subir archivos
@@ -390,7 +390,7 @@ export default function ProductosForm({ initialData, onSubmit, onCancel, formErr
       {!initialData?.id && codeExists && formValues.codigo && (
         <div className="bg-red-50 border border-red-300 rounded p-3">
           <p className="text-sm text-red-800 font-semibold">
-            ⚠️ Ya existe un producto con el código "{formValues.codigo}". Por favor, usa un código diferente.
+            ⚠️ Ya existe un producto con el código &quot;{formValues.codigo}&quot;. Por favor, usa un código diferente.
           </p>
         </div>
       )}

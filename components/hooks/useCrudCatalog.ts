@@ -76,14 +76,16 @@ export const useCrudCatalog = <T extends CrudItem, C extends ItemForm, U extends
   // Memoizar dependencias custom por valor para evitar recrear el callback en cada render
   // cuando el componente padre pasa un array nuevo pero con el mismo contenido.
   // Comparar contenido del array, no la referencia
+  const customDepsArray = options.customDependencies ?? [];
+  const customDepsKey = customDepsArray.join('|');
+  
   const customDependencies = useMemo(
     () => {
-      const deps = options.customDependencies ?? [];
-      console.log('[useMemo customDependencies] evaluando:', deps);
-      return deps;
+      console.log('[useMemo customDependencies] evaluando:', customDepsArray);
+      return customDepsArray;
     },
-    // Convertir el array a string para comparar contenido, no referencia
-    [(options.customDependencies ?? []).join('|')]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [customDepsKey]
   );
 
   // Función de carga de datos (memoizada para usar en el efecto)
