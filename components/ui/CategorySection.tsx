@@ -78,7 +78,7 @@ const CategorySection: React.FC = () => {
         // const response = await getCategorias();
         // setCategories(response.data); 
         const data = await getCategorias();
-        setCategories(data);
+        setCategories(data.data);
         setLoading(false);
       } catch (err) {
         console.error("Error al cargar categorías:", err);
