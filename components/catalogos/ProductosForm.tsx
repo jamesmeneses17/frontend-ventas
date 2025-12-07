@@ -14,7 +14,16 @@ import { getEstados, Estado } from "../services/estadosService";
 import { getCategorias, Categoria } from "../services/categoriasService";
 import { formatCurrency } from "../../utils/formatters";
 
-type FormData = CreateProductoData & { id?: number; categoriaId?: number };
+type FormData = CreateProductoData & { id?: number; categoriaId?: number; precio_venta?: number | string; precio?: number | string };
+
+// Formatea un valor numérico a string con separador de miles y sin decimales
+const formatThousands = (val: any): string => {
+  if (val === undefined || val === null || val === "") return "";
+  const num = Number(val);
+  if (!Number.isFinite(num)) return "";
+  const intPart = Math.trunc(num).toString();
+  return intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+};
 
 interface Props {
   initialData?: Partial<Producto> | null;
@@ -35,7 +44,8 @@ export default function ProductosForm({ initialData, onSubmit, onCancel, formErr
       id: initialData?.id || undefined,
       nombre: initialData?.nombre || "",
       codigo: initialData?.codigo || "",
-      precio: (initialData as any)?.precio ?? 0,
+      precio: formatThousands((initialData as any)?.precio),
+      precio_venta: formatThousands((initialData as any)?.precio_venta ?? (initialData as any)?.precio),
       stock: (initialData as any)?.stock ?? 0,
       descripcion: initialData?.descripcion || "",
       ficha_tecnica_url: initialData?.ficha_tecnica_url || "",
@@ -114,7 +124,7 @@ export default function ProductosForm({ initialData, onSubmit, onCancel, formErr
       id: initialData?.id ?? undefined,
       nombre: initialData?.nombre ?? "",
       codigo: initialData?.codigo ?? "",
-      precio: initialData?.precio ?? 0,
+      precio_venta: formatThousands((initialData as any)?.precio_venta ?? initialData?.precio),
       stock: initialData?.stock ?? 0,
       descripcion: initialData?.descripcion ?? "",
       ficha_tecnica_url: initialData?.ficha_tecnica_url ?? "",
@@ -149,7 +159,18 @@ export default function ProductosForm({ initialData, onSubmit, onCancel, formErr
   }, [formValues.subcategoriaId, subcategorias, setValue, initialData]);
 
   const submitForm: SubmitHandler<FormData> = async (data) => {
-    data.precio = Number(String(data.precio).replace(/[^\d]/g, ""));
+    const parsePrecio = (val: any) => {
+      if (val === undefined || val === null || val === "") return undefined;
+      // remover separadores de miles, conservar punto decimal
+      const str = String(val).replace(/,/g, "");
+      const num = parseFloat(str);
+      return Number.isFinite(num) ? num : undefined;
+    };
+
+    data.precio = parsePrecio(data.precio) as any;
+    if ((data as any).precio_venta !== undefined) {
+      (data as any).precio_venta = parsePrecio((data as any).precio_venta) as any;
+    }
     
     const isEditing = Boolean(initialData?.id);
     
@@ -157,6 +178,10 @@ export default function ProductosForm({ initialData, onSubmit, onCancel, formErr
     const submittedData: any = {
       ...data,
     };
+
+    // Limpiar campos vacíos de precios para no sobrescribir con undefined
+    if (submittedData.precio === undefined) delete submittedData.precio;
+    if (submittedData.precio_venta === undefined) delete submittedData.precio_venta;
 
     // Detectar si la subcategoría cambió desde su valor original
     const originalSubcategoryId = (initialData as any)?.subcategoriaId || 0;
@@ -245,10 +270,13 @@ export default function ProductosForm({ initialData, onSubmit, onCancel, formErr
   ) => {
     const { name, value, type } = e.target;
 
-    if (name === "precio") {
-      const numericValue = value.replace(/[^\d]/g, "");
-      const numberValue = Number(numericValue || 0);
-      setValue(name as keyof FormData, numberValue as any, { shouldValidate: true });
+    if (name === "precio" || name === "precio_venta") {
+      // Formatear en vivo con separador de miles (coma) y permitir punto decimal
+      const raw = value.replace(/[^0-9.]/g, "");
+      const [intPart, decPart] = raw.split(".");
+      const intFormatted = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+      const formatted = decPart !== undefined ? `${intFormatted}.${decPart}` : intFormatted;
+      setValue(name as keyof FormData, formatted as any, { shouldValidate: true });
       return;
     }
 
@@ -311,99 +339,31 @@ export default function ProductosForm({ initialData, onSubmit, onCancel, formErr
       </div>
 
       {/* Fila 2 */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <FormSelect
-          label="Categoría"
-          name="categoriaId"
-          value={String(formValues.categoriaId || "")}
-          onChange={handleChange}
-          options={[
-            { value: "", label: "Seleccionar..." },
-            ...categorias.map((c) => ({
-              value: String(c.id),
-              label: c.nombre,
-            })),
-          ]}
-          disabled={false}
-        />
-
-        <FormSelect
-          label="Subcategoría"
-          name="subcategoriaId"
-          value={String(formValues.subcategoriaId ?? 0)}
-          onChange={handleChange}
-          options={subcategoriaOptions}
-          required={false}
-        />
-      </div>
+     
 
       {/* Fila 3 */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <FormInput
           label="Precio de Venta"
-          name="precio"
+          name="precio_venta"
           type="text"
-          value={formatCurrency(Number(formValues.precio || 0))}
+          value={(formValues as any).precio_venta ?? ""}
           onChange={handleChange}
-          placeholder="$180,000"
+          placeholder="180000"
           required
         />
         <FormInput
-          label="Stock"
-          name="stock"
-          type="number"
-          value={String(formValues.stock)}
+          label="Costo (opcional)"
+          name="precio"
+          type="text"
+          value={(formValues as any).precio ?? ""}
           onChange={handleChange}
-          placeholder="45"
-          required
+          placeholder="120000"
         />
       </div>
 
-      {/* Descripción */}
-      <FormInput
-        label="Descripción"
-        name="descripcion"
-        type="textarea"
-        value={formValues.descripcion}
-        onChange={handleChange}
-        placeholder="Una descripción breve del producto."
-      />
+     
 
-      {/* Ficha Técnica */}
-      <FormInput
-        label="URL Ficha Técnica (Opcional)"
-        name="ficha_tecnica_url"
-        value={formValues.ficha_tecnica_url || ""}
-        onChange={handleChange}
-        placeholder="https://ejemplo.com/ficha.pdf"
-      />
-
-      {/* Subir Imagen */}
-      {initialData?.id && (
-        <div className="space-y-2">
-          <label className="block text-sm font-medium text-gray-700">
-            Imagen del producto (Opcional)
-          </label>
-          <div className="flex items-center gap-3">
-            <input type="file" accept="image/*" onChange={handleFileChange} />
-            <Button type="button" onClick={handleUploadImage} disabled={uploading || !file}>
-              {uploading ? "Subiendo..." : "Subir Imagen"}
-            </Button>
-          </div>
-
-          {preview && (
-            <div className="pt-2">
-              <Image
-                src={preview}
-                alt="Imagen producto"
-                width={128}
-                height={128}
-                className="w-32 h-32 object-cover rounded border"
-              />
-            </div>
-          )}
-        </div>
-      )}
 
       {/* Nota informativa para nuevos productos */}
       {!initialData?.id && (

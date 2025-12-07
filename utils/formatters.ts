@@ -1,5 +1,5 @@
 // utils/formatters.ts
-export const formatCurrency = (value: number, currencyLabel = 'COP'): string => {
+export const formatCurrency = (value: number, currencyLabel = '$'): string => {
   // Usa separador de miles con coma (en-US) para mostrar 700,000
   const formatted = new Intl.NumberFormat('en-US', {
     minimumFractionDigits: 0,

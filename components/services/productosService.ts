@@ -28,6 +28,16 @@ export const getProductosStats = async (): Promise<{ total: number; stockBajo: n
 export const createProducto = async (data: CreateProductoData): Promise<Producto> => {
     const payload: any = { ...data };
 
+    // Mapear precio_venta si viene
+    if (payload.precio_venta !== undefined) {
+        payload.precio_venta = Number(payload.precio_venta) || 0;
+    }
+    if (payload.precio !== undefined) {
+        payload.precio = Number(payload.precio) || 0;
+        // algunos backends esperan precio_costo
+        payload.precio_costo = payload.precio;
+    }
+
     // Si subcategoriaId es 0, enviarlo como null (sin subcategoría)
     if (payload.subcategoriaId === 0) {
         payload.subcategoriaId = null;
@@ -79,6 +89,23 @@ export const updateProducto = async (id: number, data: UpdateProductoData): Prom
             // Número válido → vincular
             payload.subcategoriaId = subcat;
             console.log('[updateProducto] ✅ subcategoriaId numérico → vincular:', subcat);
+        }
+    }
+
+    // Mapear precios
+    if ('precio_venta' in data) {
+        const pv = Number((data as any).precio_venta);
+        if (!Number.isNaN(pv)) {
+            payload.precio_venta = pv;
+            console.log('[updateProducto] precio_venta →', pv);
+        }
+    }
+    if ('precio' in data) {
+        const pc = Number((data as any).precio);
+        if (!Number.isNaN(pc)) {
+            payload.precio = pc;
+            payload.precio_costo = pc;
+            console.log('[updateProducto] precio/precio_costo →', pc);
         }
     }
 
@@ -164,16 +191,17 @@ export interface PaginacionResponse<T> {
 
 // 2. TIPO DE DATOS PARA CREACIÓN/ACTUALIZACIÓN (ASUMIENDO STOCK MÍNIMO)
 export type CreateProductoData = {
-    nombre: string;
-    codigo: string;
-    descripcion: string;
-    ficha_tecnica_url?: string;
+    nombre: string;
+    codigo: string;
+    descripcion: string;
+    ficha_tecnica_url?: string;
     imagen_url?: string;
-    
+    
     // Se espera que el DTO reciba estos datos
     stock: number;
-    precio: number;
-    stockMinimo?: number; // ✅ Asumiendo que agregaste esto al DTO
+    precio: number;          // costo (opcional si backend lo usa)
+    precio_venta?: number;   // precio de venta
+    stockMinimo?: number;    // ✅ Asumiendo que agregaste esto al DTO
     
     categoriaId?: number;           // ✅ Categoría (nivel 2)
     categoriaPrincipalId?: number;  // ✅ Categoría principal (nivel 1)
