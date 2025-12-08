@@ -115,20 +115,29 @@ export const getSubcategorias = async (
         }
 
         // Normalización básica (asegurar tipos si fuera necesario)
-        const normalized: Subcategoria[] = subcategorias.map((it: any) => ({
-            ...it,
-            id: Number(it.id),
-            categoria_id: Number(it.categoria_id),
-            categoriaId: Number(it.categoriaId || it.categoria_id),
-            // Extraer categoriaPrincipalId desde la relación anidada
-            categoriaPrincipalId: it.categoria?.categoria_principal?.id 
-              ? Number(it.categoria.categoria_principal.id)
-              : it.categoriaPrincipalId 
-                ? Number(it.categoriaPrincipalId)
-                : undefined,
-            // Asegurar que el nombre de la categoría esté disponible
-            categoria_nombre: it.categoria_nombre ?? it.categoria?.nombre ?? 'N/A',
-        }));
+        const normalized: Subcategoria[] = subcategorias.map((it: any) => {
+            // Obtener categoria_id de múltiples fuentes posibles
+            const categoriaIdValue = 
+              it.categoria_id ||
+              it.categoriaId ||
+              it.categoria?.id ||
+              (it.categoria && typeof it.categoria === 'object' && it.categoria.id);
+            
+            return {
+              ...it,
+              id: Number(it.id),
+              categoria_id: categoriaIdValue ? Number(categoriaIdValue) : undefined,
+              categoriaId: categoriaIdValue ? Number(categoriaIdValue) : undefined,
+              // Extraer categoriaPrincipalId desde la relación anidada
+              categoriaPrincipalId: it.categoria?.categoria_principal?.id 
+                ? Number(it.categoria.categoria_principal.id)
+                : it.categoriaPrincipalId 
+                  ? Number(it.categoriaPrincipalId)
+                  : undefined,
+              // Asegurar que el nombre de la categoría esté disponible
+              categoria_nombre: it.categoria_nombre ?? it.categoria?.nombre ?? 'N/A',
+            };
+        });
 
         return { data: normalized, total };
     } catch (err: any) {

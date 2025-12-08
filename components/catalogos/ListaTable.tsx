@@ -29,18 +29,48 @@ export default function ListaTable({
   onEdit,
   onDelete,
 }: Props) {
+  // Debug
+  React.useEffect(() => {
+    if (data.length > 0) {
+      console.log("[ListaTable] Debug data:", {
+        dataLength: data.length,
+        subcategoriasLength: subcategorias.length,
+        subcategorias: subcategorias.map(s => ({ id: s.id, nombre: s.nombre, categoria_id: s.categoria_id })),
+        firstProducto: data[0] ? {
+          codigo: (data[0] as any).codigo,
+          nombre: (data[0] as any).nombre,
+          subcategoria_id: (data[0] as any).subcategoria_id || (data[0] as any).subcategoriaId,
+          categoria_id: (data[0] as any).categoria_id || (data[0] as any).categoriaId,
+          allKeys: Object.keys(data[0]),
+          fullObject: data[0],
+        } : null,
+      });
+    }
+  }, [data, subcategorias]);
   // ✅ Helper para obtener el nombre de la categoría padre de una subcategoría
   const getCategoriaFromSubcategoria = (subcategoriaId: number | undefined): string => {
     if (!subcategoriaId || subcategoriaId === 0) return "";
     
     const subcategoria = subcategorias.find((s) => s.id === subcategoriaId);
-    if (!subcategoria) return "";
+    if (!subcategoria) {
+      console.warn("[ListaTable] Subcategoría no encontrada:", subcategoriaId, "Disponibles:", subcategorias.map(s => s.id));
+      return "";
+    }
     
-    const categoriaId = subcategoria.categoria_id || (subcategoria as any).categoriaPrincipalId;
-    if (!categoriaId) return "";
+    // Intentar obtener categoria_id de varias formas
+    const categoriaId = subcategoria.categoria_id || (subcategoria as any).categoriaId || (subcategoria as any).categoriaPrincipalId;
+    if (!categoriaId) {
+      console.warn("[ListaTable] categoria_id no encontrado en subcategoría:", subcategoria);
+      return "";
+    }
     
     const categoria = categorias.find((c) => c.id === categoriaId);
-    return categoria?.nombre || "";
+    if (!categoria) {
+      console.warn("[ListaTable] Categoría no encontrada:", categoriaId, "Disponibles:", categorias.map(c => c.id));
+      return "";
+    }
+    
+    return categoria.nombre || "";
   };
 
   // ✅ Helper para obtener el nombre de la subcategoría
