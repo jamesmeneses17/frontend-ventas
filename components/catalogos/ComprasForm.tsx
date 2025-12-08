@@ -57,6 +57,7 @@ export default function ComprasForm({
 
     const [productos, setProductos] = useState<Producto[]>([]);
     const [loadingLookups, setLoadingLookups] = useState(false);
+    const [productoSearchTerm, setProductoSearchTerm] = useState("");
 
     // 🔎 Cargar productos
     useEffect(() => {
@@ -154,8 +155,33 @@ export default function ComprasForm({
         label: `${p.codigo} - ${p.nombre}`,
     }));
 
+    // Filtrar productos por búsqueda
+    const productosFiltrados = productos.filter((p) => {
+        const searchLower = productoSearchTerm.toLowerCase();
+        return (
+            p.codigo?.toLowerCase().includes(searchLower) ||
+            p.nombre?.toLowerCase().includes(searchLower)
+        );
+    });
+
+    const productoOptionsFiltered = productosFiltrados.map((p) => ({
+        value: String(p.id),
+        label: `${p.codigo} - ${p.nombre}`,
+    }));
+
     return (
         <form onSubmit={handleSubmit(submitForm)} className="space-y-4">
+            {/* ===================== BÚSQUEDA DE PRODUCTO ===================== */}
+            <div className="w-full">
+                <FormInput
+                    label="Buscar Producto por Código o Nombre"
+                    name="productoSearch"
+                    value={productoSearchTerm}
+                    onChange={(e) => setProductoSearchTerm(e.target.value)}
+                    placeholder="Ej: LC209 o Teclado..."
+                />
+            </div>
+
             {/* ===================== FILA 1 ===================== */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <FormSelect
@@ -163,7 +189,7 @@ export default function ComprasForm({
                     name="productoId"
                     value={String(formValues.productoId)}
                     onChange={handleChange}
-                    options={productoOptions}
+                    options={productoOptionsFiltered}
                     disabled={loadingLookups}
                     required
                 />

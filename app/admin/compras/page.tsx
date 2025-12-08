@@ -49,6 +49,7 @@ export default function ComprasPage() {
   const [selectedYear, setSelectedYear] = useState("");
   const [selectedMonth, setSelectedMonth] = useState("");
   const [totalComprasAll, setTotalComprasAll] = useState<number>(0);
+  const [localSearchTerm, setLocalSearchTerm] = useState("");
 
   // ===================== CRUD HOOK ======================
   const {
@@ -78,18 +79,34 @@ export default function ComprasPage() {
         page,
         size,
         searchTermParam,
-        selectedYearParam,
-        selectedMonthParam
+        ...customParams
       ) => {
+        const selectedYearParam = customParams[0];
+        const selectedMonthParam = customParams[1];
+        const actualSearchTerm = customParams[2] || "";
+        
+        const searchLower = (actualSearchTerm || "").toLowerCase();
+        console.log("[ComprasPage] loadItems llamado:", {
+          page,
+          size,
+          searchTermParam,
+          actualSearchTerm,
+          searchLower,
+          selectedYearParam,
+          selectedMonthParam,
+          customParams,
+        });
+        
         if (selectedMonthParam) {
           const resp = await getCompras(
             1,
             Math.max(1000, page * size),
-            searchTermParam
+            ""
           );
           let items: any[] = Array.isArray(resp) ? resp : resp?.data ?? [];
+          console.log("[ComprasPage] Items del backend (mes):", items.length, items);
 
-          const filtered = items.filter((it: any) => {
+          let filtered = items.filter((it: any) => {
             if (!it?.fecha) return false;
             const d = new Date(it.fecha);
             const ym = `${d.getFullYear()}-${String(
@@ -97,10 +114,33 @@ export default function ComprasPage() {
             ).padStart(2, "0")}`;
             return ym === String(selectedMonthParam);
           });
+          console.log("[ComprasPage] Después filtro mes:", filtered.length);
+
+          // Filtrar por búsqueda si existe
+          if (searchLower) {
+            filtered = filtered.filter((it: any) => {
+              const codigo = (it?.producto?.codigo || "").toLowerCase();
+              const nombre = (it?.producto?.nombre || "").toLowerCase();
+              const match = codigo.includes(searchLower) || nombre.includes(searchLower);
+              console.log("[ComprasPage] Comparando búsqueda:", {
+                codigo,
+                nombre,
+                searchLower,
+                match,
+              });
+              return match;
+            });
+            console.log("[ComprasPage] Después filtro búsqueda:", filtered.length);
+          }
 
           const total = filtered.length;
           const start = (page - 1) * size;
           const pageItems = filtered.slice(start, start + size);
+          console.log("[ComprasPage] Resultado final (mes):", {
+            total,
+            pageItemsLength: pageItems.length,
+            pageItems,
+          });
           return { data: pageItems, total };
         }
 
@@ -108,30 +148,81 @@ export default function ComprasPage() {
           const resp = await getCompras(
             1,
             Math.max(1000, page * size),
-            searchTermParam
+            ""
           );
           let items: any[] = Array.isArray(resp) ? resp : resp?.data ?? [];
+          console.log("[ComprasPage] Items del backend (año):", items.length);
 
-          const filtered = items.filter((it: any) => {
+          let filtered = items.filter((it: any) => {
             if (!it?.fecha) return false;
             const d = new Date(it.fecha);
             return `${d.getFullYear()}` === String(selectedYearParam);
           });
+          console.log("[ComprasPage] Después filtro año:", filtered.length);
+
+          // Filtrar por búsqueda si existe
+          if (searchLower) {
+            filtered = filtered.filter((it: any) => {
+              const codigo = (it?.producto?.codigo || "").toLowerCase();
+              const nombre = (it?.producto?.nombre || "").toLowerCase();
+              const match = codigo.includes(searchLower) || nombre.includes(searchLower);
+              console.log("[ComprasPage] Comparando búsqueda:", {
+                codigo,
+                nombre,
+                searchLower,
+                match,
+              });
+              return match;
+            });
+            console.log("[ComprasPage] Después filtro búsqueda:", filtered.length);
+          }
 
           const total = filtered.length;
           const start = (page - 1) * size;
           const pageItems = filtered.slice(start, start + size);
+          console.log("[ComprasPage] Resultado final (año):", {
+            total,
+            pageItemsLength: pageItems.length,
+          });
           return { data: pageItems, total };
         }
 
-        return await getCompras(page, size, searchTermParam);
+        // Sin filtro de año/mes, solo búsqueda
+        const resp = await getCompras(1, Math.max(1000, page * size), "");
+        let items: any[] = Array.isArray(resp) ? resp : resp?.data ?? [];
+        console.log("[ComprasPage] Items del backend (sin filtro):", items.length);
+
+        if (searchLower) {
+          items = items.filter((it: any) => {
+            const codigo = (it?.producto?.codigo || "").toLowerCase();
+            const nombre = (it?.producto?.nombre || "").toLowerCase();
+            const match = codigo.includes(searchLower) || nombre.includes(searchLower);
+            console.log("[ComprasPage] Comparando búsqueda:", {
+              codigo,
+              nombre,
+              searchLower,
+              match,
+            });
+            return match;
+          });
+          console.log("[ComprasPage] Después filtro búsqueda:", items.length);
+        }
+
+        const total = items.length;
+        const start = (page - 1) * size;
+        const pageItems = items.slice(start, start + size);
+        console.log("[ComprasPage] Resultado final (sin filtro):", {
+          total,
+          pageItemsLength: pageItems.length,
+        });
+        return { data: pageItems, total };
       },
       createItem: createCompra,
       updateItem: updateCompra,
       deleteItem: deleteCompra,
     },
     "Compra",
-    { customDependencies: [selectedYear, selectedMonth] }
+    { customDependencies: [selectedYear, selectedMonth, localSearchTerm] }
   );
 
   const editingCompra = editingItem as Compra | null;
@@ -198,7 +289,7 @@ export default function ComprasPage() {
   // Recalcular total agregado de todas las compras filtradas (no sólo la página)
   const recalculateTotalAll = React.useCallback(async () => {
     try {
-      const resp = await getCompras(1, 10000, searchTerm || "");
+      const resp = await getCompras(1, 10000, localSearchTerm || "");
       const items: any[] = Array.isArray(resp) ? resp : resp?.data ?? [];
 
       let filtered = items;
@@ -227,7 +318,7 @@ export default function ComprasPage() {
     } catch (err) {
       setTotalComprasAll(0);
     }
-  }, [searchTerm, selectedMonth, selectedYear]);
+  }, [localSearchTerm, selectedMonth, selectedYear]);
 
   useEffect(() => {
     recalculateTotalAll();
@@ -285,12 +376,12 @@ export default function ComprasPage() {
             {/* Grupo de Buscador y Selectores (para que se mantengan juntos a la izquierda) */}
             <div className="flex flex-wrap items-end gap-4">
                 
-                {/* 1. Buscador por Proveedor */}
+                {/* 1. Buscador por Código o Producto */}
                 <div className="flex-1 min-w-[250px] max-w-sm">
                   <SearchInput
-                    searchTerm={searchTerm}
-                    placeholder="Buscar por proveedor..."
-                    onSearchChange={setSearchTerm}
+                    searchTerm={localSearchTerm}
+                    placeholder="Buscar por código o producto..."
+                    onSearchChange={setLocalSearchTerm}
                   />
                 </div>
 
