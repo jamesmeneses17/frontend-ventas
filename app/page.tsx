@@ -5,22 +5,18 @@
 import React from "react";
 import PublicLayout from "../components/layout/PublicLayout";
 import HeroSection from "../components/ui/HeroSection";
-import CategorySection from "../components/ui/CategorySection";
 import FeaturedProductsSection from "../components/ui/FeaturedProductsSection";
 import WhyChooseUsSection from "../components/ui/WhyChooseUsSection";
-import ContactSection from "../components/ui/ContactSection";
 
 export default function HomePage() {
   return (
     <PublicLayout>
-      {/* 1. SECCIÓN PRINCIPAL (HERO) */}
+      {/* 1. SECCIÓN PRINCIPAL (HERO/CARRUSEL) */}
       <HeroSection />
-      {/* 2. SECCIÓN DE CATEGORÍAS */}
-       <FeaturedProductsSection />  
-     {/* <CategorySection /> */}
-      {/* 3. SECCIÓN DE VALOR/PROPUESTA DE VENTA (NUEVO) */}
-            <WhyChooseUsSection />
-      {/* 4. SECCIÓN DE PRODUCTOS DESTACADOS (usando el nuevo archivo) */}
+      {/* 2. SECCIÓN DE PRODUCTOS DESTACADOS */}
+      <FeaturedProductsSection />  
+      {/* 3. SECCIÓN DE VALOR/PROPUESTA DE VENTA */}
+      <WhyChooseUsSection />
        {/* 5. SECCIÓN DE CONTACTO (NUEVO) */}
         {/*    <ContactSection />  */}   
     </PublicLayout>
