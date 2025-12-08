@@ -14,25 +14,25 @@ interface PublicLayoutProps {
 
 const PublicLayout: React.FC<PublicLayoutProps> = ({ children }) => {
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white pt-24">
       {/* 1. Navbar público (fixed top-0) */}
       <HeaderPublic />
 
-      {/* 2. SECCIÓN DE BRANDING (BARRA DE MOVIMIENTO) - Justo debajo del header (h-24 = 96px) */}
-      <div className="fixed top-24 left-0 right-0 z-40 w-full bg-white">
-        <BrandingBarSection />
-      </div>
+      {/* 2. Barra de movimiento en flujo normal (no fija) */}
+      <BrandingBarSection />
 
-      {/* 3. Contenido principal de la página - con padding top para compensar header (h-24 = 96px) + branding bar (~100px) */}
-      <main className="pt-40">
+      {/* 3. Contenido principal sin relleno extra */}
+      <main className="pt-0">
         {children}
-      </main>      {/* 🚀 SECCIÓN DE MARCAS: Fuera del main para ocupar ancho completo sin espacios */}
+      </main>
+
+      {/* 🚀 SECCIÓN DE MARCAS: Fuera del main para ocupar ancho completo sin espacios */}
       <AlliedBrandsSection />
 
-      {/* 🛑 3. Footer Completo */}
-      <FooterPublic />
-    </div>
-  );
+      {/* 🛑 Footer Completo */}
+      <FooterPublic />
+    </div>
+  );
 };
 
 export default PublicLayout;

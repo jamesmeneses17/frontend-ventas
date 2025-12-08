@@ -57,13 +57,11 @@ const HeroSection: React.FC = () => {
   const current = slides[currentSlide];
 
   return (
-    <section className="bg-white relative">
-      {/* Ancho Completo */}
-      <div className="mx-auto w-full relative overflow-hidden">
-        
-        {/* Contenedor de la Imagen y altura ajustada */}
+    <section className="bg-white relative w-full -mt-6">
+      {/* Ancho Completo */}
+      <div className="w-full relative overflow-hidden">        {/* Contenedor de la Imagen y altura ajustada */}
         <div className="w-full 
-            h-[180px] sm:h-[240px] md:h-[320px] lg:h-[380px] xl:h-[400px] 
+            h-[140px] sm:h-[180px] md:h-[240px] lg:h-[300px] xl:h-[350px] 
             relative"> 
           <Image
             src={current.src}
