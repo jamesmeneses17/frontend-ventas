@@ -112,13 +112,26 @@ export default function ListaProductosPage() {
 
   // Estado para los totales reales por estado
   const [stats, setStats] = React.useState<{ total: number; stockBajo: number; agotado: number }>({ total: 0, stockBajo: 0, agotado: 0 });
+  const [totalInventoryValue, setTotalInventoryValue] = React.useState<number>(0);
 
-  // Función para actualizar los stats
+  // Función para actualizar los stats y el valor total del inventario
   const updateStats = React.useCallback(() => {
     import("../../../components/services/productosService").then(mod => {
       mod.getProductosStats().then(setStats).catch(() => setStats({ total: 0, stockBajo: 0, agotado: 0 }));
+      
+      // Obtener TODOS los productos para calcular el valor total del inventario
+      mod.getProductos(1, 10000, "", "").then((res: any) => {
+        const allProductos = res?.data || [];
+        const total = allProductos.reduce((acc: number, p: any) => {
+          const costo = Number(p.precio_costo ?? p.precio ?? 0);
+          const stock = Number(p.stock ?? 0);
+          return acc + costo * stock;
+        }, 0);
+        setTotalInventoryValue(total);
+      }).catch(() => setTotalInventoryValue(0));
     });
   }, []);
+
 
   // Consumir los totales al montar el componente
   React.useEffect(() => {
@@ -216,14 +229,7 @@ export default function ListaProductosPage() {
           />
           <CardStat
             title="Total Inventario"
-            value={formatCurrency(
-              (currentItems || []).reduce((acc, p) => {
-                const costo = Number((p as any).precio_costo ?? 0);
-                const stock = Number((p as any).stock ?? 0);
-                return acc + costo * stock;
-              }, 0),
-              '$'
-            )}
+            value={formatCurrency(totalInventoryValue, '$')}
             color="text-emerald-600"
             icon={<Package className="h-4 w-4" />}
           />

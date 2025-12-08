@@ -170,6 +170,11 @@ export default function ProductosForm({ initialData, onSubmit, onCancel, formErr
   }, [formValues.subcategoriaId, subcategorias, setValue, initialData]);
 
   const submitForm: SubmitHandler<FormData> = async (data) => {
+    // Validar que el código sea único en creación
+    if (!initialData?.id && codeExists) {
+      return; // Prevenir envío si el código ya existe
+    }
+
     const parsePrecio = (val: any): number | undefined => {
       if (val === undefined || val === null || val === "") return undefined;
       const str = String(val).replace(/,/g, "");
