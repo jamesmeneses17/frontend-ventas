@@ -26,10 +26,6 @@ const PublicLayout: React.FC<PublicLayoutProps> = ({ children }) => {
         {children}
       </main>
 
-      {/* 🚀 SECCIÓN DE MARCAS: Fuera del main para ocupar ancho completo sin espacios */}
-      <AlliedBrandsSection />
-
-      {/* 🛑 Footer Completo */}
       <FooterPublic />
     </div>
   );
