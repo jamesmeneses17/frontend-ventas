@@ -1,36 +1,35 @@
-// /components/layout/PublicLayout.tsx (MODIFICADO)
+// /components/layout/PublicLayout.tsx (CORREGIDO)
 
 "use client";
 
 import React, { ReactNode } from "react";
 import HeaderPublic from "./HeaderPublic";
-// 👈 Importa el nuevo componente Footer
 import FooterPublic from "./FooterPublic";
 import AlliedBrandsSection from "../ui/AlliedBrandsSection";
 
 interface PublicLayoutProps {
-  children: ReactNode;
+  children: ReactNode;
 }
 
 const PublicLayout: React.FC<PublicLayoutProps> = ({ children }) => {
-  return (
-    <div className="min-h-screen bg-white">
-      {/* 1. Navbar público */}
-      <HeaderPublic />
+  return (
+    <div className="min-h-screen bg-white">
+      {/* 1. Navbar público */}
+      <HeaderPublic />
 
-      {/* 2. Contenido principal de la página */}
-      {/* Añadimos padding-top igual a la altura del header (h-24) para compensar el header fixed */}
-    <main className="pt-20">
+      {/* 2. Contenido principal de la página */}
+      {/* CAMBIO 1: Aplicamos el padding de compensación (pt-20) al main. */}
+      <main className="pt-20"> 
 
-        {/* 🚀 ¡NUEVA SECCIÓN DE MARCAS AQUÍ! */}
-        <AlliedBrandsSection />
+        {/* CAMBIO 2: Eliminamos el div con pt-20. El HeroSection se renderiza directamente con los hijos. */}
         {children}
       </main>
 
-      {/* 🛑 3. Footer Completo (Reemplazado) */}
-      <FooterPublic />
-    </div>
-  );
+      {/* 🚀 SECCIÓN DE MARCAS: Fuera del main para ocupar ancho completo sin espacios */}
+      <AlliedBrandsSection />      {/* 🛑 3. Footer Completo */}
+      <FooterPublic />
+    </div>
+  );
 };
 
 export default PublicLayout;
