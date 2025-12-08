@@ -62,6 +62,18 @@ export default function SubcategoriasPage() {
   // Tipado explícito para la edición
   const editingSubcategoria = editingItem as Subcategoria | null;
 
+  React.useEffect(() => {
+    if (editingSubcategoria) {
+      console.log("[SubcategoriasPage] editingSubcategoria:", {
+        id: editingSubcategoria.id,
+        nombre: editingSubcategoria.nombre,
+        categoria_id: editingSubcategoria.categoria_id,
+        categoria_nombre: editingSubcategoria.categoria_nombre,
+        fullObject: editingSubcategoria,
+      });
+    }
+  }, [editingSubcategoria]);
+
   return (
     <AuthenticatedLayout>
       <div className="space-y-6">
@@ -153,8 +165,8 @@ export default function SubcategoriasPage() {
                   ? {
                       id: editingSubcategoria.id,
                       nombre: editingSubcategoria.nombre,
-                      // Necesitamos el ID de la Categoría padre para editar
-                      categoria_id: editingSubcategoria.categoria_id, 
+                      // Necesitamos el ID de la Categoría padre para editar - asegurar que es número
+                      categoria_id: Number(editingSubcategoria.categoria_id) || 0, 
                     }
                   : {
                       nombre: "",

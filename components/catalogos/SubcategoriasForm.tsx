@@ -68,22 +68,38 @@ export default function SubcategoriasForm({ initialData, onSubmit, onCancel, for
         const isEditing = Boolean(initialData?.id);
 
         // Asignamos el ID de categoría por defecto (si es nuevo) o el existente (si es edición)
-        const defaultCategoriaId = isEditing
-          ? initialData?.categoria_id 
+        // IMPORTANTE: Si estamos editando, SIEMPRE usar el categoria_id actual - convertir a número
+        const categoriaIdValue = isEditing 
+          ? Number(initialData?.categoria_id) || 0
           : catList.length > 0 ? catList[0].id : 0;
+
+        const defaultCategoriaId = categoriaIdValue;
+
+        console.log("[SubcategoriasForm] loadLookups:", {
+          isEditing,
+          initialData_categoria_id: initialData?.categoria_id,
+          convertedValue: categoriaIdValue,
+          defaultCategoriaId,
+          catList: catList.map(c => ({ id: c.id, nombre: c.nombre })),
+        });
 
         // 🔥 Forzamos el reset con los valores cargados/existentes
         reset({
           id: initialData?.id ?? undefined,
           nombre: initialData?.nombre ?? "",
           categoria_id: defaultCategoriaId, // Usamos el valor por defecto/existente
+        }, {
+          keepValues: false, // Aseguramos que el reset aplique todos los valores
         });
       } catch (error) {
         console.error("Error al cargar categorías:", error);
+        const fallbackCategoriaId = Number(initialData?.categoria_id) || 0;
         reset({
           id: initialData?.id ?? undefined,
           nombre: initialData?.nombre ?? "",
-          categoria_id: 0, 
+          categoria_id: fallbackCategoriaId, 
+        }, {
+          keepValues: false,
         });
       } finally {
         setLoadingLookups(false);
@@ -94,8 +110,9 @@ export default function SubcategoriasForm({ initialData, onSubmit, onCancel, for
   }, [initialData, reset]);
 
   const submitForm: SubmitHandler<FormData> = (data) => {
-    // La data ya está limpia, la enviamos
-    onSubmit(data);
+    // Remover el ID antes de enviar (el hook lo maneja por separado)
+    const { id, ...submitData } = data;
+    onSubmit(submitData as any);
   };
 
   const handleChange = (
@@ -112,6 +129,16 @@ export default function SubcategoriasForm({ initialData, onSubmit, onCancel, for
     value: String(c.id),
     label: c.nombre,
   }));
+
+  // Debug: Verificar que el valor del select coincide con las opciones
+  React.useEffect(() => {
+    console.log("[SubcategoriasForm] Debug:", {
+      formValues_categoria_id: formValues.categoria_id,
+      categoriaOptions,
+      initialData_categoria_id: initialData?.categoria_id,
+      match: categoriaOptions.some(opt => opt.value === String(formValues.categoria_id)),
+    });
+  }, [formValues.categoria_id, categoriaOptions, initialData?.categoria_id]);
 
   return (
     <form onSubmit={handleSubmit(submitForm)} className="space-y-4">
