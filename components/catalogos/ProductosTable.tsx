@@ -136,6 +136,39 @@ export default function ProductosTable({
       },
     },
     {
+      key: "promocion_porcentaje",
+      label: "Promoción %",
+      render: (row: Producto) => {
+        const promocion = Number((row as any).promocion_porcentaje ?? 0);
+        return (
+          <span className={`font-semibold ${promocion > 0 ? 'text-orange-600' : 'text-gray-500'}`}>
+            {promocion > 0 ? `${promocion}%` : '-'}
+          </span>
+        );
+      },
+    },
+    {
+      key: "precio_con_descuento",
+      label: "Precio con Descuento",
+      render: (row: Producto) => {
+        const precioVenta = Number(
+          (row as any).precio_venta ?? (row as any).precioVenta ?? row.precio ?? 0
+        );
+        const promocion = Number((row as any).promocion_porcentaje ?? 0);
+        
+        let precioFinal = precioVenta;
+        if (promocion > 0) {
+          precioFinal = precioVenta - (precioVenta * promocion / 100);
+        }
+        
+        return (
+          <span className={`font-semibold ${promocion > 0 ? 'text-green-600' : 'text-gray-700'}`}>
+            {formatCurrency(precioFinal)}
+          </span>
+        );
+      },
+    },
+    {
       key: "utilidad",
       label: "Utilidad / Producto",
       render: (row: Producto) => {

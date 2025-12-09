@@ -101,39 +101,64 @@ export const useProductListLogic = (initialSort: SortOption = 'relevancia') => {
         let mappedProducts: ProductCardData[] = productos.map((p) => {
             // Preferir precio activo/proyecto desde el servicio de `precios` si existe
             const precioEntry = preciosList.find(pr => Number(pr.productoId ?? pr.producto?.id) === Number(p.id));
-            // Preferir el precio final de la tabla `precios` (valor_final) cuando exista,
-            // luego valor_unitario y finalmente los campos del producto.
-            const priceValue = precioEntry?.valor_final ?? precioEntry?.valor_unitario ?? p.precios?.[0]?.valor_final ?? p.precios?.[0]?.valor_unitario ?? (p as any).precio ?? (p as any).precio_costo;
-            // Debug: mostrar el mapeo de precio para los primeros productos (ayuda a diagnosticar por qué falta precio_venta)
-            if (p && preciosList && productos && productos.length) {
-                // limitar logging a los primeros 10 productos
-                const prodIndex = productos.findIndex(pr => Number(pr.id) === Number(p.id));
-                if (prodIndex >= 0 && prodIndex < 10) {
-                    console.debug('[useProductListLogic] price mapping', { productId: p.id, precio_venta: (p as any).precio_venta ?? (p as any).precioVenta ?? null, precio_costo: (p as any).precio_costo ?? null, precio_from_precios: precioEntry ? (precioEntry.valor_final ?? precioEntry.valor_unitario) : null, priceValue });
-                }
-            }
-            const discountFromPrecios = precioEntry?.descuento_porcentaje ?? precioEntry?.descuento ?? undefined;
-            const discountFromProducto = p.precios?.[0]?.descuento_porcentaje ?? p.precios?.[0]?.descuento ?? undefined;
+            
+            // OBTENER EL PRECIO ORIGINAL (precio_venta sin descuento)
+            // Prioridad: precio_venta > precios[0].valor_final > precio > precio_costo
+            const precioVentaOriginal =
+                (p as any).precio_venta ??
+                p.precios?.[0]?.valor_final ??
+                p.precios?.[0]?.valor_unitario ??
+                precioEntry?.valor_final ??
+                precioEntry?.valor_unitario ??
+                (p as any).precioVenta ??
+                (p as any).precio ??
+                (p as any).precio_costo;
+            
+            // OBTENER PORCENTAJE DE DESCUENTO
+            // PRIORIDAD: promocion_porcentaje del producto > descuento en precios > otros campos
+            const descuentoProducto = (p as any).promocion_porcentaje ?? (p as any).promocion;
+            const descuentoPrecios = precioEntry?.descuento_porcentaje ?? precioEntry?.descuento;
+            const descuentoArrayPrecios = p.precios?.[0]?.descuento_porcentaje ?? p.precios?.[0]?.descuento;
+            
+            // Usar el primer valor válido encontrado, priorizando promocion_porcentaje
+            const discountValue = descuentoProducto ?? descuentoArrayPrecios ?? descuentoPrecios ?? 0;
+            const parsedDiscount = Number(discountValue);
+            const discountPercent = Number.isFinite(parsedDiscount) && parsedDiscount > 0 ? parsedDiscount : undefined;
 
             const stockNum = Number((p as any).stock ?? p.inventario?.[0]?.stock) || 0;
             const stockMin = Number((p as any).stockMinimo ?? (p as any).stockMin ?? 5);
             let stockStatus = 'Disponible';
             if (stockNum <= 0) stockStatus = 'Agotado';
             else if (stockNum <= stockMin) stockStatus = 'Stock Bajo';
+            
+            // CALCULAR PRECIO FINAL Y PRECIO ORIGINAL
+            const precioVentaNumerico = getNumericPrice(precioVentaOriginal);
+            let precioFinal: number;
+            let originalPrice: string | undefined;
+            
+            if (discountPercent && discountPercent > 0) {
+                // Si hay descuento: precio_venta es el ORIGINAL, calculamos el precio CON descuento
+                precioFinal = precioVentaNumerico - (precioVentaNumerico * discountPercent / 100);
+                originalPrice = formatPrice(precioVentaNumerico); // Precio original (tachado)
+            } else {
+                // Sin descuento: mostrar el precio de venta normal
+                precioFinal = precioVentaNumerico;
+                originalPrice = undefined;
+            }
 
             return {
                 id: p.id,
                 nombre: p.nombre,
-                displayPrice: formatPrice(priceValue), // Desde utils
-                numericPrice: getNumericPrice(priceValue), // Desde utils
-                imageSrc: ( (p as any).imagen_url && isImageUrl((p as any).imagen_url) ? (p as any).imagen_url : ((p as any).imageSrc || mapProductToImage(p.nombre, p.id)) ), // Preferir imagen del producto sólo si es imagen
-                // Navegar a la página de especificaciones en la app de usuarios
+                displayPrice: formatPrice(precioFinal), // Precio CON descuento (o normal si no hay descuento)
+                originalPrice: originalPrice, // Precio original SIN descuento (solo si hay promoción)
+                numericPrice: precioFinal, // Para ordenamiento
+                imageSrc: ( (p as any).imagen_url && isImageUrl((p as any).imagen_url) ? (p as any).imagen_url : ((p as any).imageSrc || mapProductToImage(p.nombre, p.id)) ),
                 href: `/users/especificaciones/${p.id}`,
-                brand: "DISEM SAS", // Valor fijo (mockeado)
-                rating: 4.5, // Valor fijo (mockeado)
+                brand: "DISEM SAS",
+                rating: 4.5,
                 stock: stockNum,
                 categoria: p.categoria?.nombre || p.categoria || undefined,
-                discountPercent: discountFromPrecios !== undefined ? Number(discountFromPrecios) : (discountFromProducto !== undefined ? Number(discountFromProducto) : undefined),
+                discountPercent: discountPercent,
                 salesCount: Number(p.ventas ?? p.sales ?? 0) || undefined,
                 stockStatus,
         } as ProductCardData;

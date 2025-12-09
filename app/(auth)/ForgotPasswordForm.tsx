@@ -3,7 +3,6 @@
 import InputField from "../../components/ui/InputField";
 import Button from "../../components/ui/button";
 import React, { useState } from 'react';
-import { AlertCircle, CheckCircle } from 'lucide-react';
 import { API_URL } from "../../components/services/apiConfig";
 
 const ForgotPasswordForm: React.FC = () => {
@@ -55,21 +54,12 @@ const ForgotPasswordForm: React.FC = () => {
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       {message && (
-        <div className={`flex items-start gap-3 p-4 rounded-lg ${
+        <div className={`p-4 rounded-lg text-center font-semibold ${
           message.type === 'success' 
-            ? 'bg-green-50 border border-green-200' 
-            : 'bg-red-50 border border-red-200'
+            ? 'bg-green-100 text-green-800 border border-green-300' 
+            : 'bg-red-100 text-red-800 border border-red-300'
         }`}>
-          {message.type === 'success' ? (
-            <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
-          ) : (
-            <AlertCircle className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" />
-          )}
-          <p className={`text-sm font-medium ${
-            message.type === 'success' ? 'text-green-800' : 'text-red-800'
-          }`}>
-            {message.text}
-          </p>
+          {message.text}
         </div>
       )}
 

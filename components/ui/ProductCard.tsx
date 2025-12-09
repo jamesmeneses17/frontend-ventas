@@ -17,6 +17,8 @@ interface ProductCardProps {
   viewMode?: "grid" | "list";
   /** umbral para considerar "stock bajo" (por defecto 5) */
   lowStockThreshold?: number;
+  /** Precio original (sin descuento) para mostrar tachado */
+  originalPrice?: string;
 }
 
 const ProductCard: React.FC<ProductCardProps> = ({
@@ -31,6 +33,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
   href,
   viewMode = "grid",
   lowStockThreshold = 5,
+  originalPrice,
 }) => {
   const [src, setSrc] = React.useState<string>(isImageUrl(imageSrc) ? imageSrc : "/images/imagen.webp");
   React.useEffect(() => {
@@ -112,10 +115,30 @@ const ProductCard: React.FC<ProductCardProps> = ({
             <p className="text-sm text-gray-500 mt-1">Ventas: {salesCount}</p>
           )}
 
-          {/* Precio principal */}
-          <p className="text-2xl font-bold text-[#e75e55] mb-3">
-            {displayPrice}
-          </p>
+          {/* Sección de Precio con Descuento */}
+          <div className="mb-3 w-full">
+            {discountPercent && discountPercent > 0 && originalPrice ? (
+              <div className="flex flex-col items-center gap-1">
+                {/* Precio Original (tachado) */}
+                <p className="text-sm text-gray-400 line-through">
+                  {originalPrice}
+                </p>
+                {/* Precio con Descuento (destacado) */}
+                <p className="text-3xl font-extrabold text-green-600">
+                  {displayPrice}
+                </p>
+                {/* Badge de ahorro */}
+                <span className="text-xs font-bold text-white bg-green-600 px-2 py-1 rounded">
+                  ¡Ahorra {discountPercent}%!
+                </span>
+              </div>
+            ) : (
+              /* Sin descuento */
+              <p className="text-2xl font-bold text-[#e75e55]">
+                {displayPrice}
+              </p>
+            )}
+          </div>
 
           {/* Botón azul tipo DISEM */}
           <Link
@@ -169,8 +192,26 @@ const ProductCard: React.FC<ProductCardProps> = ({
             <p className="text-sm text-gray-500">Ventas: {salesCount}</p>
           )}
 
-          {/* Precio */}
-          <p className="text-[#e75e55] text-2xl font-bold">{displayPrice}</p>
+          {/* Sección de Precio con Descuento */}
+          {discountPercent && discountPercent > 0 && originalPrice ? (
+            <div className="flex flex-col gap-1 mt-2">
+              {/* Precio Original (tachado) */}
+              <p className="text-sm text-gray-400 line-through">
+                {originalPrice}
+              </p>
+              {/* Precio con Descuento (destacado) */}
+              <p className="text-3xl font-extrabold text-green-600">
+                {displayPrice}
+              </p>
+              {/* Badge de ahorro */}
+              <span className="text-xs font-bold text-white bg-green-600 px-2 py-1 rounded w-fit">
+                ¡Ahorra {discountPercent}%!
+              </span>
+            </div>
+          ) : (
+            /* Sin descuento */
+            <p className="text-[#e75e55] text-2xl font-bold mt-2">{displayPrice}</p>
+          )}
         </div>
 
         {/* Botón */}

@@ -16,23 +16,22 @@ export interface BaseProductType {
 
 
 export interface ProductCardData {
-    id: number;
-    nombre: string; // Mantener el nombre original para ser pasado al componente
-    displayPrice: string; // El precio formateado para mostrar
-    numericPrice: number; // El precio en número para ordenamiento
-    imageSrc: string; // La URL de la imagen (mapeada)
-    href: string; // El enlace al detalle del producto
-    brand: string;
-    rating: number;
+    id: number;
+    nombre: string; // Mantener el nombre original para ser pasado al componente
+    displayPrice: string; // El precio formateado para mostrar
+    originalPrice?: string; // Precio antes del descuento (opcional)
+    numericPrice: number; // El precio en número para ordenamiento
+    imageSrc: string; // La URL de la imagen (mapeada)
+    href: string; // El enlace al detalle del producto
+    brand: string;
+    rating: number;
 	stock: number;
 	categoria?: string;
 	discountPercent?: number;
 	salesCount?: number;
-    /** Estado calculado de stock: 'Disponible' | 'Stock Bajo' | 'Agotado' */
-    stockStatus?: string;
+    /** Estado calculado de stock: 'Disponible' | 'Stock Bajo' | 'Agotado' */
+    stockStatus?: string;
 }
-
-
 // --- 2. Utilidades de Formato y Mapeo ---
 
 

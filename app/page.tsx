@@ -6,6 +6,7 @@ import React from "react";
 import PublicLayout from "../components/layout/PublicLayout";
 import HeroSection from "../components/ui/HeroSection";
 import FeaturedProductsSection from "../components/ui/FeaturedProductsSection";
+import FeaturedProductsWithDiscount from "../components/ui/FeaturedProductsWithDiscount";
 import WhyChooseUsSection from "../components/ui/WhyChooseUsSection";
 
 export default function HomePage() {
@@ -13,9 +14,11 @@ export default function HomePage() {
     <PublicLayout>
       {/* 1. SECCIÓN PRINCIPAL (HERO/CARRUSEL) */}
       <HeroSection />
-      {/* 2. SECCIÓN DE PRODUCTOS DESTACADOS */}
-      <FeaturedProductsSection />  
-      {/* 3. SECCIÓN DE VALOR/PROPUESTA DE VENTA */}
+      {/* 2. SECCIÓN DE CATEGORÍAS DESTACADAS */}
+      <FeaturedProductsSection />
+      {/* 3. SECCIÓN DE PRODUCTOS CON PROMOCIONES */}
+      <FeaturedProductsWithDiscount />  
+      {/* 4. SECCIÓN DE VALOR/PROPUESTA DE VENTA */}
      <WhyChooseUsSection /> 
        {/* 5. SECCIÓN DE CONTACTO (NUEVO) */}
         {/*    <ContactSection />  */}   

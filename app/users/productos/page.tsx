@@ -172,6 +172,7 @@ function ProductosClientePageContent() {
                     id={product.id}
                     nombre={product.nombre}
                     displayPrice={product.displayPrice}
+                    originalPrice={product.originalPrice}
                     imageSrc={product.imageSrc}
                     href={product.href}
                     viewMode={viewMode}

@@ -18,6 +18,7 @@ import { formatCurrency } from "../../utils/formatters";
 type FormData = Omit<CreateProductoData, "precio" | "precio_venta"> & {
   precio?: number | string;
   precio_venta?: number | string;
+  promocion_porcentaje?: number | string;
   id?: number;
   categoriaId?: number;
 };
@@ -52,6 +53,7 @@ export default function ProductosForm({ initialData, onSubmit, onCancel, formErr
       codigo: initialData?.codigo || "",
       precio: formatThousands((initialData as any)?.precio),
       precio_venta: formatThousands((initialData as any)?.precio_venta ?? (initialData as any)?.precio),
+      promocion_porcentaje: (initialData as any)?.promocion_porcentaje ?? "",
       stock: (initialData as any)?.stock ?? 0,
       descripcion: initialData?.descripcion || "",
       ficha_tecnica_url: initialData?.ficha_tecnica_url || "",
@@ -443,6 +445,21 @@ export default function ProductosForm({ initialData, onSubmit, onCancel, formErr
           value={(formValues as any).precio ?? ""}
           onChange={handleChange}
           placeholder="120000"
+        />
+      </div>
+
+      {/* Fila 4: Promoción */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <FormInput
+          label="Promoción % (opcional)"
+          name="promocion_porcentaje"
+          type="number"
+          value={(formValues as any).promocion_porcentaje ?? ""}
+          onChange={handleChange}
+          placeholder="0"
+          min="0"
+          max="100"
+          step="0.01"
         />
       </div>
 
