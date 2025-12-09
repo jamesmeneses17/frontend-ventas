@@ -44,23 +44,7 @@ const mapCategoryToImage = (nombre: string, id: number): string => {
     case "energia-solar":
     case "energia-solar-sostenible":
       return "/images/panel.webp";
-    case "productos-automotriz":
-    case "automotriz":
-      return "/images/bateria.webp";
-    case "paneles-solares":
-      return "/images/panel.webp";
-    case "baterias-solares":
-    case "baterias":
-      return "/images/bateria.webp";
-    case "controladores":
-    case "controlador":
-      return "/images/controladores.webp";
-    case "iluminacion-solar":
-    case "iluminacion-ac":
-    case "alumbrado-solar":
-      return "/images/iluminacion-solar.webp";
-    case "sistemas-de-bombeo":
-      return "/images/bombeo.webp";
+   
     default:
       const index = id % fallbackImages.length;
       return fallbackImages[index];

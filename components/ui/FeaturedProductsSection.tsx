@@ -1,143 +1,187 @@
-// /components/ui/FeaturedProductsSection.tsx
-
 "use client";
 
 import React, { useState, useEffect } from "react";
+// Importamos la lógica de categorías en lugar de productos
 import {
-  getProductos,
-  Producto as ProductoType,
-} from "@/components/services/productosService";
-import { createSlug } from "@/utils/slug"; // Importamos la utilidad
-import { mapProductToImage, isImageUrl } from '@/utils/ProductUtils';
-import { formatPrice } from '@/utils/ProductUtils';
+    getCategoriasPrincipales,
+    CategoriaPrincipal,
+} from "@/components/services/categoriasPrincipalesService";
+import { createSlug } from "@/utils/slug";
+// Importamos ImageLinkCard, que será nuestra tarjeta base
 import ImageLinkCard from "./ImageLinkCard";
-import ProductCard from "./ProductCard";
+// Ya no necesitamos ProductCard, formatPrice ni ProductUtils
+import Link from "next/link";
+import { Zap } from "lucide-react"; // Icono opcional para el título
 
-// --- Tipos ---
+// --- 1. Tipos y Utilidad de Mapeo de Imágenes (Copiado de la página de Categorías) ---
 
-// Props del componente tarjeta (usa el tipo exportado)
-type ProductCardProps = ProductoType & {
-  imageSrc: string;
-  href: string;
-  displayPrice: string;
+interface CategoryCardDisplayProps {
+    id: number;
+    nombre: string;
+    imageSrc: string;
+    href: string;
+}
+
+const fallbackImages = [
+    "/images/panel.webp",
+    "/images/bateria.webp",
+    "/images/controladores.webp",
+    "/images/iluminacion-solar.webp",
+];
+
+const mapCategoryToImage = (nombre: string, id: number): string => {
+    const slug = createSlug(nombre);
+
+    switch (slug) {
+        case "corriente-alterna":
+        case "energia-ac":
+            return "/images/iluminacion-solar.webp";
+        case "energia-solar":
+        case "energia-solar-sostenible":
+            return "/images/panel.webp";
+        
+        default:
+            const index = id % fallbackImages.length;
+            return fallbackImages[index];
+    }
 };
 
-// --- Utilidad de Mapeo de Imagenes (Usa el Slug) ---
+// --- 2. Componente de Tarjeta de Categoría (Adaptado para la cuadrícula) ---
 
-// Usaremos la función centralizada `mapProductToImage` importada desde utils
+const CategoryCard: React.FC<CategoryCardDisplayProps> = ({
+    nombre,
+    imageSrc,
+    href,
+}) => (
+    // La tarjeta es un enlace completo, usamos el componente base ImageLinkCard
+    <ImageLinkCard href={href} imageSrc={imageSrc} altText={nombre}>
+        <div className="flex flex-col justify-end h-full">
+            {/* Overlay para el contenido de la tarjeta */}
+            <div className="p-4 bg-gradient-to-t from-black/80 via-black/40 to-transparent absolute inset-0">
+                <div className="flex flex-col justify-end h-full">
+                    
+                    {/* Título de Categoría */}
+                    <h3 className="text-xl font-bold text-white mb-2 tracking-wide">
+                        {nombre}
+                    </h3>
 
-// --- Formato de Precio (para usar dentro de ProductCard) ---
+                    {/* Botón simple de Ver Categoría */}
+                    <span className="text-sm font-medium text-amber-300 hover:text-amber-500 transition duration-150">
+                        Explorar ahora →
+                    </span>
+                </div>
+            </div>
+        </div>
+    </ImageLinkCard>
+);
 
-  // ahora usamos formatPrice importado desde utils/ProductUtils
-
-// --- Componente de Tarjeta (ProductCard) ---
-
-// --- Componente de Sección Destacada (FeaturedProductsSection) ---
+// --- 3. Componente de Sección Destacada (FeaturedProductsSection) ---
 
 const FeaturedProductsSection: React.FC = () => {
-  const [productos, setProductos] = useState<ProductoType[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
+    // Usamos CategoriaPrincipal en lugar de ProductoType
+    const [categories, setCategories] = useState<CategoriaPrincipal[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(false);
 
-  useEffect(() => {
-    const fetchProductos = async () => {
-      try {
-        setLoading(true);
-  const response = await getProductos();
-  setProductos(response.data);
-        setLoading(false);
-      } catch (err) {
-        console.error("Error al cargar productos:", err);
-        setError(true);
-        setLoading(false);
-      }
-    };
+    useEffect(() => {
+        const fetchCategories = async () => {
+            try {
+                setLoading(true);
+                // Llamamos al servicio de categorías principales
+                const response = await getCategoriasPrincipales(1, 1000, ""); 
+                
+                let categoriasArray: CategoriaPrincipal[] = [];
+                if (Array.isArray(response)) {
+                    categoriasArray = response;
+                } else if (response && typeof response === 'object' && Array.isArray(response.data)) {
+                    categoriasArray = response.data;
+                }
+                
+                // Opcional: ordenar si es necesario, pero para destacados a veces se mantiene como viene
+                setCategories(categoriasArray);
+                setLoading(false);
+            } catch (err) {
+                console.error("Error al cargar categorías:", err);
+                setError(true);
+                setLoading(false);
+            }
+        };
 
-    fetchProductos();
-  }, []);
+        fetchCategories();
+    }, []);
 
-  // Mostrar solo 4 productos
-  const displayedProducts = productos.slice(0, 4).map((p) => {
-    // Preferir valor_final (precio final) si viene en la relación `precios`,
-    // luego valor_unitario y por último campos en el producto mismo.
-  const priceValue = (p as any).precios?.[0]?.valor_final ?? (p as any).precios?.[0]?.valor_unitario ?? (p as any).precio ?? (p as any).precio_costo;
-    const displayPrice = formatPrice(priceValue);
+    // Mostrar solo 4 categorías (adaptado)
+    const displayedCategories: CategoryCardDisplayProps[] = categories.slice(0, 4).map((cat) => ({
+        id: cat.id,
+        nombre: cat.nombre,
+        // Usamos la lógica de mapeo de imágenes de categoría
+        imageSrc: mapCategoryToImage(cat.nombre, cat.id),
+        // La URL es la de la página de productos filtrados por la categoría principal
+        href: `/users/categorias-principales?categoriaPrincipalId=${cat.id}`,
+    }));
 
-    return {
-      ...p,
-      imageSrc: ((p as any).imagen_url && isImageUrl((p as any).imagen_url)) ? (p as any).imagen_url : mapProductToImage(p.nombre, p.id),
-      // 🛑 La URL de producto es por ID, no requiere slugging del nombre
-      href: `/producto/${p.id}`,
-      displayPrice: displayPrice,
-    };
-  });
+    if (loading) {
+        return (
+            <section className="py-16 text-center">
+                <p className="text-lg text-amber-600">Cargando categorías destacadas...</p>
+            </section>
+        );
+    }
 
-  if (loading) {
+    if (error) {
+        return (
+            <section className="py-16 text-center">
+                <p className="text-lg text-red-600">
+                    Error al cargar las categorías. Intente de nuevo más tarde.
+                </p>
+            </section>
+        );
+    }
+
     return (
-      <section className="py-16 text-center">
-        <p className="text-lg text-amber-600">Cargando productos...</p>
-      </section>
+        <section className="py-8 sm:py-12 md:py-7 bg-white">
+            <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                <div className="text-center mb-12">
+                    <h2 className="text-4xl font-extrabold text-gray-900">
+                        Explora Nuestras Categorías
+                    </h2>
+                    <p className="mt-4 text-xl text-gray-600 max-w-2xl mx-auto">
+                        Encuentra rápidamente la sección de productos solares que necesitas.
+                    </p>
+                </div>
+
+                {displayedCategories.length > 0 ? (
+                    // Cuadrícula adaptada para 4 columnas, ideal para la sección destacada
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                        {displayedCategories.map((category) => (
+                            <CategoryCard
+                                key={category.id}
+                                {...category}
+                            />
+                        ))}
+                    </div>
+                ) : (
+                    <p className="text-center text-gray-500 text-lg">
+                        No hay categorías disponibles por ahora.
+                    </p>
+                )}
+
+                {/* Botón para ver todas las categorías (si hay más de 4) */}
+                {categories.length > 4 && (
+                    <div className="mt-12 text-center">
+                        <a
+                            href="/users/categorias" // Enlace a la página de todas las categorías
+                            // --- CLASES MODIFICADAS AQUÍ ---
+                            className="inline-flex items-center px-8 py-3 border border-transparent text-base font-medium rounded-lg shadow-md text-white bg-blue-600 hover:bg-blue-700 transition duration-150"
+                            // -----------------------------
+                        >
+                            Ver todas las categorías →
+                        </a>
+                    </div>
+                )}
+            </div>
+        </section>
     );
-  }
-
-  if (error) {
-    return (
-      <section className="py-16 text-center">
-        <p className="text-lg text-red-600">
-          Error al cargar los productos. Intente de nuevo más tarde.
-        </p>
-      </section>
-    );
-  }
-
-  return (
-    <section className="py-8 sm:py-12 md:py-7 bg-white">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-12">
-          <h2 className="text-4xl font-extrabold text-gray-900">
-            Nuestros Productos
-          </h2>
-          <p className="mt-4 text-xl text-gray-600 max-w-2xl mx-auto">
-            Descubre nuestros productos más vendidos y recomendados.
-          </p>
-        </div>
-
-        {displayedProducts.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {displayedProducts.map((product) => (
-              <ProductCard
-                key={product.id}
-                id={product.id}
-                nombre={product.nombre}
-                displayPrice={product.displayPrice}
-                imageSrc={product.imageSrc}
-                href={product.href}
-                stock={Number((product as any).stock) || 0}
-                categoria={(product as any).categoria?.nombre || (product as any).categoria || undefined}
-                discountPercent={Number((product as any).precios?.[0]?.descuento_porcentaje ?? (product as any).precios?.[0]?.descuento ?? 0) || undefined}
-                salesCount={Number((product as any).ventas ?? (product as any).sales ?? 0) || undefined}
-              />
-            ))}
-          </div>
-        ) : (
-          <p className="text-center text-gray-500 text-lg">
-            No hay productos disponibles por ahora.
-          </p>
-        )}
-
-        {productos.length > 4 && (
-          <div className="mt-12 text-center">
-            <a
-              href="users/categorias"
-              className="inline-flex items-center px-8 py-3 border border-transparent text-base font-medium rounded-lg shadow-md text-white bg-amber-600 hover:bg-amber-700 transition duration-150"
-            >
-              Ver todos los productos →
-            </a>
-          </div>
-        )}
-      </div>
-    </section>
-  );
 };
 
 export default FeaturedProductsSection;
