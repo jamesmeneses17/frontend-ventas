@@ -9,8 +9,8 @@ const WHY_CHOOSE_US_TEXT = "Nuestro enfoque personalizado y atención al detalle
 const WhyChooseUsSection: React.FC = () => {
     return (
        
-       <section className="relative w-full overflow-hidden h-[400px] md:h-[500px] lg:h-[600px] -mt-30">
-        // --- FIN DE LA MODIFICACIÓN ---
+       <section className="relative w-full overflow-hidden h-[400px] md:h-[500px] lg:h-[600px] -mt-20">
+        {/* --- FIN DE LA MODIFICACIÓN --- */}
 
             <video
                 className="absolute top-0 left-0 w-full h-full object-cover"
