@@ -1,5 +1,3 @@
-// /components/layout/FooterPublic.tsx
-
 import React from 'react';
 // Eliminamos el componente 'Image' ya que no usaremos logo
 // Iconos: Teléfono, Email, Ubicación
@@ -11,14 +9,12 @@ const BG_COLOR = "bg-gray-900";
 
 // Datos de Contacto y Enlaces
 const CONTACT_INFO = {
-    telefono: '+57 (601) 286 1451',
-    whatsappMovil: '+57 3206197545',
-    email: 'informacion@disemsas.com.co',
+    telefono: '+57 320 6197545',
+    whatsappMovil: '+57 320 6197545',
+    email: 'disemrd@gmail.com',
     
     direcciones: [
-        { ciudad: 'Bogotá', detalle: 'Calle 17 # 12 – 79 Centro' },
-        { ciudad: 'Villavicencio', detalle: 'Calle 35 # 26 – 63' },
-        { ciudad: 'Medellín', detalle: 'Calle 51 # 55 – 69 / Local 131' },
+        { ciudad: 'Mocoa Putumayo', detalle: 'Vereda Pueblo Viejo' },
     ]
 };
 
@@ -29,7 +25,8 @@ const CONTACT_INFO = {
  */
 const FooterPublic: React.FC = () => {
     return (
-        <footer className={`${BG_COLOR} text-white mt-auto`}>
+        // CAMBIO APLICADO: Se eliminó 'mt-auto' para pegar el footer al contenido.
+        <footer className={`${BG_COLOR} text-white`}>
             <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pt-10 pb-6">
                 
                 {/* Contenedor Principal (3 Columnas: Síguenos, Contacto, Direcciones) */}
@@ -58,7 +55,6 @@ const FooterPublic: React.FC = () => {
                                 <Phone className="w-5 h-5 mr-2" />
                                 <span className="font-semibold text-base">Llámanos:</span>
                             </div>
-                            <p className="text-gray-400 text-sm ml-7">Fijo: {CONTACT_INFO.telefono}</p>
                             <p className="text-gray-400 text-sm ml-7">WhatsApp: {CONTACT_INFO.whatsappMovil}</p>
                         </div>
                         
