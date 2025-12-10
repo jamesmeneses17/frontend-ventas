@@ -46,22 +46,23 @@ const ProductCard: React.FC<ProductCardProps> = ({
     if (typeof s !== "number") return null;
     if (s <= 0)
       return { label: "Agotado", className: "bg-red-600 text-white" };
-    if (s <= lowStockThreshold)
-      return { label: "Stock Bajo", className: "bg-yellow-400 text-gray-800" };
-    return null; // ✅ No mostrar “Disponible”
+    return null; // No mostrar stock bajo ni disponible
   };
 
-  // 🟥 Etiqueta de descuento
+  // Etiqueta de descuento (top-left)
   const DiscountBadge = () => {
-    if (typeof discountPercent === "number" && discountPercent > 0) {
+    if (discountPercent && discountPercent > 0) {
       return (
-        <div className="absolute top-2 left-2 bg-red-600 text-white text-xs font-bold px-2 py-1 rounded-full z-20 shadow-md">
-          -{discountPercent}%
+        <div className="absolute top-2 left-2 bg-red-600 text-white text-xs font-bold px-2 py-1 rounded-full z-30 shadow-md flex flex-col items-center leading-tight">
+          <span>-{discountPercent}%</span>
+          <span className="text-[10px]">OFF</span>
         </div>
       );
     }
     return null;
   };
+
+
 
   // 🟨 Etiqueta de stock (derecha)
   const StockBadge = () => {
@@ -79,71 +80,67 @@ const ProductCard: React.FC<ProductCardProps> = ({
   // ✅ --- VISTA EN CUADRÍCULA ---
   if (viewMode === "grid") {
     return (
-      <div className="group relative block bg-white rounded-xl overflow-hidden shadow-xl hover:shadow-2xl transition duration-300 transform hover:-translate-y-1">
+      <div className="group relative block bg-white rounded-xl overflow-hidden shadow-md hover:shadow-xl transition duration-300 transform hover:-translate-y-1 max-w-[300px] mx-auto">
         {/* Imagen con etiquetas */}
-          <Link href={targetHref} className="block relative h-48 sm:h-56 overflow-hidden flex items-center justify-center bg-white p-4">
+        <Link href={targetHref} className="block relative h-48 overflow-hidden flex items-center justify-center bg-white p-4">
           <DiscountBadge />
           <StockBadge />
-            <div className="relative w-full h-full max-w-[260px] md:max-w-[320px]">
-            <Image src={src} alt={nombre} fill onError={() => setSrc('/images/imagen.webp')} className="object-contain transition-transform duration-300 group-hover:scale-105 z-10" />
+          <div className="relative w-full h-full">
+            <Image 
+              src={src} 
+              alt={nombre} 
+              fill 
+              onError={() => setSrc('/images/imagen.webp')} 
+              className="object-contain transition-transform duration-300 group-hover:scale-105" 
+            />
           </div>
         </Link>
 
         {/* Contenido */}
-        <div className="p-4 flex flex-col items-center text-center">
-          {/* Nombre más destacado */}
-          <h3 className="text-lg font-extrabold text-gray-900 line-clamp-2 mb-1">
-            {nombre}
-          </h3>
+        <div className="p-4 flex flex-col">
+          {/* Nombre del producto - Negrita, centrado */}
+          <Link href={targetHref}>
+            <h3 className="text-center text-lg font-bold text-gray-900 line-clamp-2 mb-2 min-h-[3.5rem] hover:text-[#2e9fdb] transition-colors">
+              {nombre}
+            </h3>
+          </Link>
 
-          {/* Categoría más suave */}
-          {categoria && (
-            <p className="text-sm font-medium text-gray-500 mb-1">
-              {categoria}
-            </p>
-          )}
+        
 
-          {/* Stock (solo informativo, no etiqueta principal) */}
-          {typeof stock === "number" && (
-            <p className="text-xs text-gray-400 mb-1">
-              Disponible: {stock}
-            </p>
-          )}
-
-          {/* Ventas (opcional) */}
-          {typeof salesCount === "number" && (
-            <p className="text-sm text-gray-500 mt-1">Ventas: {salesCount}</p>
-          )}
-
-          {/* Sección de Precio con Descuento */}
-          <div className="mb-3 w-full">
+          {/* Sección de Precios */}
+          <div className="mb-4 flex flex-col items-center">
             {discountPercent && discountPercent > 0 && originalPrice ? (
-              <div className="flex flex-col items-center gap-1">
-                {/* Precio Original (tachado) */}
-                <p className="text-sm text-gray-400 line-through">
-                  {originalPrice}
+              <>
+                {/* Precio Anterior con etiqueta "Antes:" */}
+                <p className="text-sm text-gray-400 line-through mb-2">
+                  Antes: $ {originalPrice.replace(/COP\s*/, '').trim()}
                 </p>
-                {/* Precio con Descuento (destacado) */}
-                <p className="text-3xl font-extrabold text-green-600">
-                  {displayPrice}
-                </p>
-                {/* Badge de ahorro */}
-                <span className="text-xs font-bold text-white bg-green-600 px-2 py-1 rounded">
-                  ¡Ahorra {discountPercent}%!
-                </span>
-              </div>
+                {/* Precio Actual (Oferta) con badge al lado */}
+                <div className="flex items-center gap-2">
+                  <p className="text-4xl font-extrabold text-[#008000]">
+                    $ {displayPrice.replace(/COP\s*/, '').trim()}
+                  </p>
+                </div>
+              </>
             ) : (
-              /* Sin descuento */
-              <p className="text-2xl font-bold text-[#e75e55]">
-                {displayPrice}
+              /* Sin descuento - Precio normal (verde) */
+              <p className="text-3xl font-bold text-[#008000] mb-2">
+                $ {displayPrice.replace(/COP\s*/, '').trim()}
               </p>
             )}
           </div>
 
-          {/* Botón azul tipo DISEM */}
+          {/* Disponibilidad - Texto en negro, solo cantidad */}
+          {typeof stock === "number" && (
+            <p className="text-center text-xs mb-4 text-black">
+              Disponible: {stock}
+            </p>
+          )}
+
+          {/* Botón CTA - Agregar al carrito */}
           <Link
             href={targetHref}
-            className="inline-flex items-center px-6 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-[#2e9fdb] hover:bg-[#238ac1] transition duration-150"
+            className="w-full inline-flex items-center justify-center px-6 py-3 border border-transparent text-sm font-bold uppercase rounded-lg text-white bg-[#2e9fdb] hover:bg-[#238ac1] transition duration-150 shadow-sm hover:shadow-md"
           >
             Ver más
           </Link>
@@ -158,69 +155,76 @@ const ProductCard: React.FC<ProductCardProps> = ({
       {/* Imagen con etiquetas */}
       <Link
         href={targetHref}
-        className="w-full sm:w-56 h-56 flex-shrink-0 relative overflow-hidden flex items-center justify-center p-3 bg-white"
+        className="w-full sm:w-64 h-56 flex-shrink-0 relative overflow-hidden flex items-center justify-center p-4 bg-white"
       >
         <DiscountBadge />
         <StockBadge />
-          <div className="relative w-full h-full max-w-[220px] md:max-w-[280px]">
-          <Image src={src} alt={nombre} fill onError={() => setSrc('/images/imagen.webp')} className="object-contain transition-transform duration-300 hover:scale-105 z-10" />
+        <div className="relative w-full h-full">
+          <Image 
+            src={src} 
+            alt={nombre} 
+            fill 
+            onError={() => setSrc('/images/imagen.webp')} 
+            className="object-contain transition-transform duration-300 hover:scale-105" 
+          />
         </div>
       </Link>
 
       {/* Contenido */}
-      <div className="flex flex-col justify-between p-4 flex-1 text-center sm:text-left">
+      <div className="flex flex-col justify-between p-5 flex-1">
         <div>
           {/* Nombre principal */}
-          <h3 className="text-xl font-extrabold text-gray-900 mb-2">
-            {nombre}
-          </h3>
+          <Link href={targetHref}>
+            <h3 className="text-xl font-bold text-gray-900 mb-2 hover:text-[#2e9fdb] transition-colors">
+              {nombre}
+            </h3>
+          </Link>
 
           {/* Categoría */}
           {categoria && (
-            <p className="text-sm font-medium text-gray-500 mb-2">
+            <p className="text-sm text-gray-500 mb-3">
               {categoria}
             </p>
           )}
 
-          {/* Stock informativo */}
+          {/* Sección de Precio */}
+          <div className="mb-3">
+            {discountPercent && discountPercent > 0 && originalPrice ? (
+              <div className="flex flex-col gap-2">
+                {/* Precio Anterior con "Antes:" */}
+                <p className="text-base text-gray-400 line-through">
+                  Antes: $ {originalPrice.replace(/COP\s*/, '').trim()}
+                </p>
+                {/* Precio Actual con badge al lado */}
+                <div className="flex items-center gap-2">
+                  <p className="text-4xl font-extrabold text-[#008000]">
+                    $ {displayPrice.replace(/COP\s*/, '').trim()}
+                  </p>
+                </div>
+              </div>
+            ) : (
+              /* Sin descuento (verde) */
+              <p className="text-3xl font-bold text-[#008000]">
+                $ {displayPrice.replace(/COP\s*/, '').trim()}
+              </p>
+            )}
+          </div>
+
+          {/* Disponibilidad */}
           {typeof stock === "number" && (
-            <p className="text-xs text-gray-400 mb-2">Disponible: {stock}</p>
-          )}
-
-          {/* Ventas */}
-          {typeof salesCount === "number" && (
-            <p className="text-sm text-gray-500">Ventas: {salesCount}</p>
-          )}
-
-          {/* Sección de Precio con Descuento */}
-          {discountPercent && discountPercent > 0 && originalPrice ? (
-            <div className="flex flex-col gap-1 mt-2">
-              {/* Precio Original (tachado) */}
-              <p className="text-sm text-gray-400 line-through">
-                {originalPrice}
-              </p>
-              {/* Precio con Descuento (destacado) */}
-              <p className="text-3xl font-extrabold text-green-600">
-                {displayPrice}
-              </p>
-              {/* Badge de ahorro */}
-              <span className="text-xs font-bold text-white bg-green-600 px-2 py-1 rounded w-fit">
-                ¡Ahorra {discountPercent}%!
-              </span>
-            </div>
-          ) : (
-            /* Sin descuento */
-            <p className="text-[#e75e55] text-2xl font-bold mt-2">{displayPrice}</p>
+            <p className="text-sm mb-3 text-black">
+              Disponible: {stock}
+            </p>
           )}
         </div>
 
         {/* Botón */}
-        <div className="mt-4 sm:mt-0 sm:self-end">
+        <div className="mt-4">
           <Link
             href={targetHref}
-            className="inline-flex items-center px-6 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-[#2e9fdb] hover:bg-[#238ac1] transition duration-150"
+            className="inline-flex items-center justify-center px-8 py-3 border border-transparent text-sm font-bold uppercase rounded-lg text-white bg-[#2e9fdb] hover:bg-[#238ac1] transition duration-150 shadow-sm hover:shadow-md"
           >
-            Cotizar
+            Ver más
           </Link>
         </div>
       </div>

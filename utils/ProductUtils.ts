@@ -84,9 +84,9 @@ export const isImageUrl = (url?: string | null): boolean => {
 import { formatCurrency } from './formatters';
 
 export const formatPrice = (priceStr: string | number | undefined): string => {
-    const priceNum = parseFloat(String(priceStr || 0));
-    if (isNaN(priceNum) || priceNum === 0) { return "Consultar Precio"; }
-    return formatCurrency(priceNum, 'COP');
+	const priceNum = parseFloat(String(priceStr || 0));
+	if (isNaN(priceNum) || priceNum === 0) { return "Cotizar"; }
+	return formatCurrency(priceNum, 'COP');
 };
 
 

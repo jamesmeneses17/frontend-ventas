@@ -171,7 +171,7 @@ function CategoriasClientePageContent() {
               // ⭐️ Diseño centrado y responsivo
               <div className="flex justify-center">
                 <div 
-                  className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl"
+                  className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 max-w-6xl"
                 >
                   {displayedCategories.map((category) => (
                     <CategoryCard key={category.id} {...category} />

@@ -72,10 +72,8 @@ const QuickInfo = ({
   categoryId?: number | null;
 }) => {
   const stockState =
-    stock > 10
-      ? { icon: CheckCircle, label: "Disponible", color: "text-green-600" }
-      : stock > 0
-      ? { icon: Clock, label: `Últimas ${stock} unidades`, color: "text-yellow-600" }
+    stock > 0
+      ? { icon: CheckCircle, label: `Disponible: ${stock}`, color: "text-green-600" }
       : { icon: XCircle, label: "Agotado", color: "text-red-600" };
 
   return (
@@ -231,7 +229,8 @@ function ProductDetailPageContent({ productId }: { productId: string }) {
     (product as any).descripcion_larga ??
     (product as any).descripcion ??
     "Sin descripción disponible.";
-  const descuento = (product as any).descuento ?? 0;
+  // Priorizar promocion_porcentaje como en useProductListLogic
+  const descuento = (product as any).promocion_porcentaje ?? (product as any).descuento ?? 0;
   const fichaTecnica = (product as any).ficha_tecnica;
   // Asegurarnos de trabajar con valores numéricos
   const precioNum = Number(precio) || 0;
@@ -413,12 +412,12 @@ function ProductDetailPageContent({ productId }: { productId: string }) {
   return (
     <PublicLayout>
       <div className="bg-white min-h-screen">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-10">
+          <div className="mx-auto max-w-5xl px-4 sm:px-5 lg:px-6 py-6">
           <Breadcrumb productName={nombre} categoryName={categoria?.nombre} />
 
           <div className="lg:grid lg:grid-cols-2 lg:gap-x-12">
             {/* 🖼️ Imagen */}
-            <div className="lg:col-span-1 mb-8 lg:mb-0">
+                  <div className="relative w-full h-[400px] bg-white">
               <div className="rounded-xl overflow-hidden shadow-2xl sticky top-4">
                 <div className="w-full flex items-center justify-center bg-white p-6">
                   <div className="relative w-full max-w-[420px] h-[320px] sm:max-w-[480px] sm:h-[380px] md:max-w-[520px] md:h-[440px] rounded-lg overflow-hidden shadow-sm">
@@ -439,14 +438,22 @@ function ProductDetailPageContent({ productId }: { productId: string }) {
               <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-gray-900 mb-2">
                 {nombre}
               </h1>
-              <p className="text-xl text-[#e75e55] font-bold mb-4">
-                {precio ? formatCurrency(precioFinal, 'COP') : "Consultar Precio"}
-                {descuento > 0 && (
-                  <span className="text-sm text-gray-500 line-through ml-2">
-                    {formatCurrency(Number(precio), 'COP')}
-                  </span>
+              <div className="mb-4">
+                {precio ? (
+                  <div className="space-y-1">
+                    {descuento > 0 && (
+                      <p className="text-sm text-gray-500 line-through">
+                        ${Number(precio).toLocaleString('es-CO')}
+                      </p>
+                    )}
+                    <p className="text-3xl font-bold text-[#008000]">
+                      ${Number(precioFinal).toLocaleString('es-CO')}
+                    </p>
+                  </div>
+                ) : (
+                  <p className="text-xl font-semibold text-gray-600">Cotizar</p>
                 )}
-              </p>
+              </div>
 
               <QuickInfo
                 stock={stock ?? 0}
