@@ -166,6 +166,34 @@ export default function ProductosTable({
         );
       },
     },
+    /*
+ {
+      key: "utilidad",
+      label: "Utilidad / Producto",
+      render: (row: Producto) => {
+        const costo = Number((row as any).precio_costo ?? 0);
+        const pv = Number(
+          (row as any).precio_venta ?? (row as any).precioVenta ?? row.precio ?? 0
+        );
+        const promo = Number((row as any).promocion_porcentaje ?? 0);
+        const precioConDescuento = promo > 0 ? pv - (pv * promo) / 100 : pv;
+        const utilidad = precioConDescuento - costo;
+
+        return (
+          <span
+            className={`font-semibold ${
+              utilidad < 0 ? "text-red-600" : "text-green-600"
+            }`}
+          >
+            {formatCurrency(utilidad)}
+          </span>
+        );
+      },
+    },
+
+
+
+    */
     {
       key: "valor_inventario",
       label: "Valor Inventario",

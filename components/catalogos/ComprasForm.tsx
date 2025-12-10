@@ -100,6 +100,79 @@ export default function ComprasForm({
             setValue("costo_total", total);
         }, [formValues.cantidad, formValues.costo_unitario, setValue]);
 
+    // 🔄 Buscar productos y autoseleccionar sin perder el catálogo inicial (similar a ProductosForm)
+    useEffect(() => {
+        const term = productoSearchTerm.trim();
+        if (!term) return;
+
+        const normalized = term.toLowerCase();
+
+        // 1) Intentar con la lista local primero
+        const exactLocal = productos.find((p) => p.codigo?.toLowerCase() === normalized);
+        const partialLocal = productos.find((p) => p.codigo?.toLowerCase().startsWith(normalized));
+        const localTarget = exactLocal || partialLocal;
+        if (localTarget) {
+            setValue("productoId", localTarget.id, { shouldValidate: true });
+            return;
+        }
+
+        // 2) Si no está en la lista local, consultar API y fusionar sin reemplazar la lista previa
+        const timer = setTimeout(async () => {
+            try {
+                const res = await getProductos(1, 10, "", term);
+                const list = Array.isArray(res) ? res : res?.data ?? [];
+
+                if (list.length > 0) {
+                    // fusionar sin duplicar por id
+                    setProductos((prev) => {
+                        const merged = [...prev];
+                        list.forEach((item: any) => {
+                            if (!merged.some((p) => p.id === item.id)) {
+                                merged.push(item);
+                            }
+                        });
+                        return merged;
+                    });
+
+                    const exact = list.find((p: any) => p.codigo?.toLowerCase() === normalized);
+                    const partial = list.find((p: any) => p.codigo?.toLowerCase().startsWith(normalized));
+                    const target = exact || partial || list[0];
+                    if (target) {
+                        setValue("productoId", target.id, { shouldValidate: true });
+                    }
+                }
+            } catch (err) {
+                console.error("Error buscando producto por código", err);
+            }
+        }, 300);
+
+        return () => clearTimeout(timer);
+    }, [productoSearchTerm, productos, setValue]);
+
+    // 📌 Seleccionar producto automáticamente al escribir un código exacto
+    useEffect(() => {
+        if (!productoSearchTerm || productos.length === 0) return;
+
+        const normalizedSearch = productoSearchTerm.trim().toLowerCase();
+        const exactMatch = productos.find(
+            (p) => p.codigo?.trim().toLowerCase() === normalizedSearch
+        );
+
+        if (exactMatch) {
+            setValue("productoId", exactMatch.id, { shouldValidate: true });
+            return;
+        }
+
+        // Si no hay match exacto, intenta con coincidencia inicial (para evitar escribir todo el código)
+        const partialMatch = productos.find((p) =>
+            p.codigo?.trim().toLowerCase().startsWith(normalizedSearch)
+        );
+
+        if (partialMatch) {
+            setValue("productoId", partialMatch.id, { shouldValidate: true });
+        }
+    }, [productoSearchTerm, productos, setValue]);
+
     // 📌 Control universal de cambios
     const handleChange = (
         e: React.ChangeEvent<
@@ -128,6 +201,12 @@ export default function ComprasForm({
                 : value;
 
         setValue(name as keyof FormData, parsed, { shouldValidate: true });
+
+        // Sincronizar el campo de búsqueda cuando se selecciona un producto desde el combo
+        if (name === "productoId") {
+            const selected = productos.find((p) => p.id === Number(value));
+            if (selected?.codigo) setProductoSearchTerm(selected.codigo);
+        }
     };
 
     const submitForm: SubmitHandler<FormData> = (data) => {
@@ -171,19 +250,16 @@ export default function ComprasForm({
 
     return (
         <form onSubmit={handleSubmit(submitForm)} className="space-y-4">
-            {/* ===================== BÚSQUEDA DE PRODUCTO ===================== */}
-            <div className="w-full">
+            {/* ===================== BÚSQUEDA + SELECCIÓN ===================== */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormInput
-                    label="Buscar Producto por Código o Nombre"
+                    label="Buscar Producto"
                     name="productoSearch"
                     value={productoSearchTerm}
                     onChange={(e) => setProductoSearchTerm(e.target.value)}
                     placeholder="Ej: LC209 o Teclado..."
                 />
-            </div>
 
-            {/* ===================== FILA 1 ===================== */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <FormSelect
                     label="Producto"
                     name="productoId"
@@ -193,7 +269,10 @@ export default function ComprasForm({
                     disabled={loadingLookups}
                     required
                 />
+            </div>
 
+            {/* ===================== FILA 1 ===================== */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormInput
                     label="Cantidad"
                     name="cantidad"
@@ -216,13 +295,7 @@ export default function ComprasForm({
 
             {/* ===================== FILA 2 ===================== */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormInput
-                    label="Costo Total"
-                    name="costo_total"
-                    type="text"
-                    value={formatCurrency(formValues.costo_total)}
-                    disabled
-                />
+             
 
                 <FormInput
                     label="Fecha de Compra"
@@ -232,16 +305,11 @@ export default function ComprasForm({
                     onChange={handleChange}
                     required
                 />
+                
             </div>
 
             {/* ===================== FILA 3 ===================== */}
-            <FormInput
-                label="Observación (Opcional)"
-                name="observacion"
-                type="textarea"
-                value={formValues.observacion}
-                onChange={handleChange}
-            />
+          
 
             {/* ===================== BOTONES ===================== */}
             <div className="flex justify-end gap-3 pt-4">

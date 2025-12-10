@@ -208,12 +208,7 @@ export default function ProductosForm({ initialData, onSubmit, onCancel, formErr
       : 0;
     const hasSubcategoryChanged = originalSubcategoryId !== newSubcategoryId;
 
-    // REGLA: Solo incluir subcategoriaId si:
-    // 1. En CREACIÓN: enviar el valor (o null si no hay)
-    // 2. En EDICIÓN:
-    //    - Si la subcategoría es 0 (vacía): SIEMPRE enviar null (el usuario la limpió o cambió categoría)
-    //    - Si cambió a un valor diferente: enviar el nuevo valor
-    //    - Si NO cambió: NO incluir el campo (mantendrá el actual)
+ 
     if (!isEditing) {
       // En creación, enviar null si no hay subcategoría
       submittedData.subcategoriaId = newSubcategoryId > 0 ? newSubcategoryId : null;
@@ -438,19 +433,7 @@ export default function ProductosForm({ initialData, onSubmit, onCancel, formErr
           placeholder="180000"
           required
         />
-        <FormInput
-          label="Costo (opcional)"
-          name="precio"
-          type="text"
-          value={(formValues as any).precio ?? ""}
-          onChange={handleChange}
-          placeholder="120000"
-        />
-      </div>
-
-      {/* Fila 4: Promoción */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <FormInput
+         <FormInput
           label="Promoción % (opcional)"
           name="promocion_porcentaje"
           type="number"
@@ -461,11 +444,10 @@ export default function ProductosForm({ initialData, onSubmit, onCancel, formErr
           max="100"
           step="0.01"
         />
+      
       </div>
 
-     
-
-
+  
       {/* Botones */}
       <div className="flex justify-end gap-3 pt-4">
         <Button type="button" onClick={onCancel} disabled={isSubmitting || loadingLookups}>
