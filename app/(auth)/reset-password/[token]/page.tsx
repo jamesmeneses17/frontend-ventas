@@ -1,5 +1,5 @@
-import AuthSplitPanel from "../../../components/layout/AuthSplitPanel";
-import ResetPasswordForm from "../ResetPasswordForm";
+import AuthSplitPanel from "../../../../components/layout/AuthSplitPanel";
+import ResetPasswordForm from "../../ResetPasswordForm";
 import Link from 'next/link';
 
 interface ResetPasswordPageProps {
