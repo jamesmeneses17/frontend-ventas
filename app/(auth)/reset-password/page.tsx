@@ -1,11 +1,12 @@
 "use client";
 
 import { useSearchParams } from 'next/navigation';
+import { Suspense } from 'react';
 import AuthSplitPanel from "../../../components/layout/AuthSplitPanel";
 import ResetPasswordForm from "../ResetPasswordForm";
 import Link from 'next/link';
 
-export default function ResetPasswordPage() {
+function ResetPasswordContent() {
   const searchParams = useSearchParams();
   const token = searchParams.get('token');
 
@@ -52,5 +53,13 @@ export default function ResetPasswordPage() {
       </Link>
       
     </AuthSplitPanel>
+  );
+}
+
+export default function ResetPasswordPage() {
+  return (
+    <Suspense fallback={<div>Cargando...</div>}>
+      <ResetPasswordContent />
+    </Suspense>
   );
 }
