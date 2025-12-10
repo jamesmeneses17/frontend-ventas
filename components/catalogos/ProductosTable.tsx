@@ -71,30 +71,7 @@ export default function ProductosTable({
       ),
       cellClass: "px-0 py-0", // padding interno viene en el render
     },
-    {
-      key: "categoria",
-      label: "Categoría",
-      render: (row: Producto) => {
-        // Usamos el helper de la otra tabla para obtener la categoría principal
-        const subcategoriaId =
-          (row as any).subcategoriaId ?? (row as any).subcategoria_id;
-        
-        // Si tiene subcategoría, obtener la categoría padre
-        if (subcategoriaId && subcategoriaId !== 0) {
-          return getCategoriaFromSubcategoria(subcategoriaId);
-        }
-        
-        // Si no tiene subcategoría, buscar la categoría directamente
-        const categoriaId =
-          (row as any).categoriaId ?? (row as any).categoria_id;
-        if (categoriaId) {
-          const categoria = categorias.find((c) => c.id === categoriaId);
-          if (categoria?.nombre) return categoria.nombre;
-        }
-        
-        return "N/A";
-      },
-    },
+  
     // Eliminamos Subcategoría, Imagen y Ficha Técnica para simplificar la vista de Inventario.
     
     {

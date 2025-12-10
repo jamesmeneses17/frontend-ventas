@@ -9,22 +9,23 @@ interface LayoutProps {
 }
 
 export default function Layout({ children }: LayoutProps) {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
   };
 
   return (
-    <div className="flex h-screen">
+    <div className="flex h-screen bg-gray-50">
       
-      <div
-        className={`fixed inset-y-0 left-0 z-40 w-56 transform bg-gray-800 transition duration-300 ease-in-out md:flex md:translate-x-0 ${
-          isSidebarOpen ? "translate-x-0" : "-translate-x-full"
-        }`}
-      >
-        <Sidebar />
-      </div>
+      {/* Sidebar - se contrae en desktop, overlay en mobile */}
+      {isSidebarOpen && (
+        <div className="w-56 bg-gray-800 transition-all duration-300 ease-in-out overflow-hidden fixed inset-y-0 left-0 z-40 md:relative md:inset-auto">
+          <div className="w-56 h-full overflow-y-auto hide-scrollbar">
+            <Sidebar />
+          </div>
+        </div>
+      )}
 
       
       {isSidebarOpen && (
@@ -41,7 +42,7 @@ export default function Layout({ children }: LayoutProps) {
         <Header toggleSidebar={toggleSidebar} isSidebarOpen={isSidebarOpen} />
 
         
-        <main className="flex-1 overflow-x-hidden overflow-y-auto p-6 md:ml-56 bg-gray-50">
+        <main className="flex-1 overflow-x-hidden overflow-y-auto p-6 bg-gray-50">
           {children}
         </main>
       </div>

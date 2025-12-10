@@ -53,16 +53,16 @@ export default function Header({ toggleSidebar, isSidebarOpen }: HeaderProps) {
         bg-white px-6 py-3 shadow
         sticky top-0 z-40
         h-[80px]
-        md:ml-56     /* 👈 coincide con el ancho del sidebar (w-56) */
       "
     >
       {/* === LADO IZQUIERDO === */}
       <div className="flex items-center gap-4">
-        {/* Botón hamburguesa SOLO visible en móvil */}
+        {/* Botón hamburguesa visible en todas las pantallas */}
         <button
           onClick={toggleSidebar}
-          className="text-gray-600 hover:text-gray-900 md:hidden"
+          className="text-gray-600 hover:text-gray-900 transition-colors"
           aria-label={isSidebarOpen ? 'Cerrar menú' : 'Abrir menú'}
+          title="Expandir/Contraer menú"
         >
           <Menu className="w-6 h-6" />
         </button>
