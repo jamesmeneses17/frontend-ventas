@@ -100,12 +100,25 @@ export const updateProducto = async (id: number, data: UpdateProductoData): Prom
             console.log('[updateProducto] precio_venta →', pv);
         }
     }
+    
+    // ✅ Manejo específico de precio_costo
+    if ('precio_costo' in data) {
+        const pcosto = Number((data as any).precio_costo);
+        if (!Number.isNaN(pcosto)) {
+            payload.precio_costo = pcosto;
+            console.log('[updateProducto] precio_costo →', pcosto);
+        }
+    }
+    
     if ('precio' in data) {
         const pc = Number((data as any).precio);
         if (!Number.isNaN(pc)) {
             payload.precio = pc;
-            payload.precio_costo = pc;
-            console.log('[updateProducto] precio/precio_costo →', pc);
+            // Si no se envió precio_costo explícitamente, usar precio
+            if (!('precio_costo' in data)) {
+                payload.precio_costo = pc;
+            }
+            console.log('[updateProducto] precio →', pc);
         }
     }
 

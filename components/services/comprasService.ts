@@ -1,6 +1,8 @@
 // components/services/comprasService.ts
 import axios from "axios";
 import { API_URL } from "./apiConfig";
+import { getProductoById } from "./productosService";
+
 const ENDPOINT_BASE = `${API_URL}/compras`;
 
 // ------------------------------------------------------
@@ -107,6 +109,13 @@ export const getCompraById = async (id: number): Promise<Compra> => {
 
 /**
  * Crear una compra.
+ * 
+ * El backend automáticamente:
+ * 1. Registra la compra
+ * 2. Recalcula y actualiza precio_costo con promedio ponderado
+ * 3. Actualiza inventario (stock y compras)
+ * 
+ * El frontend después refrescaría los datos del producto si es necesario.
  */
 export const createCompra = async (data: CreateCompraDTO): Promise<Compra> => {
     // Construir payload explícito con sólo los campos que el backend espera
@@ -121,8 +130,27 @@ export const createCompra = async (data: CreateCompraDTO): Promise<Compra> => {
     console.log("[createCompra] POST", ENDPOINT_BASE, payload);
 
     try {
+        // 1. Crear la compra
         const res = await axios.post(ENDPOINT_BASE, payload);
-        return res.data as Compra;
+        const nuevaCompra = res.data as Compra;
+        
+        console.log("[createCompra] ✅ Compra registrada exitosamente");
+        console.log("[createCompra] El backend actualizó: precio_costo (promedio ponderado) e inventario (stock + compras)");
+        
+        // 2. Refrescar el producto para ver los cambios en precio_costo e inventario
+        try {
+            const productoId = Number(data.producto_id);
+            const productoActualizado = await getProductoById(productoId);
+            console.log("[createCompra] 🔄 Producto refrescado:", {
+                id: productoActualizado.id,
+                precio_costo: (productoActualizado as any).precio_costo,
+                stock: productoActualizado.stock,
+            });
+        } catch (refreshError: any) {
+            console.warn("[createCompra] ⚠️ No se pudo refrescar el producto, pero la compra se registró correctamente:", refreshError?.message);
+        }
+        
+        return nuevaCompra;
     } catch (err: any) {
         console.error("[createCompra] Error:", err?.message ?? err, err?.response?.data ?? err?.response);
         throw err;

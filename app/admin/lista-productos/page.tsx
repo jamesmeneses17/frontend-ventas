@@ -205,7 +205,7 @@ export default function ListaProductosPage() {
 
   return (
     <AuthenticatedLayout>
-      <div className="space-y-6" style={{ zoom: '0.69' }}>
+      <div className="space-y-6" style={{ zoom: '0.81' }}>
 
         {/* --- WIDGETS DE RESUMEN --- */}
   <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
