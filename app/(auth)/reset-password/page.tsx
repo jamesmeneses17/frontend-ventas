@@ -1,11 +1,12 @@
 "use client";
 
+import { Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import AuthSplitPanel from "../../../components/layout/AuthSplitPanel";
 import ResetPasswordForm from "../ResetPasswordForm";
 import Link from 'next/link';
 
-export default function ResetPasswordPage() {
+function ResetPasswordContent() {
   const searchParams = useSearchParams();
   const token = searchParams.get('token');
 
@@ -52,5 +53,19 @@ export default function ResetPasswordPage() {
       </Link>
       
     </AuthSplitPanel>
+  );
+}
+
+export default function ResetPasswordPage() {
+  return (
+    <Suspense fallback={
+      <AuthSplitPanel imageSrc="/images/logodisem.jpg" imageAlt="Resetear Contraseña">
+        <div className="text-center">
+          <p className="text-lg text-gray-500">Cargando...</p>
+        </div>
+      </AuthSplitPanel>
+    }>
+      <ResetPasswordContent />
+    </Suspense>
   );
 }
