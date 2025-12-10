@@ -99,6 +99,13 @@ export default function VentasPage() {
             return ym === String(selectedMonthParam);
           });
 
+          // Ordenar por fecha descendente (más recientes primero)
+          filtered.sort((a: any, b: any) => {
+            const dateA = new Date(a.fecha || 0).getTime();
+            const dateB = new Date(b.fecha || 0).getTime();
+            return dateB - dateA;
+          });
+
           const total = filtered.length;
           const start = (page - 1) * size;
           const pageItems = filtered.slice(start, start + size);
@@ -119,13 +126,31 @@ export default function VentasPage() {
             return `${d.getFullYear()}` === String(selectedYearParam);
           });
 
+          // Ordenar por fecha descendente (más recientes primero)
+          filtered.sort((a: any, b: any) => {
+            const dateA = new Date(a.fecha || 0).getTime();
+            const dateB = new Date(b.fecha || 0).getTime();
+            return dateB - dateA;
+          });
+
           const total = filtered.length;
           const start = (page - 1) * size;
           const pageItems = filtered.slice(start, start + size);
           return { data: pageItems, total };
         }
 
-        return await getVentas(page, size, searchTermParam);
+        // Sin filtros: obtener y ordenar por fecha descendente
+        const resp = await getVentas(page, size, searchTermParam);
+        const items = Array.isArray(resp) ? resp : resp?.data ?? [];
+        
+        // Ordenar por fecha descendente
+        items.sort((a: any, b: any) => {
+          const dateA = new Date(a.fecha || 0).getTime();
+          const dateB = new Date(b.fecha || 0).getTime();
+          return dateB - dateA;
+        });
+
+        return Array.isArray(resp) ? items : { ...resp, data: items };
       },
       createItem: createVenta,
       updateItem: updateVenta,
@@ -188,6 +213,8 @@ export default function VentasPage() {
     setFormError("");
     try {
       await handleFormSubmit(data);
+      // Forzar recálculo de totales después de crear/actualizar venta
+      await recalculateTotalsAll();
     } catch (err: any) {
       const remote = err?.response?.data;
       let msg: string;

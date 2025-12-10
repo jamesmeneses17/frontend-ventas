@@ -262,16 +262,20 @@ export const useCrudCatalog = <T extends CrudItem, C extends ItemForm, U extends
         const newItem = await serviceRef.current.createItem(formData as C);
       }
 
+      const itemName = (formData as any).nombre || `${itemKey}`;
+      
       setNotification({
-        message: `${itemKey} "${formData.nombre}" ${
-          isEditing ? "actualizada" : "creada"
+        message: `${itemKey} ${
+          isEditing ? "actualizado/a" : "creado/a"
         } correctamente.`,
         type: "success",
       });
 
       // Cerrar modal inmediatamente después de guardar (crear o actualizar)
       handleCloseModal();
-      await fetchItems(); // Recargar datos después de la operación
+      
+      // Recargar datos después de la operación
+      await fetchItems();
     } catch (error) {
         const err: any = error;
         const message = err?.response?.data?.message || err?.message || "Error al procesar la solicitud.";

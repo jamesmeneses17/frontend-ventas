@@ -42,9 +42,10 @@ export default function ComprasTable({
         if (!row.fecha) return "-";
         try {
           const d = new Date(row.fecha);
-          return `${d.getDate()} - ${d.toLocaleString("es-CO", {
-            month: "long",
-          })}.${d.getFullYear()}`;
+          const day = d.getDate().toString().padStart(2, '0');
+          const month = d.toLocaleString("es-CO", { month: "short" }).replace('.', '');
+          const year = d.getFullYear();
+          return `${day}/${month}/${year}`;
         } catch {
           return String(row.fecha);
         }
@@ -58,16 +59,7 @@ export default function ComprasTable({
       render: (row: Compra) =>
         row.producto?.nombre ?? `#${row.producto_id}`,
     },
-    {
-      key: "categoria",
-      label: "Categoría",
-      headerClass: "px-4 py-3 text-left text-sm font-semibold text-gray-700",
-      cellClass: "px-4 py-2",
-      render: (row: Compra) =>
-        row.categoria?.nombre ??
-        row.producto?.categoria?.nombre ??
-        (row.categoria_id ? `#${row.categoria_id}` : "-"),
-    },
+  
     {
       key: "cantidad",
       label: "Cantidad",
