@@ -179,7 +179,8 @@ export default function ProductosForm({ initialData, onSubmit, onCancel, formErr
 
     const parsePrecio = (val: any): number | undefined => {
       if (val === undefined || val === null || val === "") return undefined;
-      const str = String(val).replace(/,/g, "");
+      // Limpiar el formato: punto para miles, coma para decimales
+      const str = String(val).replace(/\./g, "").replace(/,/g, ".");
       const num = parseFloat(str);
       return Number.isFinite(num) ? num : undefined;
     };
@@ -277,18 +278,49 @@ export default function ProductosForm({ initialData, onSubmit, onCancel, formErr
     }
   };
 
+  // 🔥 Formatear precio con miles sin bloquear entrada
+  const handlePriceChange = (
+    fieldName: "precio" | "precio_venta",
+    inputValue: string
+  ) => {
+    // Permitir solo dígitos y punto decimal
+    const cleaned = inputValue.replace(/[^0-9.]/g, "");
+    
+    // Limitar a máximo 1 punto decimal (para separador)
+    const parts = cleaned.split(".");
+    let numericValue: string;
+    
+    if (parts.length > 2) {
+      // Si hay más de 1 punto, usar solo los dos primeros segmentos
+      numericValue = parts[0] + "." + parts[1];
+    } else {
+      numericValue = cleaned;
+    }
+
+    // Limitar a máximo 2 decimales
+    if (parts.length === 2) {
+      const decimals = parts[1];
+      if (decimals.length > 2) {
+        numericValue = parts[0] + "." + decimals.slice(0, 2);
+      }
+    }
+
+    // Formatear para visualizar con separador de miles
+    const [intPart = "", decPart = ""] = numericValue.split(".");
+    const intFormatted = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    const displayValue = decPart ? `${intFormatted},${decPart}` : intFormatted;
+
+    // Guardar en el formulario
+    setValue(fieldName, displayValue as any, { shouldValidate: true });
+  };
+
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
   ) => {
     const { name, value, type } = e.target;
 
     if (name === "precio" || name === "precio_venta") {
-      // Formatear en vivo con separador de miles (coma) y permitir punto decimal
-      const raw = value.replace(/[^0-9.]/g, "");
-      const [intPart, decPart] = raw.split(".");
-      const intFormatted = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-      const formatted = decPart !== undefined ? `${intFormatted}.${decPart}` : intFormatted;
-      setValue(name as keyof FormData, formatted as any, { shouldValidate: true });
+      handlePriceChange(name as "precio" | "precio_venta", value);
       return;
     }
 
