@@ -145,7 +145,7 @@ export default function ProductosTable({
         );
       },
     },
-    {
+    /*{
       key: "utilidad",
       label: "Utilidad / Producto",
       render: (row: Producto) => {
@@ -166,7 +166,7 @@ export default function ProductosTable({
         );
       },
     },
-    /*
+    */
  {
       key: "utilidad",
       label: "Utilidad / Producto",
@@ -191,9 +191,6 @@ export default function ProductosTable({
       },
     },
 
-
-
-    */
     {
       key: "valor_inventario",
       label: "Valor Inventario",

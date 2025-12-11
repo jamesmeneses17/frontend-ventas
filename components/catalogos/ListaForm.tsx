@@ -77,8 +77,7 @@ export default function ListaForm({ initialData, onSubmit, onCancel, formError }
         const cats = Array.isArray(catResponse?.data) ? catResponse.data : Array.isArray(catResponse) ? catResponse : [];
         const ests = estResponse || [];
         
-        console.log('[ListaForm] 📦 Subcategorías cargadas:', subs);
-        console.log('[ListaForm] 📦 Ejemplo de subcategoría:', subs[0]);
+     
         
         setSubcategorias(subs);
         setEstados(ests);
