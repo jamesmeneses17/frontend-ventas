@@ -3,10 +3,12 @@
 "use client";
 
 import React from "react";
+import Image from "next/image";
 import CrudTable from "../common/CrudTable";
 import ActionButton from "../common/ActionButton";
 import { CategoriaPrincipal } from "../services/categoriasPrincipalesService";
 import { Trash, Pencil, CheckCircle, XCircle } from "lucide-react";
+import { isImageUrl } from "../../utils/ProductUtils";
 
 interface Props {
     data: CategoriaPrincipal[];
@@ -24,13 +26,48 @@ export default function CategoriaPrincipalTable({
     
     // Definición de las columnas de la tabla
     const columns = [
-       
+        {
+            key: "imagen",
+            label: "Imagen",
+            render: (row: CategoriaPrincipal) => (
+                <div className="w-12 h-12 relative">
+                    {row.imagen_url && isImageUrl(row.imagen_url) ? (
+                        <Image 
+                            src={row.imagen_url} 
+                            alt={row.nombre} 
+                            width={48} 
+                            height={48} 
+                            className="w-12 h-12 object-cover rounded border" 
+                        />
+                    ) : (
+                        <div className="w-12 h-12 bg-gray-200 rounded border flex items-center justify-center text-xs text-gray-500">
+                            Sin imagen
+                        </div>
+                    )}
+                </div>
+            ),
+        },
         { 
             key: "nombre", 
             label: "Nombre de la Categoría",
             render: (row: CategoriaPrincipal) => <span className="font-medium text-gray-800">{row.nombre}</span>
         },
-       
+        {
+            key: "activo",
+            label: "Activo",
+            render: (row: CategoriaPrincipal) => {
+                const isActivo = Number((row as any).activo ?? 1) === 1;
+                return (
+                    <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                        isActivo 
+                            ? 'bg-green-100 text-green-800' 
+                            : 'bg-red-100 text-red-800'
+                    }`}>
+                        {isActivo ? "Activo" : "Inactivo"}
+                    </span>
+                );
+            }
+        }
     ];
 
     return (

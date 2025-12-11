@@ -6,17 +6,11 @@ import { API_URL } from "./apiConfig";
 // ----------------------
 // INTERFACES
 // ----------------------
-export interface Estado {
-  id: number;
-  nombre: string;
-}
-
 export interface CategoriaPrincipal {
   id: number;
   nombre: string;
-
-  estadoId: number;
-  estado: Estado;
+  activo: number; // 1 = activo, 0 = inactivo
+  imagen_url?: string | null;
 }
 
 // -------------------------
@@ -24,7 +18,8 @@ export interface CategoriaPrincipal {
 // -------------------------
 export interface CreateCategoriaPrincipalData {
   nombre: string;
-  estadoId?: number; // por defecto 1 en el backend
+  activo?: number; // por defecto 1
+  imagen_url?: string | null;
 }
 
 // ---------------------------
@@ -108,6 +103,7 @@ export const createCategoriaPrincipal = async (
   data: CreateCategoriaPrincipalData
 ): Promise<CategoriaPrincipal> => {
   const payload = { ...data };
+  if (payload.activo === undefined) payload.activo = 1;
 
   try {
     const res = await axios.post(`${API_URL}/categorias-principales`, payload);
@@ -165,4 +161,15 @@ function extractDuplicateMessage(err: any): string | null {
 // ======================================
 export const deleteCategoriaPrincipal = async (id: number): Promise<void> => {
   await axios.delete(`${API_URL}/categorias-principales/${id}`);
+};
+
+// ======================================
+// SUBIR IMAGEN
+// ======================================
+export const uploadImagenCategoriaPrincipal = async (id: number, file: File | Blob) => {
+  const endpoint = `${API_URL}/categorias-principales/${id}/upload-imagen`;
+  const form = new FormData();
+  form.append('file', file as any, (file as any).name || 'upload');
+  const res = await axios.post(endpoint, form);
+  return res.data;
 };

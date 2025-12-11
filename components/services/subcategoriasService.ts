@@ -1,7 +1,6 @@
 // components/services/subcategoriasService.ts
 
 import axios from "axios";
-import { Estado } from "./estadosService"; // Reutilizamos el tipo Estado
 import { Categoria } from "./categoriasService"; // Reutilizamos el tipo Categoria
 
 // Configuración de la URL base
@@ -21,8 +20,8 @@ export interface Subcategoria {
     nombre: string;
     categoria_id: number; // Clave Foránea al Nivel 2
     categoria_nombre?: string; // Nombre de la categoría padre (para mostrar en la tabla, via JOIN)
-    estado_id?: number; 
-    estado?: Estado; 
+    activo: number; // 1 = activo, 0 = inactivo
+    imagen_url?: string | null;
     categoria?: Categoria;
 }
 
@@ -33,6 +32,8 @@ export interface Subcategoria {
 export interface CreateSubcategoriaData {
     nombre: string;
     categoria_id: number; 
+    activo?: number;
+    imagen_url?: string | null;
 }
 
 /**
@@ -135,7 +136,8 @@ export const getSubcategorias = async (
                   ? Number(it.categoriaPrincipalId)
                   : undefined,
               // Asegurar que el nombre de la categoría esté disponible
-              categoria_nombre: it.categoria_nombre ?? it.categoria?.nombre ?? 'N/A',
+                            categoria_nombre: it.categoria_nombre ?? it.categoria?.nombre ?? 'N/A',
+                            activo: Number(it.activo ?? 1),
             };
         });
 
@@ -151,7 +153,9 @@ export const getSubcategorias = async (
  */
 export const createSubcategoria = async (data: CreateSubcategoriaData): Promise<Subcategoria> => {
     try {
-        const res = await axios.post(ENDPOINT_BASE, data);
+        const payload = { ...data };
+        if (payload.activo === undefined) payload.activo = 1;
+        const res = await axios.post(ENDPOINT_BASE, payload);
         return res.data as Subcategoria;
     } catch (err: any) {
         const message = normalizeSubcategoriaError(err);
@@ -198,3 +202,14 @@ function normalizeSubcategoriaError(err: any): string {
     }
     return text || "No se pudo procesar la subcategoría.";
 }
+
+// ======================================
+// SUBIR IMAGEN
+// ======================================
+export const uploadImagenSubcategoria = async (id: number, file: File | Blob) => {
+    const endpoint = `${ENDPOINT_BASE}/${id}/upload-imagen`;
+    const form = new FormData();
+    form.append('file', file as any, (file as any).name || 'upload');
+    const res = await axios.post(endpoint, form);
+    return res.data;
+};

@@ -3,19 +3,12 @@
 import axios from "axios";
 import { API_URL } from "./apiConfig";
 
-// Definición del objeto Estado que viene del backend
-export interface Estado {
-  id: number;
-  nombre: string;
-}
-
-// 1. ACTUALIZACIÓN DE LA INTERFAZ CATEGORIA
+// 1. ACTUALIZACIÓN DE LA INTERFAZ CATEGORIA (usa campo activo)
 export interface Categoria {
   id: number;
   nombre: string;
-  // Nuevos campos para la relación de estado
-  estadoId: number; 
-  estado: Estado; 
+  activo: number; // 1 = activo, 0 = inactivo
+  imagen_url?: string | null;
   // referencia a categoría principal (si aplica)
   categoriaPrincipalId?: number;
   categoriaPrincipal?: {
@@ -24,13 +17,15 @@ export interface Categoria {
   };
 }
 
-// 2. TIPO DE DATOS PARA CREACIÓN (Ahora incluye estadoId)
+// 2. TIPO DE DATOS PARA CREACIÓN (usa activo)
 export type CreateCategoriaData = { 
   nombre: string;
-  estadoId?: number; // Es opcional porque el backend le pone 1 por defecto
+  activo?: number; // default 1
+  categoriaPrincipalId?: number | null;
+  imagen_url?: string | null;
 };
 
-// 3. TIPO DE DATOS PARA ACTUALIZACIÓN (Ahora incluye estadoId)
+// 3. TIPO DE DATOS PARA ACTUALIZACIÓN
 export type UpdateCategoriaData = Partial<CreateCategoriaData>;
 
 export interface PaginacionResponse<T> {
@@ -84,29 +79,30 @@ export const getCategoriaById = async (id: number): Promise<Categoria> => {
   return normalizeCategoria(res.data);
 };
 
-// ✅ CREACIÓN: data espera { nombre: string, estadoId?: number }
+// ✅ CREACIÓN: data espera { nombre: string, activo?: number }
 export const createCategoria = async (data: CreateCategoriaData): Promise<Categoria> => {
   // Enviar tanto camelCase como snake_case para compatibilidad con backends que esperan snake_case
   const payload: any = { ...data };
   if (data && (data as any).categoriaPrincipalId !== undefined) {
     payload.categoria_principal_id = (data as any).categoriaPrincipalId;
   }
+  if (data.activo === undefined) payload.activo = 1;
+
   console.debug("[createCategoria] payload:", payload);
   try {
     const res = await axios.post(`${API_URL}/categorias`, payload);
     console.debug("[createCategoria] response:", res.data);
     return normalizeCategoria(res.data);
   } catch (err: any) {
-    // Log raw server response for diagnóstico (puede ser JSON o HTML)
+    // Log raw server response para diagnóstico
     console.error("[createCategoria] error response:", err?.response?.data ?? err?.toString());
-    // Re-lanzamos para que el caller (form) lo capture
     throw err;
   }
 };
 
-// ✅ ACTUALIZACIÓN: data espera Partial<{ nombre: string, estadoId: number }>
+// ✅ ACTUALIZACIÓN: data espera Partial<{ nombre: string, activo: number }>
 export const updateCategoria = async (id: number, data: UpdateCategoriaData): Promise<Categoria> => {
-  // Nota: Cambié .patch a .put si tu backend usa PUT, pero mantengo PATCH por convención de actualización parcial
+  // PATCH para actualización parcial
   const payload: any = { ...data };
   if (data && (data as any).categoriaPrincipalId !== undefined) {
     payload.categoria_principal_id = (data as any).categoriaPrincipalId;
@@ -146,10 +142,26 @@ function normalizeCategoria(raw: any): Categoria {
     normalized.categoriaPrincipal = raw.categoriaPrincipal;
   }
 
-  // map estado fields (ya están probablemente correctos)
-  if (raw.estado_id !== undefined && !raw.estado) {
-    normalized.estadoId = raw.estado_id;
+  // map activo (tinyint) y defaults
+  if (raw.activo === undefined && raw.active !== undefined) {
+    normalized.activo = raw.active;
+  }
+  if (normalized.activo === undefined) {
+    normalized.activo = Number(raw.activo ?? 1);
+  } else {
+    normalized.activo = Number(normalized.activo);
   }
 
   return normalized as Categoria;
 }
+
+// ======================================
+// SUBIR IMAGEN
+// ======================================
+export const uploadImagenCategoria = async (id: number, file: File | Blob) => {
+  const endpoint = `${API_URL}/categorias/${id}/upload-imagen`;
+  const form = new FormData();
+  form.append('file', file as any, (file as any).name || 'upload');
+  const res = await axios.post(endpoint, form);
+  return res.data;
+};

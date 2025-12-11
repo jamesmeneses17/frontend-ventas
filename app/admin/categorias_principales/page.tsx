@@ -27,7 +27,7 @@ import {
 import { useCrudCatalog } from "../../../components/hooks/useCrudCatalog";
 
 // Tipos
-type CreateData = { nombre: string };
+type CreateData = { nombre: string; activo?: number };
 type UpdateData = Partial<CreateData>;
 
 export default function CategoriasPrincipalesPage() {
@@ -153,8 +153,13 @@ export default function CategoriasPrincipalesPage() {
             <CategoriaPrincipalForm
               initialData={
                 editingCategoria
-                  ? { id: editingCategoria.id, nombre: editingCategoria.nombre }
-                  : { nombre: "" }
+                  ? { 
+                      id: editingCategoria.id, 
+                      nombre: editingCategoria.nombre, 
+                      activo: (editingCategoria as any).activo,
+                      imagen_url: (editingCategoria as any).imagen_url
+                    }
+                  : undefined
               }
               onSubmit={handleFormSubmit}
               onCancel={handleCloseModal}

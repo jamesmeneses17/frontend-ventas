@@ -1,11 +1,13 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import Image from "next/image";
 import CrudTable from "../common/CrudTable";
 import ActionButton from "../common/ActionButton";
 import { Categoria } from "../services/categoriasService";
 import { getCategoriaById } from "../services/categoriasService";
 import { getCategoriaPrincipalById } from "../services/categoriasPrincipalesService";
+import { isImageUrl } from "../../utils/ProductUtils";
 interface Props {
   data: Categoria[];
   loading?: boolean;
@@ -68,15 +70,42 @@ export default function CategoriasTable({ data, loading, totalItems = 0, onEdit,
   }, [data, parentMap]);
 
   const columns = [
-    //{ key: "id", label: "ID" },
-    { key: "nombre", label: "Nombre" },
-    //{ key: "descripcion", label: "Descripción" },
     {
-      key: "estado",
-      label: "Estado",
+      key: "imagen",
+      label: "Imagen",
+      render: (row: Categoria) => (
+        <div className="w-12 h-12 relative">
+          {row.imagen_url && isImageUrl(row.imagen_url) ? (
+            <Image 
+              src={row.imagen_url} 
+              alt={row.nombre} 
+              width={48} 
+              height={48} 
+              className="w-12 h-12 object-cover rounded border" 
+            />
+          ) : (
+            <div className="w-12 h-12 bg-gray-200 rounded border flex items-center justify-center text-xs text-gray-500">
+              Sin imagen
+            </div>
+          )}
+        </div>
+      ),
+    },
+    { key: "nombre", label: "Nombre" },
+    {
+      key: "activo",
+      label: "Activo",
       render: (row: Categoria) => {
-          const estado = (row as any).estado?.nombre || (row as any).estado || "-";
-          return <span className="text-gray-700">{estado}</span>;
+        const isActivo = Number((row as any).activo ?? 1) === 1;
+        return (
+          <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
+            isActivo 
+              ? 'bg-green-100 text-green-800' 
+              : 'bg-red-100 text-red-800'
+          }`}>
+            {isActivo ? "Activo" : "Inactivo"}
+          </span>
+        );
       },
     },
   ];

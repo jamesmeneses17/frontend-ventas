@@ -11,12 +11,12 @@ import Button from "../ui/button";
 import { 
     Subcategoria, 
     CreateSubcategoriaData, 
-    UpdateSubcategoriaData 
+    UpdateSubcategoriaData,
+    uploadImagenSubcategoria
 } from "../services/subcategoriasService";
 
 // ⚠️ Asegúrate de importar los servicios de lookups:
 import { getCategorias, Categoria } from "../services/categoriasService";
-import { getEstados, Estado } from "../services/estadosService"; 
 
 // 💡 TIPADO DE DATOS DEL FORMULARIO
 type FormData = CreateSubcategoriaData & { id?: number };
@@ -40,7 +40,8 @@ export default function SubcategoriasForm({ initialData, onSubmit, onCancel, for
       id: initialData?.id || undefined,
       nombre: initialData?.nombre || "",
       // Usamos categoria_id según la Entidad Subcategoria
-      categoria_id: initialData?.categoria_id || 0, 
+      categoria_id: initialData?.categoria_id || 0,
+      activo: (initialData as any)?.activo ?? 1,
     },
   });
 
@@ -50,9 +51,11 @@ export default function SubcategoriasForm({ initialData, onSubmit, onCancel, for
   const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [loadingLookups, setLoadingLookups] = useState(false);
   
-  // No necesitamos estados en el form de subcategorías, pero si se usa, 
-  // habría que cargarlos (los omitiremos por simplicidad)
-
+  // Estados para la imagen
+  const [imagePreview, setImagePreview] = useState<string | null>((initialData as any)?.imagen_url || null);
+  const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  
   useEffect(() => {
     const loadLookups = async () => {
       setLoadingLookups(true);
@@ -88,19 +91,28 @@ export default function SubcategoriasForm({ initialData, onSubmit, onCancel, for
           id: initialData?.id ?? undefined,
           nombre: initialData?.nombre ?? "",
           categoria_id: defaultCategoriaId, // Usamos el valor por defecto/existente
+          activo: (initialData as any)?.activo ?? 1,
+          imagen_url: (initialData as any)?.imagen_url ?? undefined,
         }, {
           keepValues: false, // Aseguramos que el reset aplique todos los valores
         });
+        
+        // Sincronizar preview de imagen
+        setImagePreview((initialData as any)?.imagen_url || null);
       } catch (error) {
         console.error("Error al cargar categorías:", error);
         const fallbackCategoriaId = Number(initialData?.categoria_id) || 0;
         reset({
           id: initialData?.id ?? undefined,
           nombre: initialData?.nombre ?? "",
-          categoria_id: fallbackCategoriaId, 
+          categoria_id: fallbackCategoriaId,
+          activo: (initialData as any)?.activo ?? 1,
+          imagen_url: (initialData as any)?.imagen_url ?? undefined,
         }, {
           keepValues: false,
         });
+        
+        setImagePreview((initialData as any)?.imagen_url || null);
       } finally {
         setLoadingLookups(false);
       }
@@ -109,9 +121,32 @@ export default function SubcategoriasForm({ initialData, onSubmit, onCancel, for
     loadLookups();
   }, [initialData, reset]);
 
-  const submitForm: SubmitHandler<FormData> = (data) => {
+  const submitForm: SubmitHandler<FormData> = async (data) => {
     // Remover el ID antes de enviar (el hook lo maneja por separado)
     const { id, ...submitData } = data;
+    
+    // Si hay un archivo de imagen nuevo, subirlo primero
+    if (selectedImageFile) {
+      setUploadingImage(true);
+      try {
+        if (initialData?.id) {
+          const res = await uploadImagenSubcategoria(initialData.id, selectedImageFile);
+          const url = res?.url || res?.imagen_url;
+          if (url) {
+            (submitData as any).imagen_url = url;
+            console.log('[SubcategoriasForm] Imagen subida, URL del backend:', url);
+          }
+        }
+      } catch (error) {
+        console.error("Error al subir imagen:", error);
+      } finally {
+        setUploadingImage(false);
+      }
+    } else if (!selectedImageFile && imagePreview && !imagePreview.startsWith('blob:')) {
+      // Si no hay archivo nuevo pero hay una URL válida existente (no blob), mantenerla
+      (submitData as any).imagen_url = imagePreview;
+    }
+    
     onSubmit(submitData as any);
   };
 
@@ -152,6 +187,18 @@ export default function SubcategoriasForm({ initialData, onSubmit, onCancel, for
         required
       />
 
+      {/* Activo */}
+      <FormSelect
+        label="Activo"
+        name="activo"
+        value={String(formValues.activo ?? 1)}
+        onChange={handleChange}
+        options={[
+          { value: "1", label: "Sí" },
+          { value: "0", label: "No" },
+        ]}
+      />
+
       {/* Categoría Padre (Nivel 2) */}
       <FormSelect
         label="Categoría Padre"
@@ -168,6 +215,57 @@ export default function SubcategoriasForm({ initialData, onSubmit, onCancel, for
                 : undefined
         }
       />
+
+      {/* Campo de Imagen */}
+      <div className="grid grid-cols-1 gap-4">
+        <label className="block text-sm font-medium text-gray-700">
+          Imagen de la Subcategoría (Opcional)
+        </label>
+
+        <div className="flex flex-col gap-2">
+          <input
+            type="file"
+            id="imagenSubcategoria"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) {
+                setSelectedImageFile(file);
+                setImagePreview(URL.createObjectURL(file));
+              }
+            }}
+            disabled={uploadingImage}
+          />
+
+          <label
+            htmlFor="imagenSubcategoria"
+            className="px-4 py-2 border rounded-md bg-white cursor-pointer w-fit hover:bg-gray-50 disabled:opacity-50"
+          >
+            {uploadingImage ? "Subiendo imagen..." : "Seleccionar Imagen"}
+          </label>
+
+          {imagePreview && (
+            <div className="mt-2 relative w-32 h-32">
+              <img
+                src={imagePreview}
+                alt="Preview"
+                className="w-full h-full object-cover rounded border"
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  setImagePreview(null);
+                  setSelectedImageFile(null);
+                }}
+                className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600"
+              >
+                ×
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
 
       {/* Botones */}
       <div className="flex justify-end gap-3 pt-4">

@@ -166,12 +166,10 @@ export default function SubcategoriasPage() {
                       id: editingSubcategoria.id,
                       nombre: editingSubcategoria.nombre,
                       // Necesitamos el ID de la Categoría padre para editar - asegurar que es número
-                      categoria_id: Number(editingSubcategoria.categoria_id) || 0, 
+                      categoria_id: Number(editingSubcategoria.categoria_id) || 0,
+                      activo: (editingSubcategoria as any).activo ?? 1, // Agregar activo
                     }
-                  : {
-                      nombre: "",
-                      categoria_id: 0, // Se reemplaza con el primer valor disponible al cargar el form
-                    }
+                  : undefined // Para nuevo, el form usa valores por defecto
               }
               onSubmit={handleFormSubmit}
               onCancel={handleCloseModal}

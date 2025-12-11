@@ -1,35 +1,49 @@
 import React, { useState, useEffect } from 'react';
 import Alert from '@/components/ui/Alert'; // Componente de alerta
 import FormInput from '@/components/common/form/FormInput'; // asumo disponible
-import { createCategoria, updateCategoria } from '../services/categoriasService'; // servicio para create/update
+import { createCategoria, updateCategoria, uploadImagenCategoria } from '../services/categoriasService'; // servicio para create/update
 import { getCategoriasPrincipales, CategoriaPrincipal } from '../services/categoriasPrincipalesService';
-import { getEstados, Estado } from '../services/estadosService';
 
 interface Props {
   // initialData puede incluir id cuando es edición
   initialData?: {
     id?: number;
     nombre: string;
-    estadoId?: number;
+    activo?: number;
     categoriaPrincipalId?: number | null;
+    imagen_url?: string | null;
   };
   onSuccess?: (categoria: any) => void;
   onCancel?: () => void;
   // Si se pasa, el formulario delega el submit a esta función (por compatibilidad con la page)
-  onSubmit?: (formData: { nombre: string; estadoId: number; categoriaPrincipalId?: number | null }) => Promise<any>;
+  onSubmit?: (formData: { nombre: string; activo: number; categoriaPrincipalId?: number | null; imagen_url?: string | null }) => Promise<any>;
 }
 
 const CategoriasForm: React.FC<Props> = ({ initialData, onSuccess, onCancel, onSubmit }) => {
   const [values, setValues] = useState({
     nombre: initialData?.nombre ?? '',
-    estadoId: initialData?.estadoId ?? 1,
+    activo: initialData?.activo ?? 1,
     categoriaPrincipalId: initialData?.categoriaPrincipalId ?? null,
   });
 
   const [apiError, setApiError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [allCategories, setAllCategories] = useState<CategoriaPrincipal[]>([]);
-  const [estados, setEstados] = useState<Estado[]>([]);
+  
+  // Estados para la imagen
+  const [imagePreview, setImagePreview] = useState<string | null>((initialData as any)?.imagen_url || null);
+  const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
+
+  // Sincronizar cuando initialData cambia
+  useEffect(() => {
+    setValues({
+      nombre: initialData?.nombre ?? '',
+      activo: Number(initialData?.activo ?? 1), // Asegurar conversión a número
+      categoriaPrincipalId: initialData?.categoriaPrincipalId ?? null,
+    });
+    setImagePreview((initialData as any)?.imagen_url || null);
+  }, [initialData]);
 
   useEffect(() => {
     let mounted = true;
@@ -43,21 +57,6 @@ const CategoriasForm: React.FC<Props> = ({ initialData, onSuccess, onCancel, onS
       } catch (err) {
         // no crítico: dejamos el select con opciones vacías
         console.debug("No se pudieron cargar categorías para el select de padre", err);
-      }
-    })();
-    return () => {
-      mounted = false;
-    };
-  }, []);
-
-  useEffect(() => {
-    let mounted = true;
-    (async () => {
-      try {
-        const est = await getEstados();
-        if (mounted) setEstados(est ?? []);
-      } catch (err) {
-        console.debug("No se pudieron cargar estados", err);
       }
     })();
     return () => {
@@ -106,11 +105,34 @@ const extractErrorMessage = (err: any): string => {
     setApiError(null); // limpiar errores al inicio
     setLoading(true);
 
-    const payload = {
+    const payload: any = {
       nombre: values.nombre,
-      estadoId: values.estadoId,
+      activo: values.activo,
       categoriaPrincipalId: values.categoriaPrincipalId ?? undefined,
     };
+
+    // Si hay una imagen nueva, subirla primero (solo si hay archivo nuevo)
+    if (selectedImageFile) {
+      setUploadingImage(true);
+      try {
+        // Si estamos editando, subir la imagen usando el ID existente
+        if (initialData?.id) {
+          const res = await uploadImagenCategoria(initialData.id, selectedImageFile);
+          const url = res?.url || res?.imagen_url;
+          if (url) {
+            payload.imagen_url = url;
+            console.log('[CategoriasForm] Imagen subida, URL del backend:', url);
+          }
+        }
+      } catch (error) {
+        console.error("Error al subir imagen:", error);
+      } finally {
+        setUploadingImage(false);
+      }
+    } else if (!selectedImageFile && imagePreview && !imagePreview.startsWith('blob:')) {
+      // Si no hay archivo nuevo pero hay una URL válida existente (no blob), mantenerla
+      payload.imagen_url = imagePreview;
+    }
 
     try {
       let result: any;
@@ -156,25 +178,18 @@ const extractErrorMessage = (err: any): string => {
         />
 
         <div>
-          <label htmlFor="estadoId" className="block text-sm font-medium text-gray-700">
-            Estado
+          <label htmlFor="activo" className="block text-sm font-medium text-gray-700">
+            Activo
           </label>
           <select
-            id="estadoId"
-            name="estadoId"
-            value={values.estadoId}
-            onChange={(e: React.ChangeEvent<HTMLSelectElement>) => handleChange('estadoId', Number(e.target.value))}
+            id="activo"
+            name="activo"
+            value={values.activo}
+            onChange={(e: React.ChangeEvent<HTMLSelectElement>) => handleChange('activo', Number(e.target.value))}
             className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
           >
-            {estados.length === 0 ? (
-              <option value="">Cargando estados...</option>
-            ) : (
-              estados.map((est) => (
-                <option key={est.id} value={est.id}>
-                  {est.nombre}
-                </option>
-              ))
-            )}
+            <option value={1}>Sí</option>
+            <option value={0}>No</option>
           </select>
         </div>
 
@@ -200,7 +215,56 @@ const extractErrorMessage = (err: any): string => {
             </select>
           </div>
 
-     
+          {/* Campo de Imagen */}
+          <div className="grid grid-cols-1 gap-4">
+            <label className="block text-sm font-medium text-gray-700">
+              Imagen de la Categoría (Opcional)
+            </label>
+
+            <div className="flex flex-col gap-2">
+              <input
+                type="file"
+                id="imagenCategoria"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    setSelectedImageFile(file);
+                    setImagePreview(URL.createObjectURL(file));
+                  }
+                }}
+                disabled={uploadingImage || loading}
+              />
+
+              <label
+                htmlFor="imagenCategoria"
+                className="px-4 py-2 border rounded-md bg-white cursor-pointer w-fit hover:bg-gray-50 disabled:opacity-50"
+              >
+                {uploadingImage ? "Subiendo imagen..." : "Seleccionar Imagen"}
+              </label>
+
+              {imagePreview && (
+                <div className="mt-2 relative w-32 h-32">
+                  <img
+                    src={imagePreview}
+                    alt="Preview"
+                    className="w-full h-full object-cover rounded border"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setImagePreview(null);
+                      setSelectedImageFile(null);
+                    }}
+                    className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600"
+                  >
+                    ×
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
 
         <div className="flex items-center justify-end gap-4">
           <button

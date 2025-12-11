@@ -78,7 +78,9 @@ const CategorySection: React.FC = () => {
         // const response = await getCategorias();
         // setCategories(response.data); 
         const data = await getCategorias();
-        setCategories(data.data);
+        const list = Array.isArray((data as any)?.data) ? (data as any).data : (Array.isArray(data) ? data : []);
+        const activeOnly = list.filter((c: any) => Number(c.activo ?? 1) === 1);
+        setCategories(activeOnly);
         setLoading(false);
       } catch (err) {
         console.error("Error al cargar categorías:", err);

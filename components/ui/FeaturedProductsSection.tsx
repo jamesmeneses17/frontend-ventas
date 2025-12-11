@@ -96,9 +96,12 @@ const FeaturedProductsSection: React.FC = () => {
                 } else if (response && typeof response === 'object' && Array.isArray(response.data)) {
                     categoriasArray = response.data;
                 }
-                
+
+                // Mostrar solo activas (activo === 1)
+                const activeOnly = categoriasArray.filter((c: any) => Number(c.activo ?? 1) === 1);
+
                 // Opcional: ordenar si es necesario, pero para destacados a veces se mantiene como viene
-                setCategories(categoriasArray);
+                setCategories(activeOnly);
                 setLoading(false);
             } catch (err) {
                 console.error("Error al cargar categorías:", err);

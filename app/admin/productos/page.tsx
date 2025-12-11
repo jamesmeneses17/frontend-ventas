@@ -153,14 +153,13 @@ export default function CategoriasPage() {
               initialData={
                 editingCategoria
                   ? {
+                      id: editingCategoria.id,
                       nombre: editingCategoria.nombre,
-                      estadoId: editingCategoria.estadoId, // Asumiendo que existe en Categoria
+                      activo: (editingCategoria as any).activo ?? 1, // Usar activo en lugar de estadoId
                       categoriaPrincipalId: (editingCategoria as any).categoriaPrincipalId ?? (editingCategoria as any).categoriaPrincipal?.id ?? null,
+                      imagen_url: (editingCategoria as any).imagen_url
                     }
-                  : {
-                      nombre: "",
-                      estadoId: 1,
-                    }
+                  : undefined // Para nuevo, el form usa valores por defecto
               }
               onSubmit={handleFormSubmit}
               onCancel={handleCloseModal}

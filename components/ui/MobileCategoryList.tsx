@@ -65,7 +65,9 @@ const MobileCategoryList: React.FC<MobileCategoryListProps> = ({
       // carga por id: algunas APIs devuelven subcategorias en GET /categorias/:id
       getCategoriaById(categoryId)
         .then((catData: any) => {
-          const subs = (catData.subcategorias || []).filter((s: any) => s.estado?.nombre === "Activo").map((s: any) => ({ id: s.id, nombre: s.nombre }));
+          const subs = (catData.subcategorias || [])
+            .filter((s: any) => Number(s.activo ?? 1) === 1)
+            .map((s: any) => ({ id: s.id, nombre: s.nombre }));
           setGroupedCategories((prev) =>
             prev.map((p) => (p.id === categoryId ? { ...p, subcategorias: subs } : p))
           );

@@ -40,23 +40,28 @@ const HeaderProductsDropdown: React.FC = () => {
           ]);
 
         // Normalizar respuestas - manejar tanto arrays como objetos con .data
-        const cats = Array.isArray(apiCategorias?.data)
+        const catsRaw = Array.isArray(apiCategorias?.data)
           ? apiCategorias.data
           : Array.isArray(apiCategorias)
             ? apiCategorias
             : [];
 
-        const mains = Array.isArray(apiMainResponse?.data)
+        const mainsRaw = Array.isArray(apiMainResponse?.data)
           ? apiMainResponse.data
           : Array.isArray(apiMainResponse)
             ? apiMainResponse
             : [];
 
-        const subs = Array.isArray(apiSubcategorias?.data)
+        const subsRaw = Array.isArray(apiSubcategorias?.data)
           ? apiSubcategorias.data
           : Array.isArray(apiSubcategorias)
             ? apiSubcategorias
             : [];
+
+        // Solo mostrar activos (1 = activo)
+        const cats = catsRaw.filter((c: any) => Number(c.activo ?? 1) === 1);
+        const mains = mainsRaw.filter((m: any) => Number(m.activo ?? 1) === 1);
+        const subs = subsRaw.filter((s: any) => Number(s.activo ?? 1) === 1);
 
         setCategories(cats);
         setMainCategories(mains);

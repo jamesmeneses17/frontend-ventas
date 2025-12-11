@@ -3,11 +3,13 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import Image from "next/image";
 import CrudTable from "../common/CrudTable";
 import ActionButton from "../common/ActionButton";
 import { Subcategoria } from "../services/subcategoriasService"; 
 import { Categoria, getCategorias } from "../services/categoriasService";
 import { Trash, Pencil } from "lucide-react";
+import { isImageUrl } from "../../utils/ProductUtils";
 
 // ⚠️ No necesitamos importar Categoria/Estado aquí, ya que el servicio 
 // Subcategorias se encarga de traer el 'categoria_nombre' para la tabla.
@@ -73,6 +75,27 @@ export default function SubcategoriasTable({
   
   // ✅ Columnas de la tabla para Subcategorías
   const columns = [
+    {
+      key: "imagen",
+      label: "Imagen",
+      render: (row: Subcategoria) => (
+        <div className="w-12 h-12 relative">
+          {row.imagen_url && isImageUrl(row.imagen_url) ? (
+            <Image 
+              src={row.imagen_url} 
+              alt={row.nombre} 
+              width={48} 
+              height={48} 
+              className="w-12 h-12 object-cover rounded border" 
+            />
+          ) : (
+            <div className="w-12 h-12 bg-gray-200 rounded border flex items-center justify-center text-xs text-gray-500">
+              Sin imagen
+            </div>
+          )}
+        </div>
+      ),
+    },
     { key: "nombre", label: "Subcategoría" },
     {
       key: "categoria_nombre",
@@ -83,6 +106,22 @@ export default function SubcategoriasTable({
           {row.categoria_nombre || parentNames[row.categoria_id] || "N/A"}
         </span>
       ),
+    },
+    {
+      key: "activo",
+      label: "Activo",
+      render: (row: Subcategoria) => {
+        const isActivo = Number((row as any).activo ?? 1) === 1;
+        return (
+          <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
+            isActivo 
+              ? 'bg-green-100 text-green-800' 
+              : 'bg-red-100 text-red-800'
+          }`}>
+            {isActivo ? "Activo" : "Inactivo"}
+          </span>
+        );
+      },
     },
    
   ];
