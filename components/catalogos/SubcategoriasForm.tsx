@@ -157,8 +157,9 @@ export default function SubcategoriasForm({ initialData, onSubmit, onCancel, for
       try {
         const res = await uploadImagenSubcategoria(recordId, selectedImageFile);
         console.log('[SubcategoriasForm] Respuesta de upload:', res);
-        // El backend puede devolver imagenUrl (camelCase) o imagen_url (snake_case)
-        const url = res?.url || res?.imagen_url || res?.imagenUrl;
+        // El backend puede devolver imagenUrl (camelCase) o imagen_url (snake_case). Forzar a any para evitar error de tipos.
+        const r: any = res as any;
+        const url = r?.url || r?.imagen_url || r?.imagenUrl;
         if (url) {
           console.log('[SubcategoriasForm] Imagen subida exitosamente, URL:', url);
           // Actualizar el registro con la nueva URL de imagen
