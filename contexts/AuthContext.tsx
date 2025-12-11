@@ -44,26 +44,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
+      console.log('🔍 Verificando token en servidor...');
+
       const response = await fetch(`${API_BASE_URL}/auth/profile`, {
         method: 'GET',
         headers: {
-          'Authorization': `Bearer ${token}`,  // ← HEADER CON TOKEN
+          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
+        cache: 'no-store', // Evitar caché
       });
 
       if (response.ok) {
         const userData = await response.json();
+        console.log('✅ Sesión válida:', userData);
         setUser(userData);
+        setIsLoading(false);
       } else {
-        console.log('Token inválido');
+        console.warn(' Token inválido o expirado (status:', response.status + ')');
         localStorage.removeItem('auth_token');
         setUser(null);
+        setIsLoading(false);
       }
     } catch (error) {
-      console.error('Error:', error);
-      setUser(null);
-    } finally {
+      console.error(' Error verificando sesión:', error);
+      // No limpiar el token en caso de error temporal de red
+      // Permitir que el usuario intente de nuevo
       setIsLoading(false);
     }
   };
@@ -79,8 +85,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         },
         body: JSON.stringify({
           correo: email,
-          contrasena: password, // sin ñ como especificaste
+          contrasena: password,
         }),
+        cache: 'no-store',
       });
 
       console.log('📡 Respuesta del servidor:', response.status);
@@ -98,15 +105,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       const data = await response.json();
-      console.log('✅ Login exitoso:', data);
+      console.log('✅ Login exitoso');
 
       // Guardar el token en localStorage
-      localStorage.setItem('auth_token', data.access_token);
+      if (data.access_token) {
+        localStorage.setItem('auth_token', data.access_token);
+      }
       
-      // Actualizar el estado del usuario
-      setUser(data.user);
-
-      console.log('Token guardado y usuario actualizado');
+      // Actualizar el estado del usuario con los datos recibidos
+      if (data.user) {
+        setUser(data.user);
+        console.log('✅ Usuario establecido en contexto:', data.user);
+      } else {
+        // Si no viene usuario en la respuesta, intentar obtenerlo del perfil
+        setUser(data);
+      }
 
     } catch (error) {
       console.error('🚨 Error en login:', error);

@@ -1,10 +1,43 @@
 // /app/login/page.tsx
+"use client";
 
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "../../../contexts/AuthContext";
 import LoginForm from "../../../components/auth/LoginForm";
-import AuthSplitPanel from "../../../components/layout/AuthSplitPanel"; // Layout reutilizable
-import Link from 'next/link'; // Usamos Link de Next.js para una mejor navegación
+import AuthSplitPanel from "../../../components/layout/AuthSplitPanel";
+import Link from 'next/link';
 
 export default function LoginPage() {
+  const router = useRouter();
+  const { isAuthenticated, isLoading } = useAuth();
+
+  useEffect(() => {
+    // Si está autenticado y ya terminó de verificar, redirigir al dashboard
+    if (isAuthenticated && !isLoading) {
+      console.log('✅ Ya estás autenticado, redirigiendo al dashboard...');
+      router.replace('/dashboard');
+    }
+  }, [isAuthenticated, isLoading, router]);
+
+  // Mostrar loading mientras verifica si está autenticado
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Verificando sesión...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Si ya está autenticado, no mostrar el formulario
+  if (isAuthenticated) {
+    return null;
+  }
+
+  // Si no está autenticado, mostrar el formulario
   return (
     <AuthSplitPanel >
       

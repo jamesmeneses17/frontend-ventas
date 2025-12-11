@@ -2,7 +2,7 @@
 
 import { useAuth } from '../../contexts/AuthContext';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -13,14 +13,23 @@ export default function ProtectedRoute({
   children, 
   redirectTo = '/login' 
 }: ProtectedRouteProps) {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, user } = useAuth();
   const router = useRouter();
+  const [hasRedirected, setHasRedirected] = useState(false);
 
   useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
+    // Esperar a que termine de verificar
+    if (isLoading) {
+      return;
+    }
+
+    // Si no está autenticado y no ha sido redirigido aún
+    if (!isAuthenticated && !hasRedirected) {
+      console.log('🚫 No autenticado, redirigiendo a:', redirectTo);
+      setHasRedirected(true);
       router.replace(redirectTo);
     }
-  }, [isLoading, isAuthenticated, router, redirectTo]);
+  }, [isLoading, isAuthenticated, router, redirectTo, hasRedirected]);
 
   // Mostrar loading mientras verifica autenticación
   if (isLoading) {
@@ -34,7 +43,7 @@ export default function ProtectedRoute({
     );
   }
 
-  // Si no está autenticado, no mostrar nada (se está redirigiendo)
+  // Si no está autenticado y ya fue redirigido, no mostrar nada
   if (!isAuthenticated) {
     return null;
   }
