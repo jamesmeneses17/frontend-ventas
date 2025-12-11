@@ -193,6 +193,31 @@ export default function ComprasForm({
     }
   }, [productoSearchTerm, productos, setValue]);
 
+  // 🔥 Formatear costo_unitario con miles sin bloquear entrada
+  const handlePriceChange = (inputValue: string) => {
+    // Limpiar: eliminar puntos y comas de entrada
+    const cleaned = inputValue.replace(/[^0-9]/g, "");
+    
+    if (cleaned === "") {
+      setCostoUnitarioDisplay("");
+      setValue("costo_unitario", 0, { shouldValidate: true });
+      return;
+    }
+
+    // Convertir a número
+    const numericValue = parseInt(cleaned, 10);
+    if (!Number.isFinite(numericValue)) {
+      return;
+    }
+
+    // Formatear para visualizar con separador de miles (punto)
+    const formatted = numericValue.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+
+    // Guardar en display y en el formulario
+    setCostoUnitarioDisplay(formatted);
+    setValue("costo_unitario", numericValue, { shouldValidate: true });
+  };
+
   // 📌 Control universal de cambios
   const handleChange = (
     e: React.ChangeEvent<
@@ -203,19 +228,7 @@ export default function ComprasForm({
 
     // 💰 Formateo automático para costo_unitario con separador de miles en vivo
     if (name === "costo_unitario") {
-      let raw = value.replace(/[^\d]/g, ""); // Solo permitir números
-
-      // Permitir escribir sin borrar números
-      const numeric = Number(raw);
-
-      // Actualizar display con formato de miles
-      const formatted = raw === "" ? "" : numeric.toLocaleString("es-CO");
-
-      setCostoUnitarioDisplay(formatted);
-
-      // Guardar valor real en el form
-      setValue("costo_unitario", numeric, { shouldValidate: true });
-
+      handlePriceChange(value);
       return;
     }
 
@@ -249,8 +262,8 @@ export default function ComprasForm({
       producto_id: Number(data.productoId),
       cantidad: Math.max(1, Number(data.cantidad) || 0),
       // Asegurar número puro (permitir decimales)
-      costo_unitario:
-        Number(String(data.costo_unitario).replace(/[^0-9.\-]/g, "")) || 0,
+      // El valor ya está limpio porque handlePriceChange lo convierte a número
+      costo_unitario: Number(data.costo_unitario) || 0,
     };
 
     onSubmit(payload as CreateCompraDTO);

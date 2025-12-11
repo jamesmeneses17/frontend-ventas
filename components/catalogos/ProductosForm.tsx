@@ -23,13 +23,17 @@ type FormData = Omit<CreateProductoData, "precio" | "precio_venta"> & {
   categoriaId?: number;
 };
 
-// Formatea un valor numérico a string con separador de miles y sin decimales
+// Formatea un valor numérico a string con separador de miles (punto) y decimales (coma)
 const formatThousands = (val: any): string => {
   if (val === undefined || val === null || val === "") return "";
   const num = Number(val);
   if (!Number.isFinite(num)) return "";
-  const intPart = Math.trunc(num).toString();
-  return intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  
+  // Separar parte entera y decimal
+  const [intPart, decPart] = num.toString().split(".");
+  const intFormatted = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+  
+  return decPart ? `${intFormatted},${decPart}` : intFormatted;
 };
 
 interface Props {
@@ -179,8 +183,8 @@ export default function ProductosForm({ initialData, onSubmit, onCancel, formErr
 
     const parsePrecio = (val: any): number | undefined => {
       if (val === undefined || val === null || val === "") return undefined;
-      // Limpiar el formato: punto para miles, coma para decimales
-      const str = String(val).replace(/\./g, "").replace(/,/g, ".");
+      // Limpiar el formato: eliminar puntos (separador de miles)
+      const str = String(val).replace(/\./g, "");
       const num = parseFloat(str);
       return Number.isFinite(num) ? num : undefined;
     };
@@ -283,35 +287,25 @@ export default function ProductosForm({ initialData, onSubmit, onCancel, formErr
     fieldName: "precio" | "precio_venta",
     inputValue: string
   ) => {
-    // Permitir solo dígitos y punto decimal
-    const cleaned = inputValue.replace(/[^0-9.]/g, "");
+    // Limpiar: eliminar puntos y comas de entrada
+    const cleaned = inputValue.replace(/[^0-9]/g, "");
     
-    // Limitar a máximo 1 punto decimal (para separador)
-    const parts = cleaned.split(".");
-    let numericValue: string;
-    
-    if (parts.length > 2) {
-      // Si hay más de 1 punto, usar solo los dos primeros segmentos
-      numericValue = parts[0] + "." + parts[1];
-    } else {
-      numericValue = cleaned;
+    if (cleaned === "") {
+      setValue(fieldName, "" as any, { shouldValidate: true });
+      return;
     }
 
-    // Limitar a máximo 2 decimales
-    if (parts.length === 2) {
-      const decimals = parts[1];
-      if (decimals.length > 2) {
-        numericValue = parts[0] + "." + decimals.slice(0, 2);
-      }
+    // Convertir a número
+    const numericValue = parseInt(cleaned, 10);
+    if (!Number.isFinite(numericValue)) {
+      return;
     }
 
-    // Formatear para visualizar con separador de miles
-    const [intPart = "", decPart = ""] = numericValue.split(".");
-    const intFormatted = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-    const displayValue = decPart ? `${intFormatted},${decPart}` : intFormatted;
+    // Formatear para visualizar con separador de miles (punto)
+    const formatted = numericValue.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
 
-    // Guardar en el formulario
-    setValue(fieldName, displayValue as any, { shouldValidate: true });
+    // Guardar en el formulario (como string formateado para display)
+    setValue(fieldName, formatted as any, { shouldValidate: true });
   };
 
   const handleChange = (
