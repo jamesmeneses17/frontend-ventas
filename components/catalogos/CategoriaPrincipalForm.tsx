@@ -10,6 +10,7 @@ import {
     CategoriaPrincipal,
     CreateCategoriaPrincipalData,
     uploadImagenCategoriaPrincipal,
+    updateCategoriaPrincipal,
 } from "../services/categoriasPrincipalesService";
 
 type FormData = CreateCategoriaPrincipalData;
@@ -17,10 +18,11 @@ type FormData = CreateCategoriaPrincipalData;
 interface Props {
     initialData?: Partial<CategoriaPrincipal> | null;
     onSubmit: (data: FormData) => void;
+    onSuccess?: (result: any) => Promise<void> | void;
     onCancel: () => void;
 }
 
-export default function CategoriaPrincipalForm({ initialData, onSubmit, onCancel }: Props) {
+export default function CategoriaPrincipalForm({ initialData, onSubmit, onSuccess, onCancel }: Props) {
     const [nombre, setNombre] = useState(initialData?.nombre || "");
     const [activo, setActivo] = useState(String(initialData?.activo ?? 1));
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -42,35 +44,65 @@ export default function CategoriaPrincipalForm({ initialData, onSubmit, onCancel
         e.preventDefault();
         setIsSubmitting(true);
         try {
+            let recordId = initialData?.id;
+            
             const payload: FormData = {
                 nombre,
                 activo: Number(activo),
             };
             
-            // Si hay un archivo de imagen nuevo, subirlo primero
-            if (selectedImageFile) {
+            // Si no hay archivo nuevo pero hay URL existente válida, mantenerla
+            if (!selectedImageFile && imagePreview && !imagePreview.startsWith('blob:')) {
+                payload.imagen_url = imagePreview;
+            }
+            
+            // Primero enviar el formulario (crear o actualizar)
+            const result = await onSubmit(payload);
+            console.log('[CategoriaPrincipalForm] Resultado de onSubmit:', result);
+            
+            // Verificar si hubo error
+            if (!result) {
+                setIsSubmitting(false);
+                return; // No continuar si hubo error
+            }
+            
+            // Si es creación, obtener el ID del resultado
+            if (!recordId) {
+                recordId = result?.id || result?.data?.id;
+            }
+            
+            console.log('[CategoriaPrincipalForm] ID del registro:', recordId, 'Tiene imagen?', !!selectedImageFile);
+            
+            // Si hay un archivo nuevo y tenemos un ID, subir la imagen después
+            if (selectedImageFile && recordId) {
+                console.log('[CategoriaPrincipalForm] Subiendo imagen para ID:', recordId);
                 setUploadingImage(true);
                 try {
-                    // Si estamos editando, usar el ID existente para subir
-                    if (isEditing && initialData?.id) {
-                        const res = await uploadImagenCategoriaPrincipal(initialData.id, selectedImageFile);
-                        const url = res?.url || res?.imagen_url;
-                        if (url) {
-                            payload.imagen_url = url;
-                            console.log('[CategoriaPrincipalForm] Imagen subida, URL del backend:', url);
-                        }
+                    const res = await uploadImagenCategoriaPrincipal(recordId, selectedImageFile);
+                    console.log('[CategoriaPrincipalForm] Respuesta de upload:', res);
+                    // El backend puede devolver imagenUrl (camelCase) o imagen_url (snake_case)
+                    const url = res?.url || res?.imagen_url || res?.imagenUrl;
+                    if (url) {
+                        console.log('[CategoriaPrincipalForm] Imagen subida exitosamente, URL:', url);
+                        // Actualizar el registro con la nueva URL de imagen
+                        await updateCategoriaPrincipal(recordId, { imagen_url: url });
                     }
                 } catch (error) {
                     console.error("Error al subir imagen:", error);
                 } finally {
                     setUploadingImage(false);
                 }
-            } else if (!selectedImageFile && imagePreview && !imagePreview.startsWith('blob:')) {
-                // Si no hay archivo nuevo pero hay una URL válida existente (no blob), mantenerla
-                payload.imagen_url = imagePreview;
             }
             
-            onSubmit(payload);
+            // Notificar éxito y refrescar lista antes de cerrar
+            if (onSuccess) {
+                await onSuccess(result);
+            }
+
+            // Cerrar el modal después de completar todo
+            if (onCancel) {
+                onCancel();
+            }
         } finally {
             setIsSubmitting(false);
         }
@@ -163,7 +195,7 @@ export default function CategoriaPrincipalForm({ initialData, onSubmit, onCancel
                 </div>
             </div>
 
-            <div className="flex justify-end gap-3 pt-4">
+            <div className="flex justify-end gap-3 pt-2">
                 <Button
                     type="button"
                     onClick={onCancel}

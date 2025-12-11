@@ -67,6 +67,25 @@ export interface SubcategoriaStats {
 // --- FUNCIONES DE API ---
 // --------------------------------------------------------------------------------
 
+// Normaliza la respuesta del backend para asegurar consistencia
+function normalizeSubcategoria(raw: any): Subcategoria {
+    if (!raw) return raw;
+    const normalized: any = { ...raw };
+    
+    // Si viene imagenUrl (camelCase), convertir a imagen_url (snake_case)
+    if (raw.imagenUrl !== undefined) {
+        normalized.imagen_url = raw.imagenUrl;
+        delete normalized.imagenUrl;
+    }
+    
+    // Asegurar que activo sea número
+    if (normalized.activo !== undefined) {
+        normalized.activo = Number(normalized.activo);
+    }
+    
+    return normalized as Subcategoria;
+}
+
 /**
  * Obtener estadísticas de subcategorías.
  * Ejemplo de respuesta esperada del backend:
@@ -108,10 +127,10 @@ export const getSubcategorias = async (
 
         // Manejar la respuesta paginada o simple
         if (items && Array.isArray(items.data)) {
-            subcategorias = items.data;
+            subcategorias = items.data.map(normalizeSubcategoria);
             total = items.total || subcategorias.length;
         } else if (Array.isArray(items)) {
-            subcategorias = items;
+            subcategorias = items.map(normalizeSubcategoria);
             total = subcategorias.length;
         }
 
@@ -156,7 +175,7 @@ export const createSubcategoria = async (data: CreateSubcategoriaData): Promise<
         const payload = { ...data };
         if (payload.activo === undefined) payload.activo = 1;
         const res = await axios.post(ENDPOINT_BASE, payload);
-        return res.data as Subcategoria;
+        return normalizeSubcategoria(res.data);
     } catch (err: any) {
         const message = normalizeSubcategoriaError(err);
         throw new Error(message);
@@ -170,7 +189,7 @@ export const updateSubcategoria = async (id: number, data: UpdateSubcategoriaDat
     const endpoint = `${ENDPOINT_BASE}/${id}`;
     try {
         const res = await axios.patch(endpoint, data);
-        return res.data as Subcategoria;
+        return normalizeSubcategoria(res.data);
     } catch (err: any) {
         const message = normalizeSubcategoriaError(err);
         throw new Error(message);
@@ -211,5 +230,5 @@ export const uploadImagenSubcategoria = async (id: number, file: File | Blob) =>
     const form = new FormData();
     form.append('file', file as any, (file as any).name || 'upload');
     const res = await axios.post(endpoint, form);
-    return res.data;
+    return normalizeSubcategoria(res.data);
 };

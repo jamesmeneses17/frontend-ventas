@@ -256,10 +256,11 @@ export const useCrudCatalog = <T extends CrudItem, C extends ItemForm, U extends
     const isEditing = !!editingItem;
 
     try {
+      let result: any;
       if (isEditing) {
-        await serviceRef.current.updateItem(editingItem!.id, formData as U);
+        result = await serviceRef.current.updateItem(editingItem!.id, formData as U);
       } else {
-        const newItem = await serviceRef.current.createItem(formData as C);
+        result = await serviceRef.current.createItem(formData as C);
       }
 
       const itemName = (formData as any).nombre || `${itemKey}`;
@@ -271,17 +272,20 @@ export const useCrudCatalog = <T extends CrudItem, C extends ItemForm, U extends
         type: "success",
       });
 
-      // Cerrar modal inmediatamente después de guardar (crear o actualizar)
-      handleCloseModal();
+      // NO cerrar el modal aquí - dejar que el formulario lo maneje después de subir la imagen
+      // handleCloseModal();
       
       // Recargar datos después de la operación
       await fetchItems();
+      
+      // Devolver el resultado para que el formulario pueda usarlo (ej: obtener ID)
+      return result;
     } catch (error) {
         const err: any = error;
         const message = err?.response?.data?.message || err?.message || "Error al procesar la solicitud.";
         setNotification({ message: Array.isArray(message) ? message.join(', ') : String(message), type: "error" });
-        // Evitar volver a lanzar el error para no mostrar el overlay rojo de Next en modo dev.
-        return;
+        // Retornar null en caso de error para que el formulario sepa que falló
+        return null;
       }
   };
 
@@ -316,6 +320,9 @@ export const useCrudCatalog = <T extends CrudItem, C extends ItemForm, U extends
 
     // Exponer setNotification para que las páginas puedan cerrar/ajustar la notificación
     setNotification,
+
+    // Refrescar manualmente los datos (útil cuando se actualiza imagen después del submit)
+    refreshItems: fetchItems,
 
     // Handlers
     setSearchTerm: handleSearch,

@@ -83,6 +83,14 @@ const FeaturedProductsSection: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(false);
 
+    // Helper robusto para interpretar el campo "activo" (1 | '1' | true | 'true')
+    const isActive = (c: any) => {
+        const v = (c as any)?.activo;
+        if (typeof v === 'boolean') return v;
+        if (v === 'true' || v === '1') return true;
+        return Number(v ?? 1) === 1;
+    };
+
     useEffect(() => {
         const fetchCategories = async () => {
             try {
@@ -97,8 +105,8 @@ const FeaturedProductsSection: React.FC = () => {
                     categoriasArray = response.data;
                 }
 
-                // Mostrar solo activas (activo === 1)
-                const activeOnly = categoriasArray.filter((c: any) => Number(c.activo ?? 1) === 1);
+                // Mostrar solo activas con chequeo robusto
+                const activeOnly = categoriasArray.filter(isActive);
 
                 // Opcional: ordenar si es necesario, pero para destacados a veces se mantiene como viene
                 setCategories(activeOnly);
@@ -117,8 +125,8 @@ const FeaturedProductsSection: React.FC = () => {
     const displayedCategories: CategoryCardDisplayProps[] = categories.slice(0, 4).map((cat) => ({
         id: cat.id,
         nombre: cat.nombre,
-        // Usamos la lógica de mapeo de imágenes de categoría
-        imageSrc: mapCategoryToImage(cat.nombre, cat.id),
+        // Usar imagen_url de la BD si está disponible, si no usar fallback
+        imageSrc: cat.imagen_url || mapCategoryToImage(cat.nombre, cat.id),
         // La URL es la de la página de productos filtrados por la categoría principal
         href: `/users/categorias-principales?categoriaPrincipalId=${cat.id}`,
     }));

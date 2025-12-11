@@ -13,7 +13,8 @@ import {
     Subcategoria, 
     CreateSubcategoriaData, 
     UpdateSubcategoriaData,
-    uploadImagenSubcategoria
+    uploadImagenSubcategoria,
+    updateSubcategoria
 } from "../services/subcategoriasService";
 
 // ⚠️ Asegúrate de importar los servicios de lookups:
@@ -24,7 +25,7 @@ type FormData = CreateSubcategoriaData & { id?: number };
 
 interface Props {
   initialData?: Partial<Subcategoria> | null;
-  onSubmit: (data: FormData) => void;
+  onSubmit: (data: FormData) => Promise<any>;
   onCancel: () => void;
   formError?: string;
 }
@@ -125,30 +126,55 @@ export default function SubcategoriasForm({ initialData, onSubmit, onCancel, for
   const submitForm: SubmitHandler<FormData> = async (data) => {
     // Remover el ID antes de enviar (el hook lo maneja por separado)
     const { id, ...submitData } = data;
+    let recordId = initialData?.id;
     
-    // Si hay un archivo de imagen nuevo, subirlo primero
-    if (selectedImageFile) {
+    // Si no hay archivo nuevo pero hay URL existente válida (no blob), mantenerla
+    if (!selectedImageFile && imagePreview && !imagePreview.startsWith('blob:')) {
+      (submitData as any).imagen_url = imagePreview;
+    }
+    // Si hay archivo nuevo, NO enviar la URL blob, se subirá después de crear/actualizar
+    
+    // Primero enviar el formulario
+    const result = await onSubmit(submitData as any);
+    console.log('[SubcategoriasForm] Resultado de onSubmit:', result);
+    
+    // Verificar si hubo error
+    if (!result) {
+      return; // No continuar si hubo error
+    }
+    
+    // Si es creación, obtener el ID del resultado
+    if (!recordId) {
+      recordId = result?.id || result?.data?.id;
+    }
+    
+    console.log('[SubcategoriasForm] ID del registro:', recordId, 'Tiene imagen?', !!selectedImageFile);
+    
+    // Si hay un archivo nuevo y tenemos un ID, subir después
+    if (selectedImageFile && recordId) {
+      console.log('[SubcategoriasForm] Subiendo imagen para ID:', recordId);
       setUploadingImage(true);
       try {
-        if (initialData?.id) {
-          const res = await uploadImagenSubcategoria(initialData.id, selectedImageFile);
-          const url = res?.url || res?.imagen_url;
-          if (url) {
-            (submitData as any).imagen_url = url;
-            console.log('[SubcategoriasForm] Imagen subida, URL del backend:', url);
-          }
+        const res = await uploadImagenSubcategoria(recordId, selectedImageFile);
+        console.log('[SubcategoriasForm] Respuesta de upload:', res);
+        // El backend puede devolver imagenUrl (camelCase) o imagen_url (snake_case)
+        const url = res?.url || res?.imagen_url || res?.imagenUrl;
+        if (url) {
+          console.log('[SubcategoriasForm] Imagen subida exitosamente, URL:', url);
+          // Actualizar el registro con la nueva URL de imagen
+          await updateSubcategoria(recordId, { imagen_url: url });
         }
       } catch (error) {
         console.error("Error al subir imagen:", error);
       } finally {
         setUploadingImage(false);
       }
-    } else if (!selectedImageFile && imagePreview && !imagePreview.startsWith('blob:')) {
-      // Si no hay archivo nuevo pero hay una URL válida existente (no blob), mantenerla
-      (submitData as any).imagen_url = imagePreview;
     }
     
-    onSubmit(submitData as any);
+    // Cerrar el modal después de completar todo
+    if (onCancel) {
+      onCancel();
+    }
   };
 
   const handleChange = (

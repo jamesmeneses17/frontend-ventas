@@ -49,6 +49,7 @@ export default function CategoriasPrincipalesPage() {
     handleDelete,
     handleFormSubmit,
     handleCloseModal,
+    refreshItems,
     setNotification,
   } = useCrudCatalog<CategoriaPrincipal, CreateData, UpdateData>(
     {
@@ -162,6 +163,11 @@ export default function CategoriasPrincipalesPage() {
                   : undefined
               }
               onSubmit={handleFormSubmit}
+              onSuccess={async () => {
+                // Refresca la tabla y cierra el modal al terminar
+                await refreshItems();
+                handleCloseModal();
+              }}
               onCancel={handleCloseModal}
             />
           </ModalVentana>

@@ -103,51 +103,77 @@ const extractErrorMessage = (err: any): string => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setApiError(null); // limpiar errores al inicio
+    setApiError(null);
     setLoading(true);
-
-    const payload: any = {
-      nombre: values.nombre,
-      activo: values.activo,
-      categoriaPrincipalId: values.categoriaPrincipalId ?? undefined,
-    };
-
-    // Si hay una imagen nueva, subirla primero (solo si hay archivo nuevo)
-    if (selectedImageFile) {
-      setUploadingImage(true);
-      try {
-        // Si estamos editando, subir la imagen usando el ID existente
-        if (initialData?.id) {
-          const res = await uploadImagenCategoria(initialData.id, selectedImageFile);
-          const url = res?.url || res?.imagen_url;
-          if (url) {
-            payload.imagen_url = url;
-            console.log('[CategoriasForm] Imagen subida, URL del backend:', url);
-          }
-        }
-      } catch (error) {
-        console.error("Error al subir imagen:", error);
-      } finally {
-        setUploadingImage(false);
-      }
-    } else if (!selectedImageFile && imagePreview && !imagePreview.startsWith('blob:')) {
-      // Si no hay archivo nuevo pero hay una URL válida existente (no blob), mantenerla
-      payload.imagen_url = imagePreview;
-    }
 
     try {
       let result: any;
+      let recordId = initialData?.id;
+
+      // Primero crear o actualizar el registro (sin la imagen si es nueva)
+      const payload: any = {
+        nombre: values.nombre,
+        activo: values.activo,
+        categoriaPrincipalId: values.categoriaPrincipalId ?? undefined,
+      };
+
+      // Si no hay archivo nuevo pero hay URL existente válida, mantenerla
+      if (!selectedImageFile && imagePreview && !imagePreview.startsWith('blob:')) {
+        payload.imagen_url = imagePreview;
+      }
+
       if (onSubmit) {
-        // si la página pasó su propio onSubmit, lo usamos (p. ej. para manejar modal o flujo)
         result = await onSubmit(payload);
+        console.log('[CategoriasForm] Resultado de onSubmit:', result);
+        
+        // Verificar si hubo error
+        if (!result) {
+          setLoading(false);
+          return; // No continuar si hubo error
+        }
+        
+        // Si es creación, obtener el ID del resultado (puede venir como id o imagenUrl)
+        if (!recordId) {
+          recordId = result?.id || result?.data?.id;
+        }
       } else {
         if (initialData?.id) {
-          // edición
+          // Edición
           result = await updateCategoria(initialData.id, payload);
         } else {
-          // creación
+          // Creación
           result = await createCategoria(payload);
+          console.log('[CategoriasForm] Resultado de createCategoria:', result);
+          recordId = result?.id || result?.data?.id;
         }
+      }
+
+      console.log('[CategoriasForm] ID del registro:', recordId, 'Tiene imagen?', !!selectedImageFile);
+
+      // Ahora, si hay un archivo nuevo y tenemos un ID, subir la imagen
+      if (selectedImageFile && recordId) {
+        console.log('[CategoriasForm] Subiendo imagen para ID:', recordId);
+        setUploadingImage(true);
+        try {
+          const res = await uploadImagenCategoria(recordId, selectedImageFile);
+          console.log('[CategoriasForm] Respuesta de upload:', res);
+          // El backend puede devolver imagenUrl (camelCase) o imagen_url (snake_case)
+          const url = res?.url || res?.imagen_url || res?.imagenUrl;
+          if (url) {
+            console.log('[CategoriasForm] Imagen subida exitosamente, URL:', url);
+            // Actualizar el registro con la nueva URL de imagen
+            await updateCategoria(recordId, { imagen_url: url });
+          }
+        } catch (error) {
+          console.error("Error al subir imagen:", error);
+        } finally {
+          setUploadingImage(false);
+        }
+      }
+
+      // Cerrar el modal después de completar todo
+      if (onCancel) {
+        onCancel();
       }
 
       // llamar callback de éxito si existe

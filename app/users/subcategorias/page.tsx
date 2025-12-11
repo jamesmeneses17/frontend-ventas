@@ -211,7 +211,8 @@ function SubcategoriasClientePageContent() {
     .map((sub) => ({
       id: sub.id,
       nombre: sub.nombre,
-      imageSrc: mapCategoryToImage(sub.nombre, sub.id),
+      // Usar imagen_url de la BD si está disponible, si no usar fallback
+      imageSrc: sub.imagen_url || mapCategoryToImage(sub.nombre, sub.id),
       href: `/users/productos?subcategoriaId=${sub.id}`,
     }));
 

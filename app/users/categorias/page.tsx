@@ -127,7 +127,8 @@ function CategoriasClientePageContent() {
   const displayedCategories: CategoryCardDisplayProps[] = categories.map((cat) => ({
     id: cat.id,
     nombre: cat.nombre,
-    imageSrc: mapCategoryToImage(cat.nombre, cat.id),
+    // Usar imagen_url de la BD si está disponible, si no usar fallback
+    imageSrc: cat.imagen_url || mapCategoryToImage(cat.nombre, cat.id),
     href: `/users/categorias-principales?categoriaPrincipalId=${cat.id}`,
   }));
 

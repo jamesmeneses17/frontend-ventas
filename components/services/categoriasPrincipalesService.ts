@@ -35,6 +35,25 @@ export interface PaginacionResponse<T> {
   total: number;
 }
 
+// Normaliza la respuesta del backend para asegurar consistencia
+function normalizeCategoriaPrincipal(raw: any): CategoriaPrincipal {
+  if (!raw) return raw;
+  const normalized: any = { ...raw };
+  
+  // Si viene imagenUrl (camelCase), convertir a imagen_url (snake_case)
+  if (raw.imagenUrl !== undefined) {
+    normalized.imagen_url = raw.imagenUrl;
+    delete normalized.imagenUrl;
+  }
+  
+  // Asegurar que activo sea número
+  if (normalized.activo !== undefined) {
+    normalized.activo = Number(normalized.activo);
+  }
+  
+  return normalized as CategoriaPrincipal;
+}
+
 export const getCategoriasPrincipales = async (
   page: number = 1,
   size: number = 10,
@@ -55,10 +74,10 @@ export const getCategoriasPrincipales = async (
 
     // Handle paginated or simple response
     if (items && Array.isArray(items.data)) {
-      categorias = items.data;
+      categorias = items.data.map(normalizeCategoriaPrincipal);
       total = items.total || categorias.length;
     } else if (Array.isArray(items)) {
-      categorias = items;
+      categorias = items.map(normalizeCategoriaPrincipal);
       total = categorias.length;
     }
 
@@ -76,7 +95,7 @@ export const getCategoriaPrincipalById = async (
   id: number
 ): Promise<CategoriaPrincipal> => {
   const res = await axios.get(`${API_URL}/categorias-principales/${id}`);
-  return res.data;
+  return normalizeCategoriaPrincipal(res.data);
 };
 
 // ======================================
@@ -90,7 +109,7 @@ export const createCategoriaPrincipal = async (
 
   try {
     const res = await axios.post(`${API_URL}/categorias-principales`, payload);
-    return res.data;
+    return normalizeCategoriaPrincipal(res.data);
   } catch (err: any) {
     console.error("[createCategoriaPrincipal] error:", err?.response?.data ?? err);
     const message = extractDuplicateMessage(err) ?? err?.response?.data?.message;
@@ -112,7 +131,7 @@ export const updateCategoriaPrincipal = async (
       `${API_URL}/categorias-principales/${id}`,
       payload
     );
-    return res.data;
+    return normalizeCategoriaPrincipal(res.data);
   } catch (err: any) {
     console.error("[updateCategoriaPrincipal] error:", err?.response?.data ?? err);
     const message = extractDuplicateMessage(err) ?? err?.response?.data?.message;
@@ -154,5 +173,5 @@ export const uploadImagenCategoriaPrincipal = async (id: number, file: File | Bl
   const form = new FormData();
   form.append('file', file as any, (file as any).name || 'upload');
   const res = await axios.post(endpoint, form);
-  return res.data;
+  return normalizeCategoriaPrincipal(res.data);
 };
