@@ -28,23 +28,6 @@ export interface CreateCategoriaPrincipalData {
 export type UpdateCategoriaPrincipalData = Partial<CreateCategoriaPrincipalData>;
 
 // ======================================
-// OBTENER ESTADOS
-// ======================================
-export const getEstados = async (): Promise<Estado[]> => {
-  try {
-    const res = await axios.get(`${API_URL}/estados`);
-    return res.data;
-  } catch (err: any) {
-    console.error('[getEstados] error:', err);
-    // Fallback si no carga
-    return [
-      { id: 1, nombre: 'Activo' },
-      { id: 2, nombre: 'Inactivo' }
-    ];
-  }
-};
-
-// ======================================
 // OBTENER TODAS LAS CATEGORÍAS PRINCIPALES
 // ======================================
 export interface PaginacionResponse<T> {

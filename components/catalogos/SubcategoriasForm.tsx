@@ -3,6 +3,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import Image from "next/image";
 import { useForm, SubmitHandler } from "react-hook-form";
 import FormInput from "../common/form/FormInput";
 import FormSelect from "../common/form/FormSelect";
@@ -247,10 +248,13 @@ export default function SubcategoriasForm({ initialData, onSubmit, onCancel, for
 
           {imagePreview && (
             <div className="mt-2 relative w-32 h-32">
-              <img
+              <Image
                 src={imagePreview}
                 alt="Preview"
+                width={128}
+                height={128}
                 className="w-full h-full object-cover rounded border"
+                unoptimized
               />
               <button
                 type="button"

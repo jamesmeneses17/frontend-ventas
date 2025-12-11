@@ -2,6 +2,7 @@
 
 "use client";
 import React, { useEffect, useState } from "react";
+import Image from "next/image";
 import FormInput from "../common/form/FormInput";
 import Button from "../ui/button";
 
@@ -140,9 +141,11 @@ export default function CategoriaPrincipalForm({ initialData, onSubmit, onCancel
 
                     {imagePreview && (
                         <div className="mt-2 relative w-32 h-32">
-                            <img
+                            <Image
                                 src={imagePreview}
                                 alt="Preview"
+                                width={128}
+                                height={128}
                                 className="w-full h-full object-cover rounded border"
                             />
                             <button

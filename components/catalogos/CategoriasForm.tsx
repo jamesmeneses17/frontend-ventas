@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import Image from 'next/image';
 import Alert from '@/components/ui/Alert'; // Componente de alerta
 import FormInput from '@/components/common/form/FormInput'; // asumo disponible
 import { createCategoria, updateCategoria, uploadImagenCategoria } from '../services/categoriasService'; // servicio para create/update
@@ -246,9 +247,11 @@ const extractErrorMessage = (err: any): string => {
 
               {imagePreview && (
                 <div className="mt-2 relative w-32 h-32">
-                  <img
+                  <Image
                     src={imagePreview}
                     alt="Preview"
+                    width={128}
+                    height={128}
                     className="w-full h-full object-cover rounded border"
                   />
                   <button
