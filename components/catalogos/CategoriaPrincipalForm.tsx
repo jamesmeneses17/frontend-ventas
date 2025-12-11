@@ -17,7 +17,7 @@ type FormData = CreateCategoriaPrincipalData;
 
 interface Props {
     initialData?: Partial<CategoriaPrincipal> | null;
-    onSubmit: (data: FormData) => void;
+    onSubmit: (data: FormData) => Promise<any> | any;
     onSuccess?: (result: any) => Promise<void> | void;
     onCancel: () => void;
 }
@@ -60,14 +60,10 @@ export default function CategoriaPrincipalForm({ initialData, onSubmit, onSucces
             const result = await onSubmit(payload);
             console.log('[CategoriaPrincipalForm] Resultado de onSubmit:', result);
             
-            // Verificar si hubo error
-            if (!result) {
-                setIsSubmitting(false);
-                return; // No continuar si hubo error
-            }
+            // Si hubo resultado, potencialmente extraer ID; si no, continuar y confiar en excepciones
             
             // Si es creación, obtener el ID del resultado
-            if (!recordId) {
+            if (!recordId && result) {
                 recordId = result?.id || result?.data?.id;
             }
             
@@ -80,8 +76,9 @@ export default function CategoriaPrincipalForm({ initialData, onSubmit, onSucces
                 try {
                     const res = await uploadImagenCategoriaPrincipal(recordId, selectedImageFile);
                     console.log('[CategoriaPrincipalForm] Respuesta de upload:', res);
-                    // El backend puede devolver imagenUrl (camelCase) o imagen_url (snake_case)
-                    const url = res?.url || res?.imagen_url || res?.imagenUrl;
+                    // El backend puede devolver imagenUrl (camelCase) o imagen_url (snake_case). Forzar a any para evitar error de tipos.
+                    const r: any = res as any;
+                    const url = r?.url || r?.imagen_url || r?.imagenUrl;
                     if (url) {
                         console.log('[CategoriaPrincipalForm] Imagen subida exitosamente, URL:', url);
                         // Actualizar el registro con la nueva URL de imagen
