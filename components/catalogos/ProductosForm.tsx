@@ -57,7 +57,7 @@ export default function ProductosForm({ initialData, onSubmit, onCancel, formErr
       codigo: initialData?.codigo || "",
       precio: formatThousands((initialData as any)?.precio),
       precio_venta: formatThousands((initialData as any)?.precio_venta ?? (initialData as any)?.precio),
-      promocion_porcentaje: (initialData as any)?.promocion_porcentaje ? parseInt(String((initialData as any).promocion_porcentaje)) : "",
+      promocion_porcentaje: (initialData as any)?.promocion_porcentaje ?? "",
       stock: (initialData as any)?.stock ?? 0,
       descripcion: initialData?.descripcion || "",
       ficha_tecnica_url: initialData?.ficha_tecnica_url || "",
@@ -143,7 +143,6 @@ export default function ProductosForm({ initialData, onSubmit, onCancel, formErr
       nombre: initialData?.nombre ?? "",
       codigo: initialData?.codigo ?? "",
       precio_venta: formatThousands((initialData as any)?.precio_venta ?? initialData?.precio),
-      promocion_porcentaje: (initialData as any)?.promocion_porcentaje ? parseInt(String((initialData as any).promocion_porcentaje)) : "",
       stock: initialData?.stock ?? 0,
       descripcion: initialData?.descripcion ?? "",
       ficha_tecnica_url: initialData?.ficha_tecnica_url ?? "",
@@ -464,12 +463,12 @@ export default function ProductosForm({ initialData, onSubmit, onCancel, formErr
           label="Promoción % (opcional)"
           name="promocion_porcentaje"
           type="number"
-          value={String((formValues as any).promocion_porcentaje ?? "")}
+          value={(formValues as any).promocion_porcentaje ?? ""}
           onChange={handleChange}
           placeholder="0"
           min="0"
           max="100"
-          step="1"
+          step="0.01"
         />
       
       </div>

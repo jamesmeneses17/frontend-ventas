@@ -72,17 +72,11 @@ export default function CategoriasTable({ data, loading, totalItems = 0, onEdit,
     { key: "nombre", label: "Nombre" },
     //{ key: "descripcion", label: "Descripción" },
     {
-      key: "categoriaPrincipal",
-      label: "Categoría principal",
+      key: "estado",
+      label: "Estado",
       render: (row: Categoria) => {
-          const parentFromObj = (row as any).categoriaPrincipal?.nombre as string | undefined;
-          if (parentFromObj) return <span className="text-gray-700">{parentFromObj}</span>;
-
-          const parent = data.find((d) => d.id === row.categoriaPrincipalId);
-          if (parent) return <span className="text-gray-700">{parent.nombre}</span>;
-
-          const cached = row.categoriaPrincipalId ? parentMap[row.categoriaPrincipalId] : undefined;
-          return <span className="text-gray-700">{cached ?? "-"}</span>;
+          const estado = (row as any).estado?.nombre || (row as any).estado || "-";
+          return <span className="text-gray-700">{estado}</span>;
       },
     },
   ];

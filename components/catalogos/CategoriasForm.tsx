@@ -3,6 +3,7 @@ import Alert from '@/components/ui/Alert'; // Componente de alerta
 import FormInput from '@/components/common/form/FormInput'; // asumo disponible
 import { createCategoria, updateCategoria } from '../services/categoriasService'; // servicio para create/update
 import { getCategoriasPrincipales, CategoriaPrincipal } from '../services/categoriasPrincipalesService';
+import { getEstados, Estado } from '../services/estadosService';
 
 interface Props {
   // initialData puede incluir id cuando es edición
@@ -28,6 +29,7 @@ const CategoriasForm: React.FC<Props> = ({ initialData, onSuccess, onCancel, onS
   const [apiError, setApiError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [allCategories, setAllCategories] = useState<CategoriaPrincipal[]>([]);
+  const [estados, setEstados] = useState<Estado[]>([]);
 
   useEffect(() => {
     let mounted = true;
@@ -41,6 +43,21 @@ const CategoriasForm: React.FC<Props> = ({ initialData, onSuccess, onCancel, onS
       } catch (err) {
         // no crítico: dejamos el select con opciones vacías
         console.debug("No se pudieron cargar categorías para el select de padre", err);
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const est = await getEstados();
+        if (mounted) setEstados(est ?? []);
+      } catch (err) {
+        console.debug("No se pudieron cargar estados", err);
       }
     })();
     return () => {
@@ -137,6 +154,29 @@ const extractErrorMessage = (err: any): string => {
           onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleChange('nombre', e.target.value)}
           required
         />
+
+        <div>
+          <label htmlFor="estadoId" className="block text-sm font-medium text-gray-700">
+            Estado
+          </label>
+          <select
+            id="estadoId"
+            name="estadoId"
+            value={values.estadoId}
+            onChange={(e: React.ChangeEvent<HTMLSelectElement>) => handleChange('estadoId', Number(e.target.value))}
+            className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+          >
+            {estados.length === 0 ? (
+              <option value="">Cargando estados...</option>
+            ) : (
+              estados.map((est) => (
+                <option key={est.id} value={est.id}>
+                  {est.nombre}
+                </option>
+              ))
+            )}
+          </select>
+        </div>
 
           <div>
             <label htmlFor="categoriaPrincipalId" className="block text-sm font-medium text-gray-700">
