@@ -55,21 +55,19 @@ const CategoryCard: React.FC<CategoryCardDisplayProps> = ({
 }) => (
     // La tarjeta es un enlace completo, usamos el componente base ImageLinkCard
     <ImageLinkCard href={href} imageSrc={imageSrc} altText={nombre}>
-        <div className="flex flex-col justify-end h-full">
-            {/* Overlay para el contenido de la tarjeta */}
-            <div className="p-4 bg-gradient-to-t from-black/80 via-black/40 to-transparent absolute inset-0">
-                <div className="flex flex-col justify-end h-full">
-                    
-                    {/* Título de Categoría */}
-                    <h3 className="text-xl font-bold text-white mb-2 tracking-wide">
-                        {nombre}
-                    </h3>
+        <div className="flex flex-col justify-end h-full p-4">
+            {/* Sin overlay oscuro - solo fondos en los textos individuales */}
+            <div className="flex flex-col gap-2">
+                
+                {/* Título de Categoría con fondo propio */}
+                <h3 className="text-xl font-bold text-white tracking-wide w-fit px-3 py-1 bg-black/70 rounded">
+                    {nombre}
+                </h3>
 
-                    {/* Botón simple de Ver Categoría */}
-                    <span className="text-sm font-medium text-amber-300 hover:text-amber-500 transition duration-150">
-                        Explorar ahora →
-                    </span>
-                </div>
+                {/* Botón con fondo propio */}
+                <span className="text-sm font-semibold text-yellow-400 hover:text-yellow-300 transition duration-150 w-fit px-3 py-1 bg-black/70 rounded">
+                    Explorar ahora →
+                </span>
             </div>
         </div>
     </ImageLinkCard>

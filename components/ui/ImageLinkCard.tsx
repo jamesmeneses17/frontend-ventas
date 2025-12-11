@@ -26,10 +26,8 @@ const ImageLinkCard: React.FC<ImageLinkCardProps> = ({ href, imageSrc, altText, 
     >
         {/* Imagen de Fondo */}
         <div className="absolute inset-0">
-            <Image src={imageSrc} alt={altText} fill className="h-full w-full object-cover opacity-80 group-hover:opacity-100 transition duration-300" />
+            <Image src={imageSrc} alt={altText} fill className="h-full w-full object-cover group-hover:scale-105 transition duration-300" />
         </div>
-        {/* Overlay de Gradiente Oscuro */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent"></div>
         
         {/* Contenedor del Contenido (Title, Price, Description) */}
         <div className="relative p-6 pt-40 flex flex-col justify-end h-full">
