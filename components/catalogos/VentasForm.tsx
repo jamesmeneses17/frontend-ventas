@@ -112,14 +112,18 @@ export default function VentasForm({
         
         if (localTarget) {
             setValue("productoId", localTarget.id, { shouldValidate: true });
-            // Auto-rellenar precio de venta del producto
-            const precioVenta = Number(
+            // Auto-rellenar precio con promoción del producto
+            const precioBase = Number(
                 (localTarget as any).precio_venta ?? 
                 (localTarget as any).precioVenta ?? 
                 localTarget.precio ?? 
                 0
             );
-            setValue("precio_unitario", precioVenta, { shouldValidate: true });
+            const promocionPorcentaje = Number((localTarget as any).promocion_porcentaje ?? (localTarget as any).promocion ?? 0);
+            const precioConPromocion = promocionPorcentaje > 0 
+                ? precioBase - (precioBase * promocionPorcentaje / 100)
+                : precioBase;
+            setValue("precio_unitario", precioConPromocion, { shouldValidate: true });
             return;
         }
 
@@ -145,13 +149,17 @@ export default function VentasForm({
                     
                     if (target) {
                         setValue("productoId", target.id, { shouldValidate: true });
-                        const precioVenta = Number(
+                        const precioBase = Number(
                             (target as any).precio_venta ?? 
                             (target as any).precioVenta ?? 
                             target.precio ?? 
                             0
                         );
-                        setValue("precio_unitario", precioVenta, { shouldValidate: true });
+                        const promocionPorcentaje = Number((target as any).promocion_porcentaje ?? (target as any).promocion ?? 0);
+                        const precioConPromocion = promocionPorcentaje > 0 
+                            ? precioBase - (precioBase * promocionPorcentaje / 100)
+                            : precioBase;
+                        setValue("precio_unitario", precioConPromocion, { shouldValidate: true });
                     }
                 }
             } catch (err) {
@@ -201,13 +209,17 @@ export default function VentasForm({
             const selected = productos.find((p) => p.id === Number(value));
             if (selected) {
                 if (selected.codigo) setProductoSearchTerm(selected.codigo);
-                const precioVenta = Number(
+                const precioBase = Number(
                     (selected as any).precio_venta ?? 
                     (selected as any).precioVenta ?? 
                     selected.precio ?? 
                     0
                 );
-                setValue("precio_unitario", precioVenta, { shouldValidate: true });
+                const promocionPorcentaje = Number((selected as any).promocion_porcentaje ?? (selected as any).promocion ?? 0);
+                const precioConPromocion = promocionPorcentaje > 0 
+                    ? precioBase - (precioBase * promocionPorcentaje / 100)
+                    : precioBase;
+                setValue("precio_unitario", precioConPromocion, { shouldValidate: true });
             }
         }
     };
@@ -326,26 +338,7 @@ export default function VentasForm({
                     required
                 />
 
-                <FormInput
-                    label="Precio de Venta (Unitario)"
-                    name="precio_unitario"
-                    type="text"
-                    value={formatCurrency(formValues.precio_unitario)}
-                    disabled
-                />
-            </div>
-
-            {/* ===================== FILA 2: TOTAL Y FECHA ===================== */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormInput
-                    label="Total Venta"
-                    name="precio_total"
-                    type="text"
-                    value={formatCurrency(formValues.precio_total)}
-                    disabled
-                />
-
-                <FormInput
+                 <FormInput
                     label="Fecha de Venta"
                     name="fecha_venta"
                     type="date"
@@ -353,7 +346,10 @@ export default function VentasForm({
                     onChange={handleChange}
                     required
                 />
+
             </div>
+
+         
 
             <div className="flex justify-end gap-3 pt-4">
                 <Button
