@@ -120,7 +120,7 @@ function ProductosClientePageContent() {
     () =>
       displayedProducts.map((product: ProductCardData) => ({
         ...product,
-        imageSrc: product.imageSrc || ((product as any).imagen_url && isImageUrl((product as any).imagen_url) ? (product as any).imagen_url : mapProductToImage(product.id)),
+        // imageSrc ya viene del hook useProductListLogic con la primera imagen del array
       })),
     [displayedProducts]
   );

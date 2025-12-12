@@ -152,7 +152,17 @@ export const useProductListLogic = (initialSort: SortOption = 'relevancia') => {
                 displayPrice: formatPrice(precioFinal), // Precio CON descuento (o normal si no hay descuento)
                 originalPrice: originalPrice, // Precio original SIN descuento (solo si hay promoción)
                 numericPrice: precioFinal, // Para ordenamiento
-                imageSrc: ( (p as any).imagen_url && isImageUrl((p as any).imagen_url) ? (p as any).imagen_url : ((p as any).imageSrc || mapProductToImage(p.nombre, p.id)) ),
+                imageSrc: (() => {
+                  // Prioridad: primera imagen del array imagenes[] > imagen_url antigua > fallback
+                  if ((p as any).imagenes && Array.isArray((p as any).imagenes) && (p as any).imagenes.length > 0) {
+                    const firstImage = (p as any).imagenes[0];
+                    if (firstImage.url_imagen) return firstImage.url_imagen;
+                  }
+                  if ((p as any).imagen_url && isImageUrl((p as any).imagen_url)) {
+                    return (p as any).imagen_url;
+                  }
+                  return (p as any).imageSrc || mapProductToImage(p.nombre, p.id);
+                })(),
                 href: `/users/especificaciones/${p.id}`,
                 brand: "DISEM SAS",
                 rating: 4.5,

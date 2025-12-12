@@ -126,36 +126,6 @@ const QuickInfo = ({
   );
 };
 
-// ⚙️ 3. Especificaciones Técnicas
-const SpecificationsTable = ({
-  fichaTecnica,
-}: {
-  fichaTecnica: Record<string, any>;
-}) => (
-  <section className="mb-6">
-    <h2 className="text-xl font-bold text-gray-800 mb-3 border-b pb-2">
-      Ficha Técnica
-    </h2>
-    <div className="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm">
-      <dl className="divide-y divide-gray-200">
-        {Object.entries(fichaTecnica).map(([key, value], index) => (
-          <div
-            key={index}
-            className="px-4 py-2 sm:grid sm:grid-cols-2 sm:gap-4 text-sm"
-          >
-            <dt className="font-medium text-gray-700 capitalize">
-              {key.replace(/_/g, " ")}
-            </dt>
-            <dd className="mt-1 text-gray-900 sm:col-span-1 sm:mt-0 font-semibold">
-              {String(value)}
-            </dd>
-          </div>
-        ))}
-      </dl>
-    </div>
-  </section>
-);
-
 // ----------------------------------------------------------------------
 // CONTENIDO PRINCIPAL
 // ----------------------------------------------------------------------
@@ -165,8 +135,11 @@ function ProductDetailPageContent({ productId }: { productId: string }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [quantity, setQuantity] = useState(1);
-    const [imgSrc, setImgSrc] = useState<string>("/images/imagen.webp");
   const id = parseInt(productId, 10);
+
+  // Estado para la galería de imágenes
+  const [selectedImage, setSelectedImage] = useState<string>("/images/imagen.webp");
+  const [imagenesProducto, setImagenesProducto] = useState<string[]>([]);
 
 
   useEffect(() => {
@@ -197,9 +170,40 @@ function ProductDetailPageContent({ productId }: { productId: string }) {
 
   useEffect(() => {
     if (!product) return;
-    const candidate = (product as any).imagen_url || (product as any).image || (product as any).imagen || (product as any).imagenes?.[0]?.url;
-    const initialImage = isImageUrl(candidate) ? candidate : mapProductToImage(product.nombre, product.id) || "/images/imagen.webp";
-    setImgSrc(initialImage);
+    
+    console.log('[EspecificacionesPage] Producto cargado:', product);
+    
+    // Construir array de imágenes del producto
+    const imagenes: string[] = [];
+    
+    // Si tiene array de imagenes (nuevo backend)
+    if ((product as any).imagenes && Array.isArray((product as any).imagenes)) {
+      console.log('[EspecificacionesPage] Imágenes del array:', (product as any).imagenes);
+      (product as any).imagenes.forEach((img: any) => {
+        if (img.url_imagen) {
+          imagenes.push(img.url_imagen);
+          console.log('[EspecificacionesPage] Imagen agregada:', img.url_imagen);
+        }
+      });
+    }
+    
+    // Fallback a imagen_url antigua si no hay imagenes
+    const candidate = (product as any).imagen_url || (product as any).image || (product as any).imagen;
+    if (candidate && !imagenes.includes(candidate)) {
+      console.log('[EspecificacionesPage] Usando imagen_url fallback:', candidate);
+      imagenes.push(candidate);
+    }
+    
+    // Si no hay ninguna imagen, usar placeholder
+    if (imagenes.length === 0) {
+      const fallbackImage = mapProductToImage(product.nombre, product.id) || "/images/imagen.webp";
+      console.log('[EspecificacionesPage] Usando placeholder:', fallbackImage);
+      imagenes.push(fallbackImage);
+    }
+    
+    console.log('[EspecificacionesPage] Array de imágenes final:', imagenes);
+    setImagenesProducto(imagenes);
+    setSelectedImage(imagenes[0]);
   }, [product]);
 
   if (loading) {
@@ -246,7 +250,7 @@ function ProductDetailPageContent({ productId }: { productId: string }) {
     precio: precioNum,
     descuento: descuentoNum,
     codigo: codigo ?? (product as any).codigo ?? '',
-    imageUrl: imgSrc,
+    imageUrl: selectedImage,
     stock: stock || 0,
     moneda: 'COP',
   } : null;
@@ -411,145 +415,241 @@ function ProductDetailPageContent({ productId }: { productId: string }) {
 
   return (
     <PublicLayout>
-      <div className="bg-white min-h-screen">
-          <div className="mx-auto max-w-5xl px-4 sm:px-5 lg:px-6 py-6">
+      <div className="bg-gray-50 min-h-screen">
+        <div className="mx-auto max-w-7xl px-4 sm:px-5 lg:px-6 py-8">
           <Breadcrumb productName={nombre} categoryName={categoria?.nombre} />
 
-          <div className="lg:grid lg:grid-cols-2 lg:gap-x-12">
-            {/* 🖼️ Imagen */}
-                  <div className="relative w-full h-[400px] bg-white">
-              <div className="rounded-xl overflow-hidden shadow-2xl sticky top-4">
-                <div className="w-full flex items-center justify-center bg-white p-6">
-                  <div className="relative w-full max-w-[420px] h-[320px] sm:max-w-[480px] sm:h-[380px] md:max-w-[520px] md:h-[440px] rounded-lg overflow-hidden shadow-sm">
+          <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
+            <div className="lg:grid lg:grid-cols-2 lg:gap-8">
+              {/* 🖼️ GALERÍA DE IMÁGENES - LADO IZQUIERDO */}
+              <div className="p-6 lg:p-8 flex flex-col">
+                <div className="flex gap-4">
+                  {/* Miniaturas Verticales */}
+                  {imagenesProducto.length > 1 && (
+                    <div className="flex flex-col gap-2 order-first">
+                      {imagenesProducto.map((img, index) => (
+                        <button
+                          key={index}
+                          onClick={() => setSelectedImage(img)}
+                          className={`relative w-16 h-16 rounded-lg border-2 overflow-hidden transition-all duration-200 hover:border-[#2e9fdb] flex-shrink-0 ${
+                            selectedImage === img 
+                              ? 'border-[#2e9fdb] ring-2 ring-[#2e9fdb]/30' 
+                              : 'border-gray-200'
+                          }`}
+                        >
+                          <Image
+                            src={img}
+                            alt={`${nombre} - Vista ${index + 1}`}
+                            fill
+                            className="object-contain p-1"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = '/images/imagen.webp';
+                            }}
+                          />
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Imagen Principal */}
+                  <div className="relative flex-1 h-80 bg-white rounded-xl border-2 border-gray-100 overflow-hidden group">
                     <Image
-                      src={imgSrc}
+                      src={selectedImage}
                       alt={nombre}
                       fill
-                      className="object-contain"
-                      onError={() => setImgSrc('/images/imagen.webp')}
+                      className="object-contain p-4"
+                      onError={() => setSelectedImage('/images/imagen.webp')}
                     />
+                    {descuento > 0 && (
+                      <div className="absolute top-4 right-4 bg-red-500 text-white px-3 py-1 rounded-full text-sm font-bold shadow-lg">
+                        -{descuentoNum}%
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Características Rápidas - Horizontal */}
+                <div className="mt-6 grid grid-cols-3 gap-2">
+                  <div className="flex flex-col items-center p-3 bg-blue-50 rounded-lg">
+                    <Truck className="w-5 h-5 text-[#2e9fdb] mb-1" />
+                    <div className="text-xs font-semibold text-gray-800 text-center">Envío Nacional</div>
+                  </div>
+                  <div className="flex flex-col items-center p-3 bg-green-50 rounded-lg">
+                    <ShieldCheck className="w-5 h-5 text-green-600 mb-1" />
+                    <div className="text-xs font-semibold text-gray-800 text-center">Garantía</div>
+                  </div>
+                  <div className="flex flex-col items-center p-3 bg-purple-50 rounded-lg">
+                    <Award className="w-5 h-5 text-purple-600 mb-1" />
+                    <div className="text-xs font-semibold text-gray-800 text-center">100% Original</div>
                   </div>
                 </div>
               </div>
-            </div>
 
-            {/* 📄 Detalles */}
-            <div className="lg:col-span-1 mt-8 lg:mt-0">
-              <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-gray-900 mb-2">
-                {nombre}
-              </h1>
-              <div className="mb-4">
-                {precio ? (
-                  <div className="space-y-1">
-                    {descuento > 0 && (
-                      <p className="text-sm text-gray-500 line-through">
-                        ${Number(precio).toLocaleString('es-CO')}
-                      </p>
+              {/* 📄 INFORMACIÓN DEL PRODUCTO - LADO DERECHO */}
+              <div className="p-6 lg:p-8 bg-gradient-to-br from-gray-50 to-white">
+                {/* Título y Precio */}
+                <div className="mb-6">
+                  <h1 className="text-3xl lg:text-4xl font-bold tracking-tight text-gray-900 mb-4">
+                    {nombre}
+                  </h1>
+                  
+                  {/* Precio */}
+                  <div className="mb-6">
+                    {precio ? (
+                      <div className="space-y-2">
+                        {descuento > 0 && (
+                          <div className="flex items-center gap-3">
+                            <p className="text-xl text-gray-500 line-through">
+                              ${Number(precio).toLocaleString('es-CO')}
+                            </p>
+                            <span className="bg-red-100 text-red-700 px-3 py-1 rounded-full text-sm font-bold">
+                              ¡Ahorra {descuentoNum}%!
+                            </span>
+                          </div>
+                        )}
+                        <p className="text-4xl font-extrabold text-[#008000] flex items-baseline gap-2">
+                          ${Number(precioFinal).toLocaleString('es-CO')}
+                          <span className="text-lg font-normal text-gray-500">COP</span>
+                        </p>
+                      </div>
+                    ) : (
+                      <p className="text-2xl font-semibold text-gray-600">Cotizar</p>
                     )}
-                    <p className="text-3xl font-bold text-[#008000]">
-                      ${Number(precioFinal).toLocaleString('es-CO')}
+                  </div>
+
+                  <QuickInfo
+                    stock={stock ?? 0}
+                    referencia={codigo ?? "N/A"}
+                    descuento={0}
+                    categoryName={categoria?.nombre}
+                    categoryId={categoria?.id}
+                  />
+                </div>
+
+                {/* Descripción Corta */}
+                {descripcion && (
+                  <div className="mb-6 p-4 bg-white rounded-lg border border-gray-200">
+                    <h3 className="text-sm font-semibold text-gray-700 mb-2">Descripción:</h3>
+                    <p className="text-sm text-gray-600 leading-relaxed line-clamp-4">
+                      {descripcion}
                     </p>
                   </div>
-                ) : (
-                  <p className="text-xl font-semibold text-gray-600">Cotizar</p>
                 )}
-              </div>
 
-              <QuickInfo
-                stock={stock ?? 0}
-                referencia={codigo ?? "N/A"}
-                descuento={descuento}
-                categoryName={categoria?.nombre}
-                categoryId={categoria?.id}
-              />
-
-              {/* 🧮 Selector de Cantidad + Subtotal + Botón */}
-              <div className="mt-6 border-t pt-4">
-                <div className="flex items-center space-x-4 mb-4">
-                  <label htmlFor="quantity" className="text-sm font-semibold text-gray-700">
+                {/* Selector de Cantidad */}
+                <div className="mb-6">
+                  <label className="block text-sm font-semibold text-gray-700 mb-3">
                     Cantidad:
                   </label>
-                  <div className="flex items-center border rounded-lg overflow-hidden">
-                    <button
-                      type="button"
-                      aria-label="Disminuir cantidad"
-                      onClick={() => {
-                        setQuantity((prev) => {
-                          const next = Number(prev || 1) - 1;
-                          return Math.max(1, next);
-                        });
-                      }}
-                      disabled={quantity <= 1}
-                      className="px-3 py-2 bg-white hover:bg-gray-100 disabled:opacity-50"
-                    >
-                      −
-                    </button>
-                    <input
-                      id="quantity"
-                      type="number"
-                      step={1}
-                      min={1}
-                        // Permitimos editar libremente la cantidad para previsualizar subtotal;
-                        // la validación final ocurre al agregar al carrito.
-                      value={quantity}
-                      onChange={(e) => {
-                        const v = parseInt(e.target.value as string, 10);
-                        const sanitized = Number.isNaN(v) ? 1 : v;
-                        // Respetar rango entre 1 y stock (si stock definido)
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center border-2 border-gray-300 rounded-lg overflow-hidden">
+                      <button
+                        type="button"
+                        aria-label="Disminuir cantidad"
+                        onClick={() => {
+                          setQuantity((prev) => {
+                            const next = Number(prev || 1) - 1;
+                            return Math.max(1, next);
+                          });
+                        }}
+                        disabled={quantity <= 1}
+                        className="px-4 py-3 bg-white hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed font-bold text-lg"
+                      >
+                        −
+                      </button>
+                      <input
+                        id="quantity"
+                        type="number"
+                        step={1}
+                        min={1}
+                        value={quantity}
+                        onChange={(e) => {
+                          const v = parseInt(e.target.value as string, 10);
+                          const sanitized = Number.isNaN(v) ? 1 : v;
                           if (sanitized < 1) {
                             setQuantity(1);
                           } else {
                             setQuantity(sanitized);
                           }
-                      }}
-                      className="w-20 text-center border-l border-r p-2 focus:ring-[#2e9fdb] focus:border-[#2e9fdb]"
-                    />
-                    <button
-                      type="button"
-                      aria-label="Aumentar cantidad"
-                      onClick={() => {
-                        setQuantity((prev) => {
+                        }}
+                        className="w-20 text-center border-l-2 border-r-2 border-gray-300 py-3 text-lg font-semibold focus:ring-2 focus:ring-[#2e9fdb] focus:border-[#2e9fdb]"
+                      />
+                      <button
+                        type="button"
+                        aria-label="Aumentar cantidad"
+                        onClick={() => {
+                          setQuantity((prev) => {
                             const next = Number(prev || 1) + 1;
                             return next;
-                        });
-                      }}
-                        // No deshabilitamos el botón para permitir previsualizar subtotal
-                        // incluso si supera el stock; la validación final ocurre al agregar.
-                        
-                      className="px-3 py-2 bg-white hover:bg-gray-100 disabled:opacity-50"
-                    >
-                      +
-                    </button>
+                          });
+                        }}
+                        className="px-4 py-3 bg-white hover:bg-gray-100 font-bold text-lg"
+                      >
+                        +
+                      </button>
+                    </div>
+                    <div className="flex-1 text-right">
+                      <div className="text-sm text-gray-600">Subtotal:</div>
+                      <div className="text-2xl font-bold text-[#2e9fdb]">{subtotalDisplay}</div>
+                    </div>
                   </div>
                 </div>
 
-                <div className="text-lg font-bold text-gray-800 mb-4">
-                  Subtotal: {" "}
-                  <span className="text-[#2e9fdb]">{subtotalDisplay}</span>
+                {/* Botón Agregar al Carrito */}
+                <div className="mb-6">
+                  <AddToCartButton disabled={stock === 0} />
                 </div>
 
-                <AddToCartButton disabled={stock === 0} />
-                {/* Botones Ver / Descargar Ficha Técnica y extras */}
-                <div>
+                {/* Acciones de Ficha Técnica */}
+                <div className="border-t pt-6">
                   <FichaActions url={resolveFichaUrl(product)} productId={product?.id} />
-                  <ProductExtras />
                 </div>
               </div>
+            </div>
 
-              {/* 🧾 Descripción */}
-              <section className="mt-10 mb-10">
-                <h2 className="text-2xl font-bold text-gray-800 mb-3 border-b pb-2">
-                  Descripción General
-                </h2>
-                <p className="text-gray-700 leading-relaxed whitespace-pre-line">
-                  {descripcion}
-                </p>
-              </section>
+            {/* SECCIONES ADICIONALES - ANCHO COMPLETO */}
+            <div className="border-t bg-white">
+              <div className="p-6 lg:p-8">
+                {/* 🧾 Descripción Completa */}
+                <section className="mb-10">
+                  <h2 className="text-2xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+                    <span className="w-1 h-6 bg-[#2e9fdb] rounded"></span>
+                    Descripción Detallada
+                  </h2>
+                  <div className="prose max-w-none">
+                    <p className="text-gray-700 leading-relaxed whitespace-pre-line">
+                      {descripcion}
+                    </p>
+                  </div>
+                </section>
 
-              {/* ⚙️ Ficha técnica */}
-              {fichaTecnica && Object.keys(fichaTecnica).length > 0 && (
-                <SpecificationsTable fichaTecnica={fichaTecnica} />
-              )}
+                {/* ⚙️ Ficha Técnica */}
+                {fichaTecnica && Object.keys(fichaTecnica).length > 0 && (
+                  <section>
+                    <h2 className="text-2xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+                      <span className="w-1 h-6 bg-[#2e9fdb] rounded"></span>
+                      Especificaciones Técnicas
+                    </h2>
+                    <div className="bg-gray-50 border border-gray-200 rounded-xl overflow-hidden">
+                      <dl className="divide-y divide-gray-200">
+                        {Object.entries(fichaTecnica).map(([key, value], index) => (
+                          <div
+                            key={index}
+                            className="px-6 py-4 sm:grid sm:grid-cols-3 sm:gap-4 hover:bg-white transition-colors"
+                          >
+                            <dt className="text-sm font-semibold text-gray-700 capitalize">
+                              {key.replace(/_/g, " ")}
+                            </dt>
+                            <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
+                              {String(value)}
+                            </dd>
+                          </div>
+                        ))}
+                      </dl>
+                    </div>
+                  </section>
+                )}
+              </div>
             </div>
           </div>
         </div>

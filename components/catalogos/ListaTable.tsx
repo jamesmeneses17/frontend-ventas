@@ -181,23 +181,29 @@ export default function ListaTable({
 
 // Subcomponente que maneja input y subida por fila (imagen o ficha)
 function RowFiles({ producto, uploadAsFicha }: { producto: Producto; uploadAsFicha?: boolean }) {
-  const [preview, setPreview] = React.useState<string | null>(producto.imagen_url || null);
+  // ✅ Usar la primera imagen del array imagenes
+  const primeraImagen = producto.imagenes?.[0]?.url_imagen || null;
+  const [preview, setPreview] = React.useState<string | null>(primeraImagen);
 
   React.useEffect(() => {
-    setPreview(producto.imagen_url || null);
-  }, [producto.imagen_url]);
+    const nuevaImagen = producto.imagenes?.[0]?.url_imagen || null;
+    setPreview(nuevaImagen);
+  }, [producto.imagenes]);
 
   return (
     <div className="flex items-center gap-2">
       {!uploadAsFicha ? (
         preview ? (
-            isImageUrl(preview) ? (
-            <a href={preview} target="_blank" rel="noreferrer">
-              <Image src={preview} alt={`Imagen producto ${producto.nombre || producto.id}`} width={48} height={48} className="w-12 h-12 object-cover rounded border cursor-pointer" />
-            </a>
-          ) : (
-            <a href={preview} target="_blank" rel="noreferrer" className="text-sm text-gray-700">Ver archivo</a>
-          )
+          <a href={preview} target="_blank" rel="noreferrer">
+            <Image 
+              src={preview} 
+              alt={`Imagen producto ${producto.nombre || producto.id}`} 
+              width={48} 
+              height={48} 
+              className="w-12 h-12 object-cover rounded border cursor-pointer"
+              unoptimized
+            />
+          </a>
         ) : (
           <div className="w-12 h-12 flex flex-col items-center justify-center bg-gray-100 text-gray-400 rounded border text-xs">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="w-6 h-6">

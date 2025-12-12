@@ -164,16 +164,22 @@ export interface Precio {
     productoId: number;
 }
 
+// Interfaz para imágenes del producto
+export interface ProductoImagen {
+    id: number;
+    producto_id: number;
+    url_imagen: string;
+    orden: number;
+}
+
 // 1. INTERFAZ PRODUCTO (CORREGIDA)
 export interface Producto {
-    id: number;
-    nombre: string;
-    codigo: string;
-    descripcion?: string; 
-    ficha_tecnica_url?: string;
-    imagen_url?: string;
-    
-    // ✅ Campos aplanados/calculados que vienen del backend
+    id: number;
+    nombre: string;
+    codigo: string;
+    descripcion?: string; 
+    ficha_tecnica_url?: string;
+    imagenes?: ProductoImagen[];    // ✅ Campos aplanados/calculados que vienen del backend
     stock: number;             // DEBE SER OBLIGATORIO si siempre viene del backend
     precio: number;            // DEBE SER OBLIGATORIO
     // ✅ Campo de Stock Mínimo (Necesario para el formulario de edición)
@@ -208,7 +214,7 @@ export type CreateProductoData = {
     codigo: string;
     descripcion: string;
     ficha_tecnica_url?: string;
-    imagen_url?: string;
+    // ❌ Eliminar imagen_url - las imágenes se cargan después
     
     // Se espera que el DTO reciba estos datos
     stock: number;
@@ -306,7 +312,7 @@ export const getProductos = async (
                     stockMinimo: finalStockMinimo,
                     categoriaId: finalCategoriaId,
                     subcategoriaId: finalSubcategoriaId,
-                    imagen_url: it.imagen_url ?? it.image_url ?? it.url ?? null,
+                    imagenes: it.imagenes || [],
             };
         });
 
@@ -338,10 +344,10 @@ export const getProductoById = async (id: number): Promise<Producto> => {
     const precioVentaNum = Number(data.precio_venta ?? data.precioVenta ?? 0);
     const precioCostoNum = Number(data.precio_costo ?? 0);
     const precioNum = Number(data.precio ?? 0);
-    data.precio = precioVentaNum > 0 ? precioVentaNum : (precioCostoNum > 0 ? precioCostoNum : precioNum);
+        data.precio = precioVentaNum > 0 ? precioVentaNum : (precioCostoNum > 0 ? precioCostoNum : precioNum);
         data.stock = Number(data.stock) || 0;
         data.stockMinimo = Number(data.stockMinimo) || 5;
-        data.imagen_url = data.imagen_url ?? data.image_url ?? data.url ?? null;
+        data.imagenes = data.imagenes || [];
         return data as Producto;
     } catch (err: any) {
         lastError = err;
@@ -355,7 +361,7 @@ export const getProductoById = async (id: number): Promise<Producto> => {
             data.precio = precioVentaNum > 0 ? precioVentaNum : (precioCostoNum > 0 ? precioCostoNum : precioNum);
             data.stock = Number(data.stock) || 0;
             data.stockMinimo = Number(data.stockMinimo) || 5;
-            data.imagen_url = data.imagen_url ?? data.image_url ?? data.url ?? null;
+            data.imagenes = data.imagenes || [];
             return data as Producto;
         } catch (err2: any) {
             console.error(`[getProductoById] Falló obtener producto id=${id} en ambos endpoints:`, lastError?.message ?? lastError, err2?.message ?? err2);
@@ -392,6 +398,17 @@ export const uploadFichaTecnica = async (id: number, file: File | Blob) => {
     // NO forzar Content-Type: el navegador/axios establecerá el boundary correctamente
     const res = await axios.post(endpoint, form);
     return res.data;
+};
+
+/**
+ * Elimina una imagen individual de un producto.
+ * @param productoId ID del producto
+ * @param imagenId ID de la imagen en producto_imagenes
+ */
+export const deleteImagen = async (productoId: number, imagenId: number): Promise<void> => {
+    // Nuevo endpoint: /productos/imagenes/{imagenId}
+    const endpoint = `${ENDPOINT_BASE}/imagenes/${imagenId}`;
+    await axios.delete(endpoint);
 };
 
 // --------------------------------------------------

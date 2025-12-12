@@ -1,12 +1,12 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import Image from 'next/image';
 import { useForm, SubmitHandler } from "react-hook-form";
 import FormInput from "../common/form/FormInput";
 import FormSelect from "../common/form/FormSelect";
 import Button from "../ui/button"; 
-import { Producto, CreateProductoData, uploadImagen, uploadFichaTecnica } from "../services/productosService";
+import { Producto, CreateProductoData, uploadImagen, uploadFichaTecnica, deleteImagen } from "../services/productosService";
 import { getSubcategorias, Subcategoria } from "../services/subcategoriasService";
 import { getEstados, Estado } from "../services/estadosService";
 import { getCategorias, Categoria } from "../services/categoriasService";
@@ -33,67 +33,58 @@ export default function ListaForm({ initialData, onSubmit, onSuccess, onCancel, 
     setValue,
     watch,
     reset,
-  } = useForm<FormData>({
-    defaultValues: {
-      id: initialData?.id || undefined,
-      nombre: initialData?.nombre || "",
-      codigo: initialData?.codigo || "",
-      precio: (initialData as any)?.precio ?? 0,
-      stock: (initialData as any)?.stock ?? 0,
-      descripcion: initialData?.descripcion || "",
-      categoriaId: (initialData as any)?.categoriaId || 0,
-      subcategoriaId: (initialData as any)?.subcategoriaId || 0,
-      estadoId: initialData?.estadoId || 0,
-    },
-  });
+  } = useForm<FormData>({});
 
-  const formValues = watch();
-
-  const [categorias, setCategorias] = useState<Categoria[]>([]);
+  // Estados para lookups y otros
   const [subcategorias, setSubcategorias] = useState<Subcategoria[]>([]);
   const [estados, setEstados] = useState<Estado[]>([]);
+  const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [loadingLookups, setLoadingLookups] = useState(false);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
-  const [subcategoriaChanged, setSubcategoriaChanged] = useState(false);
-  
-  const [selectedPdfName, setSelectedPdfName] = useState<string | null>(null);
-  const [uploadingPdf, setUploadingPdf] = useState(false);
-  
-  const [imagePreview, setImagePreview] = useState<string | null>(initialData?.imagen_url || null);
-  const [selectedImageName, setSelectedImageName] = useState<string | null>(null);
+  const [galeriaImagenes, setGaleriaImagenes] = useState<any[]>([]); // Ajusta el tipo según tu modelo
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [uploadingPdf, setUploadingPdf] = useState(false);
+  const [isBusy, setIsBusy] = useState(false);
+  const [subcategoriaChanged, setSubcategoriaChanged] = useState(false);
 
-  const isBusy = isSubmitting || loadingLookups || uploadingImage || uploadingPdf;
+  // Para acceder a los valores actuales del formulario
+  const formValues = watch();
 
-  // Cargar lookups (categorías, subcategorías, estados)
+  // Cargar datos de lookups al montar
   useEffect(() => {
     const loadLookups = async () => {
       setLoadingLookups(true);
       try {
-        const [subResponse, estResponse, catResponse] = await Promise.all([
-          getSubcategorias(1, 1000, ""),
+        const [subsResp, ests, catsResp] = await Promise.all([
+          getSubcategorias(),
           getEstados(),
-          getCategorias(false, 1, 1000, ""),
+          getCategorias(),
         ]);
-
-        const subs = Array.isArray(subResponse?.data) ? subResponse.data : Array.isArray(subResponse) ? subResponse : [];
-        const cats = Array.isArray(catResponse?.data) ? catResponse.data : Array.isArray(catResponse) ? catResponse : [];
-        const ests = estResponse || [];
-        
-     
-        
-        setSubcategorias(subs);
+        setSubcategorias(subsResp.data || []);
         setEstados(ests);
-        setCategorias(cats);
+        setCategorias(catsResp.data || []);
       } catch (error) {
         console.error("Error al cargar datos de lookup:", error);
       } finally {
         setLoadingLookups(false);
       }
     };
-
     loadLookups();
   }, []);
+// Tipo para galería de imágenes
+type ImagenGaleria = {
+  id?: number;
+  url: string;
+  orden: number;
+  esNueva?: boolean;
+  file?: File;
+};
+
+// Estado para nombre del PDF seleccionado
+const [selectedPdfName, setSelectedPdfName] = useState<string | null>(null);
+
+// Estado para drag & drop de imágenes
+const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
 
   // Actualizar valores del formulario cuando initialData o lookups cambien
   useEffect(() => {
@@ -140,6 +131,19 @@ export default function ListaForm({ initialData, onSubmit, onSuccess, onCancel, 
 
     // Marcar que ya no es carga inicial
     setIsInitialLoad(false);
+    
+    // ✅ Inicializar galería de imágenes si estamos editando
+    if (isEditing && initialData?.imagenes && initialData.imagenes.length > 0) {
+      const imagenesExistentes: ImagenGaleria[] = initialData.imagenes.map((img, idx) => ({
+        id: img.id,
+        url: img.url_imagen,
+        orden: img.orden || idx,
+        esNueva: false,
+      }));
+      setGaleriaImagenes(imagenesExistentes);
+    } else {
+      setGaleriaImagenes([]);
+    }
   }, [initialData, subcategorias, estados, reset]);
 
   // 🔥 Cuando el usuario cambia subcategoría → actualizar categoría automáticamente
@@ -220,14 +224,17 @@ export default function ListaForm({ initialData, onSubmit, onSuccess, onCancel, 
         if (isEditing) {
           const id = Number(initialData!.id);
 
-          // Subir imagen si existe
-          const imagenFile = (data as any).imagenProducto as File | undefined;
-          if (imagenFile instanceof File) {
+          // ✅ Subir múltiples imágenes si existen nuevas
+          const imagenesNuevas = galeriaImagenes.filter(img => img.esNueva && img.file);
+          if (imagenesNuevas.length > 0) {
             setUploadingImage(true);
             try {
-              const res = await uploadImagen(id, imagenFile);
-              const url = res?.url || res?.producto?.imagen_url;
-              if (url) payload.imagen_url = url;
+              // Subir cada imagen nueva secuencialmente
+              for (const imagen of imagenesNuevas) {
+                if (imagen.file) {
+                  await uploadImagen(id, imagen.file);
+                }
+              }
             } finally {
               setUploadingImage(false);
             }
@@ -252,10 +259,27 @@ export default function ListaForm({ initialData, onSubmit, onSuccess, onCancel, 
           await onSubmit(payload as FormData);
           if (onSuccess) await onSuccess();
         } else {
-          // En creación no subimos archivos aquí: se debe crear primero y luego subir desde edición
+          // ✅ En creación, primero crear el producto
           delete (payload as any).imagenProducto;
           delete (payload as any).pdfFichaTecnica;
-          await onSubmit(payload as FormData);
+          
+          const productoCreado = await onSubmit(payload as FormData);
+          
+          // ✅ Luego subir las imágenes nuevas si existen
+          const imagenesNuevas = galeriaImagenes.filter(img => img.esNueva && img.file);
+          if (imagenesNuevas.length > 0 && productoCreado?.id) {
+            setUploadingImage(true);
+            try {
+              for (const imagen of imagenesNuevas) {
+                if (imagen.file) {
+                  await uploadImagen(productoCreado.id, imagen.file);
+                }
+              }
+            } finally {
+              setUploadingImage(false);
+            }
+          }
+          
           if (onSuccess) await onSuccess();
         }
       } catch (err) {
@@ -523,64 +547,204 @@ export default function ListaForm({ initialData, onSubmit, onSuccess, onCancel, 
         </div>
       </div>
 
-      {/* Sección: Imagen */}
+      {/* Galería de Imágenes */}
       <div className="grid grid-cols-1 gap-4">
-        <label className="block text-sm font-medium text-gray-700">
-          Imagen del producto (Opcional)
-        </label>
-
-        <div className="flex flex-col">
-          <input
-            type="file"
-            id="imagenProducto"
-            accept="image/*"
-            className="hidden"
-            onChange={(e) => {
-              const f = e.target.files?.[0];
-              if (f) {
-                setSelectedImageName(f.name);
-                setImagePreview(URL.createObjectURL(f));
-                setValue("imagenProducto", f as any);
-              }
-            }}
-            disabled={isBusy}
-          />
-
-          <label
-            htmlFor="imagenProducto"
-            className="px-4 py-2 border rounded-md bg-white cursor-pointer w-fit disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {uploadingImage ? "Subiendo imagen..." : "Seleccionar Imagen"}
+        <div className="flex items-center justify-between">
+          <label className="block text-sm font-medium text-gray-700">
+            Galería de Imágenes
           </label>
-
-          <div className="mt-3 flex items-center gap-4">
-            {imagePreview && (
-              (imagePreview.startsWith?.('blob:') || imagePreview.startsWith?.('data:')) ? (
-                <Image
-                  src={imagePreview}
-                  alt={selectedImageName ? `Vista previa: ${selectedImageName}` : 'Vista previa del producto'}
-                  width={80}
-                  height={80}
-                  className="h-20 w-20 object-cover rounded-md border"
-                  unoptimized
-                />
-              ) : (
-                <Image
-                  src={imagePreview}
-                  alt={selectedImageName ? `Vista previa: ${selectedImageName}` : 'Vista previa del producto'}
-                  width={80}
-                  height={80}
-                  className="h-20 w-20 object-cover rounded-md border"
-                />
-              )
-            )}
-            {selectedImageName && (
-              <span className="text-sm">
-                {uploadingImage ? "📤 Subiendo..." : selectedImageName}
-              </span>
-            )}
-          </div>
+          <span className="text-xs text-gray-500">
+            Máximo 6 imágenes. Arrastra para reordenar o marca la principal.
+          </span>
         </div>
+
+        {/* Botón de Subida */}
+        {galeriaImagenes.length < 6 && (
+          <div>
+            <input
+              type="file"
+              id="imagenProducto"
+              accept="image/*"
+              multiple
+              className="hidden"
+              onChange={(e) => {
+                const files = Array.from(e.target.files || []);
+                const espacioDisponible = 6 - galeriaImagenes.length;
+                const archivosASubir = files.slice(0, espacioDisponible);
+                
+                const nuevasImagenes: ImagenGaleria[] = archivosASubir.map((file, idx) => ({
+                  url: URL.createObjectURL(file),
+                  file,
+                  orden: galeriaImagenes.length + idx,
+                  esNueva: true,
+                }));
+                
+                setGaleriaImagenes(prev => [...prev, ...nuevasImagenes]);
+                e.target.value = ''; // Reset input
+              }}
+              disabled={isBusy}
+            />
+
+            <label
+              htmlFor="imagenProducto"
+              className="px-4 py-2 border-2 border-dashed border-blue-300 rounded-md bg-blue-50 hover:bg-blue-100 cursor-pointer inline-flex items-center gap-2 text-blue-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <span className="text-xl">+</span>
+              {uploadingImage ? "Subiendo imágenes..." : "Agregar más Imágenes"}
+            </label>
+          </div>
+        )}
+
+        {/* Área de Visualización - La Galería */}
+        {galeriaImagenes.length > 0 && (
+          <div className="border rounded-lg p-4 bg-gray-50">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+              {galeriaImagenes
+                .sort((a, b) => a.orden - b.orden)
+                .map((imagen, index) => (
+                  <div
+                    key={`${imagen.id || 'new'}-${index}`}
+                    draggable={!isBusy}
+                    onDragStart={() => setDraggedIndex(index)}
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      if (draggedIndex !== null && draggedIndex !== index) {
+                        const newGaleria = [...galeriaImagenes];
+                        const [draggedItem] = newGaleria.splice(draggedIndex, 1);
+                        newGaleria.splice(index, 0, draggedItem);
+                        
+                        // Reordenar índices
+                        newGaleria.forEach((img, idx) => {
+                          img.orden = idx;
+                        });
+                        
+                        setGaleriaImagenes(newGaleria);
+                        setDraggedIndex(index);
+                      }
+                    }}
+                    onDragEnd={() => setDraggedIndex(null)}
+                    className={`relative border-2 rounded-lg overflow-hidden group transition-all ${
+                      draggedIndex === index ? 'opacity-50 scale-95' : 'hover:border-blue-400'
+                    } ${index === 0 ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-300'}`}
+                  >
+                    {/* Badge de Principal */}
+                    {index === 0 && (
+                      <div className="absolute top-1 left-1 bg-blue-500 text-white text-xs px-2 py-1 rounded-full z-10 font-semibold">
+                        Principal
+                      </div>
+                    )}
+
+                    {/* Imagen */}
+                    <div className="aspect-square relative">
+                      <Image
+                        src={imagen.url}
+                        alt={`Imagen ${index + 1}`}
+                        fill
+                        className="object-cover"
+                        unoptimized
+                      />
+                    </div>
+
+                    {/* Controles */}
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/50 transition-all flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100">
+                      {/* Botón Eliminar */}
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          // Si la imagen existe en BD, eliminarla del backend
+                          if (imagen.id && initialData?.id) {
+                            if (confirm('¿Estás seguro de eliminar esta imagen?')) {
+                              try {
+                                setUploadingImage(true);
+                                await deleteImagen(initialData.id, imagen.id);
+                                // Actualizar estado local
+                                setGaleriaImagenes(prev => {
+                                  const nuevaGaleria = prev.filter((_, i) => i !== index);
+                                  nuevaGaleria.forEach((img, idx) => {
+                                    img.orden = idx;
+                                  });
+                                  return nuevaGaleria;
+                                });
+                              } catch (error) {
+                                console.error('Error al eliminar imagen:', error);
+                                alert('Error al eliminar la imagen');
+                              } finally {
+                                setUploadingImage(false);
+                              }
+                            }
+                          } else {
+                            // Si es nueva, solo eliminarla del estado
+                            setGaleriaImagenes(prev => {
+                              const nuevaGaleria = prev.filter((_, i) => i !== index);
+                              nuevaGaleria.forEach((img, idx) => {
+                                img.orden = idx;
+                              });
+                              return nuevaGaleria;
+                            });
+                          }
+                        }}
+                        disabled={isBusy}
+                        className="p-2 bg-red-500 hover:bg-red-600 text-white rounded-full transition-colors disabled:opacity-50"
+                        title="Eliminar imagen"
+                      >
+                        🗑️
+                      </button>
+
+                      {/* Botones de Ordenamiento */}
+                      {index > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const newGaleria = [...galeriaImagenes];
+                            [newGaleria[index], newGaleria[index - 1]] = [newGaleria[index - 1], newGaleria[index]];
+                            newGaleria.forEach((img, idx) => {
+                              img.orden = idx;
+                            });
+                            setGaleriaImagenes(newGaleria);
+                          }}
+                          disabled={isBusy}
+                          className="p-2 bg-blue-500 hover:bg-blue-600 text-white rounded-full transition-colors disabled:opacity-50"
+                          title="Mover hacia arriba"
+                        >
+                          ⬆️
+                        </button>
+                      )}
+
+                      {index < galeriaImagenes.length - 1 && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const newGaleria = [...galeriaImagenes];
+                            [newGaleria[index], newGaleria[index + 1]] = [newGaleria[index + 1], newGaleria[index]];
+                            newGaleria.forEach((img, idx) => {
+                              img.orden = idx;
+                            });
+                            setGaleriaImagenes(newGaleria);
+                          }}
+                          disabled={isBusy}
+                          className="p-2 bg-blue-500 hover:bg-blue-600 text-white rounded-full transition-colors disabled:opacity-50"
+                          title="Mover hacia abajo"
+                        >
+                          ⬇️
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Número de orden */}
+                    <div className="absolute bottom-1 right-1 bg-white/90 text-xs px-2 py-1 rounded-full font-semibold">
+                      {index + 1}
+                    </div>
+                  </div>
+                ))}
+            </div>
+          </div>
+        )}
+
+        {galeriaImagenes.length === 0 && (
+          <div className="text-center py-8 text-gray-400 border-2 border-dashed border-gray-300 rounded-lg">
+            <p className="text-sm">No hay imágenes. Haz clic en "+ Agregar más Imágenes" para comenzar.</p>
+          </div>
+        )}
       </div>
 
       {/* Botones */}
