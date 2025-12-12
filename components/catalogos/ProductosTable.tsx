@@ -4,23 +4,22 @@ import React from "react";
 import Image from "next/image";
 import CrudTable from "../common/CrudTable";
 import ActionButton from "../common/ActionButton";
-import { Producto, Categoria, Estado } from "../services/productosService";
+import { ProductoInventario, Categoria, Estado } from "../services/productosService";
 import { Subcategoria } from "../services/subcategoriasService";
 import { Trash, Pencil } from "lucide-react";
 import { isImageUrl } from "../../utils/ProductUtils";
 import { formatCurrency } from "../../utils/formatters";
 
 interface Props {
-  data: Producto[];
+  data: ProductoInventario[];
   categorias: Categoria[];
   subcategorias?: Subcategoria[];
   estados: Estado[];
   loading?: boolean;
   totalItems?: number; // Lo mantenemos pero no lo usaremos en el footer de este componente
-  onEdit: (producto: Producto) => void;
+  onEdit: (producto: ProductoInventario) => void;
   onDelete: (id: number) => void;
 }
-
 export default function ProductosTable({
   data,
   categorias,
@@ -61,7 +60,7 @@ export default function ProductosTable({
       key: "nombre",
       label: "Nombre",
       // Se muestra completo en hover con title y se permite salto de línea.
-      render: (row: Producto) => (
+      render: (row: ProductoInventario) => (
         <div
           className="px-6 py-4 text-sm text-gray-900 max-w-xs break-words whitespace-normal"
           title={row.nombre}
@@ -77,14 +76,14 @@ export default function ProductosTable({
     {
       key: "compras",
       label: "Compras",
-      render: (row: Producto) => (
+      render: (row: ProductoInventario) => (
         <span className="text-sm text-gray-700">{row.compras ?? 0}</span>
       ),
     },
     {
       key: "ventas",
       label: "Ventas",
-      render: (row: Producto) => (
+      render: (row: ProductoInventario) => (
         <span className="text-sm text-gray-700">{row.ventas ?? 0}</span>
       ),
     },
@@ -93,57 +92,34 @@ export default function ProductosTable({
     {
       key: "costo_unitario",
       label: "Costo Unitario",
-      render: (row: Producto) => {
-        const costo = Number((row as any).precio_costo ?? 0);
-        return <span className="font-semibold">{formatCurrency(costo)}</span>;
-      },
+      render: (row: ProductoInventario) => (
+        <span className="font-semibold">{formatCurrency(row.precio ?? 0)}</span>
+      ),
     },
     {
       key: "precio_venta",
       label: "Precio Venta",
-      render: (row: Producto) => {
-        const precioVenta = Number(
-          (row as any).precio_venta ?? (row as any).precioVenta ?? row.precio ?? 0
-        );
-        return (
-          <span className="font-semibold">
-            {formatCurrency(precioVenta)}
-          </span>
-        );
-      },
+      render: (row: ProductoInventario) => (
+        <span className="font-semibold">{formatCurrency(row.precio_venta ?? 0)}</span>
+      ),
     },
     {
       key: "promocion_porcentaje",
       label: "Promoción %",
-      render: (row: Producto) => {
-        const promocion = Number((row as any).promocion_porcentaje ?? 0);
-        return (
-          <span className={`font-semibold ${promocion > 0 ? 'text-orange-600' : 'text-gray-500'}`}>
-            {promocion > 0 ? `${promocion}%` : '-'}
-          </span>
-        );
-      },
+      render: (row: ProductoInventario) => (
+        <span className={`font-semibold ${row.promocion_porcentaje > 0 ? 'text-orange-600' : 'text-gray-500'}`}>
+          {row.promocion_porcentaje > 0 ? `${row.promocion_porcentaje}%` : '-'}
+        </span>
+      ),
     },
     {
       key: "precio_con_descuento",
       label: "Precio con Descuento",
-      render: (row: Producto) => {
-        const precioVenta = Number(
-          (row as any).precio_venta ?? (row as any).precioVenta ?? row.precio ?? 0
-        );
-        const promocion = Number((row as any).promocion_porcentaje ?? 0);
-        
-        let precioFinal = precioVenta;
-        if (promocion > 0) {
-          precioFinal = precioVenta - (precioVenta * promocion / 100);
-        }
-        
-        return (
-          <span className={`font-semibold ${promocion > 0 ? 'text-green-600' : 'text-gray-700'}`}>
-            {formatCurrency(precioFinal)}
-          </span>
-        );
-      },
+      render: (row: ProductoInventario) => (
+        <span className={`font-semibold ${row.promocion_porcentaje > 0 ? 'text-green-600' : 'text-gray-700'}`}>
+          {formatCurrency(row.precio_con_descuento ?? 0)}
+        </span>
+      ),
     },
     /*{
       key: "utilidad",
@@ -167,47 +143,29 @@ export default function ProductosTable({
       },
     },
     */
- {
+    {
       key: "utilidad",
       label: "Utilidad / Producto",
-      render: (row: Producto) => {
-        const costo = Number((row as any).precio_costo ?? 0);
-        const pv = Number(
-          (row as any).precio_venta ?? (row as any).precioVenta ?? row.precio ?? 0
-        );
-        const promo = Number((row as any).promocion_porcentaje ?? 0);
-        const precioConDescuento = promo > 0 ? pv - (pv * promo) / 100 : pv;
-        const utilidad = precioConDescuento - costo;
-
-        return (
-          <span
-            className={`font-semibold ${
-              utilidad < 0 ? "text-red-600" : "text-green-600"
-            }`}
-          >
-            {formatCurrency(utilidad)}
-          </span>
-        );
-      },
+      render: (row: ProductoInventario) => (
+        <span className={`font-semibold ${row.utilidad < 0 ? "text-red-600" : "text-green-600"}`}>
+          {formatCurrency(row.utilidad ?? 0)}
+        </span>
+      ),
     },
 
     {
       key: "valor_inventario",
       label: "Valor Inventario",
-      render: (row: Producto) => {
-        const costo = Number((row as any).precio_costo ?? 0);
-        const stock = Number(row.stock ?? 0);
-        return (
-          <span className="text-sm text-gray-700">
-            {formatCurrency(costo * stock)}
-          </span>
-        );
-      },
+      render: (row: ProductoInventario) => (
+        <span className="text-sm text-gray-700">
+          {formatCurrency(row.valor_inventario ?? 0)}
+        </span>
+      ),
     },
     {
       key: "estado_stock",
       label: "Estado de Venta",
-      render: (row: Producto) => (
+      render: (row: ProductoInventario) => (
         <span
           className={`inline-flex items-center ${getEstadoVentaClasses(
             row.estado_stock || "Disponible"
@@ -225,7 +183,7 @@ export default function ProductosTable({
         columns={columns}
         data={data}
         loading={loading}
-        renderRowActions={(row: Producto) => (
+        renderRowActions={(row: ProductoInventario) => (
           <div className="flex items-center justify-end gap-2">
             <ActionButton
               icon={<Pencil className="w-4 h-4" />}
@@ -259,7 +217,7 @@ function RowFiles({
   producto,
   uploadAsFicha,
 }: {
-  producto: Producto;
+  producto: ProductoInventario;
   uploadAsFicha?: boolean;
 }) {
   const [preview, setPreview] = React.useState<string | null>(

@@ -1,3 +1,11 @@
+// Extiende Producto para la vista de inventario con campos calculados del backend
+export interface ProductoInventario extends Producto {
+    promocion_porcentaje: number;
+    precio_con_descuento: number;
+    utilidad: number;
+    valor_inventario: number;
+    precio_venta?: number; // Agregado para evitar error en la tabla
+}
 import axios from "axios";
 import { API_URL } from "./apiConfig";
 

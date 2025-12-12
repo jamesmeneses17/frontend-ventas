@@ -24,11 +24,12 @@ import {
   createProducto,
   updateProducto,
   deleteProducto,
-  Producto,
+  ProductoInventario,
   CreateProductoData,
   UpdateProductoData,
   Estado,
   Categoria,
+  Producto,
 } from "../../../components/services/productosService";
 
 // Iconos
@@ -59,6 +60,12 @@ export default function ListaProductosPage() {
   const [categorias, setCategorias] = React.useState<Categoria[]>([]);
   const [estados, setEstados] = React.useState<Estado[]>([]);
   const [estadoStockFiltro, setEstadoStockFiltro] = React.useState<string>("");
+  const [categoriaFiltro, setCategoriaFiltro] = React.useState<string>("");
+    // Handler para filtro de categoría
+    const handleCategoriaFilterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+      setCategoriaFiltro(e.target.value);
+      handlePageChange(1);
+    };
   
 
   // Hook CRUD principal
@@ -81,22 +88,33 @@ export default function ListaProductosPage() {
     handleFormSubmit,
     handleCloseModal,
     setNotification,
-  } = useCrudCatalog<Producto, CreateProductoData, UpdateProductoData>(
-   {
-       // Los parámetros ya no son implícitos 'any', los tipamos o los pasamos.
-      loadItems: async (all, page, size, searchTerm, stockFiltro) => {
-        // El useCrudCatalog pasa (all: boolean, page: number, size: number, searchTerm, ...customDependencies)
-        // Ahora el filtro de estado se pasa correctamente
-        return await getProductos(page, size, stockFiltro, searchTerm);
-      },
-      createItem: createProducto,
-      updateItem: updateProducto,
-      deleteItem: deleteProducto,
-    },
-    "Producto",
-    // 🔑 CORRECCIÓN 2: Pasamos el filtro de stock como dependencia custom
-    { customDependencies: [estadoStockFiltro] } 
-  );
+  } = useCrudCatalog<ProductoInventario, CreateProductoData, UpdateProductoData>(
+    {
+      // Los parámetros ya no son implícitos 'any', los tipamos o los pasamos.
+      loadItems: async (all, page, size, searchTerm, stockFiltro) => {
+        // El useCrudCatalog pasa (all: boolean, page: number, size: number, searchTerm, ...customDependencies)
+        // Ahora el filtro de estado se pasa correctamente
+        const res = await getProductos(page, size, stockFiltro, searchTerm);
+        // Mapear los productos a ProductoInventario si es necesario
+        return {
+          ...res,
+          data: (res.data || []).map((p: any) => ({
+            ...p,
+            promocion_porcentaje: p.promocion_porcentaje ?? 0,
+            precio_con_descuento: p.precio_con_descuento ?? 0,
+            utilidad: p.utilidad ?? 0,
+            valor_inventario: p.valor_inventario ?? 0,
+          })),
+        };
+      },
+      createItem: createProducto,
+      updateItem: updateProducto,
+      deleteItem: deleteProducto,
+    },
+    "Producto",
+    // 🔑 CORRECCIÓN 2: Pasamos el filtro de stock como dependencia custom
+    { customDependencies: [estadoStockFiltro] }
+  );
 
   // Cargar catálogos de categorías y estados
   React.useEffect(() => {
@@ -116,19 +134,23 @@ export default function ListaProductosPage() {
 
   // Función para actualizar los stats y el valor total del inventario
   const updateStats = React.useCallback(() => {
-    import("../../../components/services/productosService").then(mod => {
-      mod.getProductosStats().then(setStats).catch(() => setStats({ total: 0, stockBajo: 0, agotado: 0 }));
-      
-      // Obtener TODOS los productos para calcular el valor total del inventario
-      mod.getProductos(1, 10000, "", "").then((res: any) => {
-        const allProductos = res?.data || [];
-        const total = allProductos.reduce((acc: number, p: any) => {
-          const costo = Number(p.precio_costo ?? p.precio ?? 0);
-          const stock = Number(p.stock ?? 0);
-          return acc + costo * stock;
-        }, 0);
-        setTotalInventoryValue(total);
-      }).catch(() => setTotalInventoryValue(0));
+    return import("../../../components/services/productosService").then(async (mod) => {
+      try {
+        await mod.getProductosStats().then(setStats).catch(() => setStats({ total: 0, stockBajo: 0, agotado: 0 }));
+        // Obtener TODOS los productos para calcular el valor total del inventario
+        await mod.getProductos(1, 10000, "", "").then((res: any) => {
+          const allProductos = res?.data || [];
+          const total = allProductos.reduce((acc: number, p: any) => {
+            const costo = Number(p.precio_costo ?? p.precio ?? 0);
+            const stock = Number(p.stock ?? 0);
+            return acc + costo * stock;
+          }, 0);
+          setTotalInventoryValue(total);
+        }).catch(() => setTotalInventoryValue(0));
+      } catch {
+        setStats({ total: 0, stockBajo: 0, agotado: 0 });
+        setTotalInventoryValue(0);
+      }
     });
   }, []);
 
@@ -251,11 +273,32 @@ export default function ListaProductosPage() {
             </div>
             
             <div className="flex items-center gap-3">
+
               <ActionButton 
                 icon={<Upload className="w-5 h-5 mr-1" />}
                 label="Importar Datos"
                 onClick={handleImport}
                 color="primary"
+              />
+
+              {/* Botón Exportar a Excel */}
+              <ActionButton
+                icon={
+                  <svg className="w-5 h-5 mr-1" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                  </svg>
+                }
+                label="Exportar a Excel"
+                color="primary"
+                onClick={() => {
+                  // Construir la URL con los filtros obligatorios
+                  let url = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/productos/exportar-excel`;
+                  const params = [];
+                  params.push(`categoriaId=${encodeURIComponent(categoriaFiltro || 'all')}`);
+                  params.push(`estado=${encodeURIComponent(estadoStockFiltro || 'all')}`);
+                  url += `?${params.join('&')}`;
+                  window.open(url, '_blank');
+                }}
               />
 
               <ActionButton
@@ -269,22 +312,37 @@ export default function ListaProductosPage() {
             </div>
           </div>
 
-          {/* BUSCADOR */}
-          <div className="w-full max-w-md mb-6">
-          <FilterBar
-            searchTerm={searchTerm}
-            onSearchChange={setSearchTerm}
-            searchPlaceholder="Buscar productos por nombre o código..."
-            
-            selectOptions={ESTADOS_STOCK_FILTRO}
-            selectFilterValue={estadoStockFiltro}
-            onSelectFilterChange={handleStockFilterChange} // Usar el handler que resetea la página
-          />
+          {/* BUSCADOR Y FILTROS */}
+          <div className="w-full flex flex-col md:flex-row md:items-center gap-4 max-w-2xl mb-6">
+            <div className="flex-1">
+              <FilterBar
+                searchTerm={searchTerm}
+                onSearchChange={setSearchTerm}
+                searchPlaceholder="Buscar productos por nombre o código..."
+                selectOptions={ESTADOS_STOCK_FILTRO}
+                selectFilterValue={estadoStockFiltro}
+                onSelectFilterChange={handleStockFilterChange}
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-gray-500 mb-1" htmlFor="categoriaFiltro">Categoría</label>
+              <select
+                id="categoriaFiltro"
+                className="border rounded px-3 py-2 text-sm text-gray-700 min-w-[180px]"
+                value={categoriaFiltro}
+                onChange={handleCategoriaFilterChange}
+              >
+                <option value="">Todas las categorías</option>
+                {categorias.map((cat) => (
+                  <option key={cat.id} value={cat.id}>{cat.nombre}</option>
+                ))}
+              </select>
+            </div>
           </div>
 
           {/* TABLA DE PRODUCTOS */}
           <ProductosTable
-            data={currentItems as Producto[]}
+            data={currentItems}
             loading={loading}
             onEdit={handleEdit}
             onDelete={handleDeleteWithStats}
@@ -330,7 +388,6 @@ export default function ListaProductosPage() {
   </ModalVentana>
 )}
 
-        {/* ALERTA */}
         {notification && (
           <div className="fixed top-10 right-4 z-[9999]">
             <Alert
@@ -340,6 +397,7 @@ export default function ListaProductosPage() {
             />
           </div>
         )}
+
       </div>
     </AuthenticatedLayout>
   );
