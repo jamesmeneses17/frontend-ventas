@@ -73,9 +73,12 @@ function normalizeSubcategoria(raw: any): Subcategoria {
     const normalized: any = { ...raw };
     
     // Si viene imagenUrl (camelCase), convertir a imagen_url (snake_case)
-    if (raw.imagenUrl !== undefined) {
+    if (raw.imagen_url !== undefined) {
+        normalized.imagen_url = raw.imagen_url;
+    } else if (raw.imagenUrl !== undefined) {
         normalized.imagen_url = raw.imagenUrl;
-        delete normalized.imagenUrl;
+    } else if (raw.url !== undefined && typeof raw.url === 'string') {
+        normalized.imagen_url = raw.url;
     }
     
     // Asegurar que activo sea número

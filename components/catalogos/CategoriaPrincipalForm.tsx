@@ -94,12 +94,11 @@ export default function CategoriaPrincipalForm({ initialData, onSubmit, onSucces
             // Notificar éxito y refrescar lista antes de cerrar
             if (onSuccess) {
                 await onSuccess(result);
-            }
-
-            // Cerrar el modal después de completar todo
-            if (onCancel) {
+            } else if (onCancel) {
                 onCancel();
             }
+        } catch (error) {
+            console.error("Error al guardar:", error);
         } finally {
             setIsSubmitting(false);
         }
@@ -114,97 +113,119 @@ export default function CategoriaPrincipalForm({ initialData, onSubmit, onSucces
     };
 
     return (
-        <form onSubmit={handleSubmit} className="space-y-4">
-            <FormInput
-                label="Nombre de la Categoría"
-                name="nombre"
-                value={nombre}
-                onChange={handleChange}
-                placeholder="Ej: Electrónica"
-                required
-            />
-            <div>
-                <label htmlFor="activo" className="block text-sm font-medium text-gray-700">
-                    Activo
-                </label>
-                <select
-                    id="activo"
-                    name="activo"
-                    value={activo}
+        <div className="relative">
+            {/* Overlay de carga */}
+            {(isSubmitting || uploadingImage) && (
+                <div className="absolute inset-0 bg-white/80 backdrop-blur-sm z-50 flex items-center justify-center rounded-lg">
+                    <div className="flex flex-col items-center gap-3">
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                        <p className="text-gray-700 font-medium">
+                            {uploadingImage ? "Subiendo imagen..." : "Guardando..."}
+                        </p>
+                    </div>
+                </div>
+            )}
+
+            <form onSubmit={handleSubmit} className="space-y-4">
+                <FormInput
+                    label="Nombre de la Categoría"
+                    name="nombre"
+                    value={nombre}
                     onChange={handleChange}
-                    className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
-                >
-                    <option value={1}>Sí</option>
-                    <option value={0}>No</option>
-                </select>
-            </div>
-
-            {/* Campo de Imagen */}
-            <div className="grid grid-cols-1 gap-4">
-                <label className="block text-sm font-medium text-gray-700">
-                    Imagen de la Categoría (Opcional)
-                </label>
-
-                <div className="flex flex-col gap-2">
-                    <input
-                        type="file"
-                        id="imagenCategoria"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={(e) => {
-                            const file = e.target.files?.[0];
-                            if (file) {
-                                setSelectedImageFile(file);
-                                setImagePreview(URL.createObjectURL(file));
-                            }
-                        }}
-                        disabled={uploadingImage}
-                    />
-
-                    <label
-                        htmlFor="imagenCategoria"
-                        className="px-4 py-2 border rounded-md bg-white cursor-pointer w-fit hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    placeholder="Ej: Electrónica"
+                    required
+                    disabled={isSubmitting || uploadingImage}
+                />
+                <div>
+                    <label htmlFor="activo" className="block text-sm font-medium text-gray-700">
+                        Activo
+                    </label>
+                    <select
+                        id="activo"
+                        name="activo"
+                        value={activo}
+                        onChange={handleChange}
+                        disabled={isSubmitting || uploadingImage}
+                        className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                        {uploadingImage ? "Subiendo imagen..." : "Seleccionar Imagen"}
+                        <option value={1}>Sí</option>
+                        <option value={0}>No</option>
+                    </select>
+                </div>
+
+                {/* Campo de Imagen */}
+                <div className="grid grid-cols-1 gap-4">
+                    <label className="block text-sm font-medium text-gray-700">
+                        Imagen de la Categoría (Opcional)
                     </label>
 
-                    {imagePreview && (
-                        <div className="mt-2 relative w-32 h-32">
-                            <Image
-                                src={imagePreview}
-                                alt="Preview"
-                                width={128}
-                                height={128}
-                                className="w-full h-full object-cover rounded border"
-                            />
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    setImagePreview(null);
-                                    setSelectedImageFile(null);
-                                }}
-                                className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600"
-                            >
-                                ×
-                            </button>
-                        </div>
-                    )}
-                </div>
-            </div>
+                    <div className="flex flex-col gap-2">
+                        <input
+                            type="file"
+                            id="imagenCategoria"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) {
+                                    setSelectedImageFile(file);
+                                    setImagePreview(URL.createObjectURL(file));
+                                }
+                            }}
+                            disabled={uploadingImage || isSubmitting}
+                        />
 
-            <div className="flex justify-end gap-3 pt-2">
-                <Button
-                    type="button"
-                    onClick={onCancel}
-                    disabled={isSubmitting}
-                    color="secondary"
-                >
-                    Cancelar
-                </Button>
-                <Button type="submit" disabled={isSubmitting}>
-                    {isEditing ? "Guardar Cambios" : "Crear Categoría"}
-                </Button>
-            </div>
-        </form>
+                        <label
+                            htmlFor="imagenCategoria"
+                            className={`px-4 py-2 border rounded-md bg-white w-fit ${
+                                uploadingImage || isSubmitting
+                                    ? "opacity-50 cursor-not-allowed"
+                                    : "cursor-pointer hover:bg-gray-50"
+                            }`}
+                        >
+                            {uploadingImage ? "Subiendo imagen..." : "Seleccionar Imagen"}
+                        </label>
+
+                        {imagePreview && (
+                            <div className="mt-2 relative w-32 h-32">
+                                <Image
+                                    src={imagePreview}
+                                    alt="Preview"
+                                    width={128}
+                                    height={128}
+                                    className="w-full h-full object-cover rounded border"
+                                    unoptimized
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setImagePreview(null);
+                                        setSelectedImageFile(null);
+                                    }}
+                                    disabled={uploadingImage || isSubmitting}
+                                    className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    ×
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                <div className="flex justify-end gap-3 pt-2">
+                    <Button
+                        type="button"
+                        onClick={onCancel}
+                        disabled={isSubmitting || uploadingImage}
+                        color="secondary"
+                    >
+                        Cancelar
+                    </Button>
+                    <Button type="submit" disabled={isSubmitting || uploadingImage}>
+                        {isEditing ? "Guardar Cambios" : "Crear Categoría"}
+                    </Button>
+                </div>
+            </form>
+        </div>
     );
 }

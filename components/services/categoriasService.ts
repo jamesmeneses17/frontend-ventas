@@ -152,6 +152,16 @@ function normalizeCategoria(raw: any): Categoria {
     normalized.activo = Number(normalized.activo);
   }
 
+  // map imagen url (snake/camel/backends diversos)
+  if (raw.imagen_url !== undefined) {
+    normalized.imagen_url = raw.imagen_url;
+  } else if (raw.imagenUrl !== undefined) {
+    normalized.imagen_url = raw.imagenUrl;
+  } else if (raw.url !== undefined && typeof raw.url === 'string') {
+    // algunos endpoints devuelven { url: '...' }
+    normalized.imagen_url = raw.url;
+  }
+
   return normalized as Categoria;
 }
 

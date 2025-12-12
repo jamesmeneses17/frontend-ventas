@@ -44,6 +44,7 @@ export default function CategoriasPage() {
     handleFormSubmit,
     handleCloseModal,
     setNotification,
+    refreshItems,
   } = useCrudCatalog<Categoria, CreateCategoriaData, UpdateCategoriaData>(
     {
       loadItems: async (_all, page, size, searchTerm) =>
@@ -162,6 +163,10 @@ export default function CategoriasPage() {
                   : undefined // Para nuevo, el form usa valores por defecto
               }
               onSubmit={handleFormSubmit}
+              onSuccess={async () => {
+                await refreshItems();
+                handleCloseModal();
+              }}
               onCancel={handleCloseModal}
             />
           </ModalVentana>

@@ -79,21 +79,17 @@ export default function SubcategoriasTable({
       key: "imagen",
       label: "Imagen",
       render: (row: Subcategoria) => {
-        console.log('[SubcategoriasTable] Subcategoría:', row.nombre, 'imagen_url:', row.imagen_url, 'isImageUrl:', isImageUrl(row.imagen_url));
         return (
           <div className="w-12 h-12 relative">
-            {row.imagen_url && isImageUrl(row.imagen_url) ? (
-              <Image 
-                src={row.imagen_url} 
-                alt={row.nombre} 
-                width={48} 
-                height={48} 
-                className="w-12 h-12 object-cover rounded border" 
+            {row.imagen_url ? (
+              <Image
+                src={row.imagen_url}
+                alt={row.nombre}
+                width={48}
+                height={48}
+                className="w-12 h-12 object-cover rounded border"
+                unoptimized
               />
-            ) : row.imagen_url ? (
-              <div className="w-12 h-12 bg-yellow-100 rounded border flex items-center justify-center text-xs text-yellow-700">
-                URL inválida
-              </div>
             ) : (
               <div className="w-12 h-12 bg-gray-200 rounded border flex items-center justify-center text-xs text-gray-500">
                 Sin imagen

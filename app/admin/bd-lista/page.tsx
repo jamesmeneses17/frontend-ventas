@@ -82,6 +82,7 @@ export default function ListaProductosPage() {
     handleFormSubmit,
     handleCloseModal,
     setNotification,
+    refreshItems,
   } = useCrudCatalog<Producto, CreateProductoData, UpdateProductoData>(
     {
       // Los parámetros ya no son implícitos 'any', los tipamos o los pasamos.
@@ -342,6 +343,10 @@ export default function ListaProductosPage() {
             <ListaForm
               initialData={editingProducto}
               onSubmit={handleFormSubmitWithStats}
+              onSuccess={async () => {
+                await refreshItems();
+                handleCloseModal();
+              }}
               onCancel={handleCloseModal}
               formError={formError}
             />

@@ -47,6 +47,7 @@ export default function SubcategoriasPage() {
     handleFormSubmit,
     handleCloseModal,
     setNotification,
+    refreshItems,
   } = useCrudCatalog<Subcategoria, CreateSubcategoriaData, UpdateSubcategoriaData>(
     {
       // Adaptamos la firma al hook: (all, page, size, searchTerm, categoriaId?)
@@ -168,10 +169,15 @@ export default function SubcategoriasPage() {
                       // Necesitamos el ID de la Categoría padre para editar - asegurar que es número
                       categoria_id: Number(editingSubcategoria.categoria_id) || 0,
                       activo: (editingSubcategoria as any).activo ?? 1, // Agregar activo
+                      imagen_url: (editingSubcategoria as any).imagen_url,
                     }
                   : undefined // Para nuevo, el form usa valores por defecto
               }
               onSubmit={handleFormSubmit}
+              onSuccess={async () => {
+                await refreshItems();
+                handleCloseModal();
+              }}
               onCancel={handleCloseModal}
             />
           </ModalVentana>

@@ -20,12 +20,13 @@ type FormData = Omit<CreateProductoData, "ficha_tecnica_url"> & {
 
 interface Props {
   initialData?: Partial<Producto> | null;
-  onSubmit: (data: FormData) => void;
+  onSubmit: (data: FormData) => Promise<any> | any;
+  onSuccess?: () => Promise<void> | void;
   onCancel: () => void;
   formError?: string;
 }
 
-export default function ListaForm({ initialData, onSubmit, onCancel, formError }: Props) {
+export default function ListaForm({ initialData, onSubmit, onSuccess, onCancel, formError }: Props) {
   const {
     handleSubmit,
     formState: { errors, isSubmitting },
@@ -61,6 +62,8 @@ export default function ListaForm({ initialData, onSubmit, onCancel, formError }
   const [imagePreview, setImagePreview] = useState<string | null>(initialData?.imagen_url || null);
   const [selectedImageName, setSelectedImageName] = useState<string | null>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
+
+  const isBusy = isSubmitting || loadingLookups || uploadingImage || uploadingPdf;
 
   // Cargar lookups (categorías, subcategorías, estados)
   useEffect(() => {
@@ -247,11 +250,13 @@ export default function ListaForm({ initialData, onSubmit, onCancel, formError }
           delete payload.pdfFichaTecnica;
 
           await onSubmit(payload as FormData);
+          if (onSuccess) await onSuccess();
         } else {
           // En creación no subimos archivos aquí: se debe crear primero y luego subir desde edición
           delete (payload as any).imagenProducto;
           delete (payload as any).pdfFichaTecnica;
           await onSubmit(payload as FormData);
+          if (onSuccess) await onSuccess();
         }
       } catch (err) {
         console.error('[ListaForm] Error en submit:', err);
@@ -353,19 +358,31 @@ export default function ListaForm({ initialData, onSubmit, onCancel, formError }
   }));
 
   return (
-    <form 
-      onSubmit={handleSubmit(submitForm)}
-      className="
-        space-y-6 
-        max-w-3xl 
-        mx-auto 
-        px-4 
-        bg-white 
-        rounded-xl 
-        max-h-[80vh] 
-        overflow-y-auto
-      "
-    >
+    <div className="relative">
+      {(isBusy) && (
+        <div className="absolute inset-0 bg-white/80 backdrop-blur-sm z-50 flex items-center justify-center rounded-xl">
+          <div className="flex flex-col items-center gap-3">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+            <p className="text-gray-700 font-medium">
+              {uploadingImage ? "Subiendo imagen..." : uploadingPdf ? "Subiendo PDF..." : "Guardando..."}
+            </p>
+          </div>
+        </div>
+      )}
+
+      <form 
+        onSubmit={handleSubmit(submitForm)}
+        className="
+          space-y-6 
+          max-w-3xl 
+          mx-auto 
+          px-4 
+          bg-white 
+          rounded-xl 
+          max-h-[80vh] 
+          overflow-y-auto
+        "
+      >
 
       {/* Sección: Nombre y Código */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -375,6 +392,7 @@ export default function ListaForm({ initialData, onSubmit, onCancel, formError }
           value={formValues.codigo}
           onChange={handleChange}
           required
+          disabled={isBusy}
         />
 
         <FormInput
@@ -400,7 +418,7 @@ export default function ListaForm({ initialData, onSubmit, onCancel, formError }
                 { value: "", label: "Seleccionar..." },
                 ...categoriaOptions,
               ]}
-              disabled={false}
+              disabled={isBusy}
               required={false}
             />
             {Number(formValues.categoriaId) > 0 && initialData?.id && (
@@ -451,7 +469,7 @@ export default function ListaForm({ initialData, onSubmit, onCancel, formError }
             value={String(formValues.subcategoriaId ?? 0)}
             onChange={handleChange}
             options={subcategoriaOptions}
-            disabled={loadingLookups}
+            disabled={isBusy}
             required={false}
           />
       </div>
@@ -464,6 +482,7 @@ export default function ListaForm({ initialData, onSubmit, onCancel, formError }
           value={formValues.descripcion}
           onChange={handleChange}
           placeholder="Descripción del producto"
+            disabled={isBusy}
         />
 
         
@@ -488,7 +507,7 @@ export default function ListaForm({ initialData, onSubmit, onCancel, formError }
               setSelectedPdfName(file ? file.name : null);
               setValue("pdfFichaTecnica", file as any);
             }}
-            disabled={uploadingPdf}
+            disabled={isBusy}
           />
 
           <label
@@ -524,7 +543,7 @@ export default function ListaForm({ initialData, onSubmit, onCancel, formError }
                 setValue("imagenProducto", f as any);
               }
             }}
-            disabled={uploadingImage}
+            disabled={isBusy}
           />
 
           <label
@@ -543,6 +562,7 @@ export default function ListaForm({ initialData, onSubmit, onCancel, formError }
                   width={80}
                   height={80}
                   className="h-20 w-20 object-cover rounded-md border"
+                  unoptimized
                 />
               ) : (
                 <Image
@@ -564,11 +584,11 @@ export default function ListaForm({ initialData, onSubmit, onCancel, formError }
       </div>
 
       {/* Botones */}
-      <div className="flex justify-end gap-3 pt-4">
-        <Button type="button" onClick={onCancel} disabled={isSubmitting || loadingLookups || uploadingImage || uploadingPdf}>
+        <div className="flex justify-end gap-3 pt-4">
+          <Button type="button" onClick={onCancel} disabled={isBusy}>
           Cancelar
         </Button>
-        <Button type="submit" disabled={isSubmitting || loadingLookups || uploadingImage || uploadingPdf}>
+          <Button type="submit" disabled={isBusy}>
           {uploadingImage || uploadingPdf ? "Subiendo archivos..." : initialData?.id ? "Guardar Cambios" : "Crear Producto"}
         </Button>
       </div>
@@ -577,5 +597,6 @@ export default function ListaForm({ initialData, onSubmit, onCancel, formError }
         <p className="text-red-600 text-center text-sm">{formError}</p>
       )}
     </form>
+    </div>
   );
 }

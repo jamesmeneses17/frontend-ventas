@@ -187,7 +187,17 @@ const extractErrorMessage = (err: any): string => {
   };
 
   return (
-    <div>
+    <div className="relative">
+      {(loading || uploadingImage) && (
+        <div className="absolute inset-0 bg-white/80 backdrop-blur-sm z-50 flex items-center justify-center rounded-lg">
+          <div className="flex flex-col items-center gap-3">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+            <p className="text-gray-700 font-medium">
+              {uploadingImage ? "Subiendo imagen..." : "Guardando..."}
+            </p>
+          </div>
+        </div>
+      )}
       {/* Mostrar alerta de error encima del formulario si existe apiError */}
       {apiError && (
         <div className="mb-4">
@@ -202,6 +212,7 @@ const extractErrorMessage = (err: any): string => {
           value={values.nombre}
           onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleChange('nombre', e.target.value)}
           required
+          disabled={loading || uploadingImage}
         />
 
         <div>
@@ -213,7 +224,8 @@ const extractErrorMessage = (err: any): string => {
             name="activo"
             value={values.activo}
             onChange={(e: React.ChangeEvent<HTMLSelectElement>) => handleChange('activo', Number(e.target.value))}
-            className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+            disabled={loading || uploadingImage}
+            className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <option value={1}>Sí</option>
             <option value={0}>No</option>
@@ -229,7 +241,8 @@ const extractErrorMessage = (err: any): string => {
               name="categoriaPrincipalId"
               value={values.categoriaPrincipalId ?? ''}
               onChange={(e: React.ChangeEvent<HTMLSelectElement>) => handleChange('categoriaPrincipalId', e.target.value ? Number(e.target.value) : null)}
-              className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+              disabled={loading || uploadingImage}
+              className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <option value="">(Ninguna)</option>
               {allCategories
@@ -266,7 +279,9 @@ const extractErrorMessage = (err: any): string => {
 
               <label
                 htmlFor="imagenCategoria"
-                className="px-4 py-2 border rounded-md bg-white cursor-pointer w-fit hover:bg-gray-50 disabled:opacity-50"
+                className={`px-4 py-2 border rounded-md bg-white w-fit ${
+                  uploadingImage || loading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:bg-gray-50'
+                }`}
               >
                 {uploadingImage ? "Subiendo imagen..." : "Seleccionar Imagen"}
               </label>
@@ -279,6 +294,7 @@ const extractErrorMessage = (err: any): string => {
                     width={128}
                     height={128}
                     className="w-full h-full object-cover rounded border"
+                    unoptimized
                   />
                   <button
                     type="button"
@@ -286,7 +302,8 @@ const extractErrorMessage = (err: any): string => {
                       setImagePreview(null);
                       setSelectedImageFile(null);
                     }}
-                    className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600"
+                    disabled={loading || uploadingImage}
+                    className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     ×
                   </button>
@@ -300,7 +317,7 @@ const extractErrorMessage = (err: any): string => {
             type="button"
             onClick={() => onCancel?.()}
             className="px-4 py-2 border rounded-md text-gray-600 hover:bg-gray-100"
-            disabled={loading}
+            disabled={loading || uploadingImage}
           >
             Cancelar
           </button>
@@ -308,7 +325,7 @@ const extractErrorMessage = (err: any): string => {
           <button
             type="submit"
             className="px-4 py-2 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50"
-            disabled={loading}
+            disabled={loading || uploadingImage}
           >
             {loading ? 'Guardando...' : 'Guardar'}
           </button>

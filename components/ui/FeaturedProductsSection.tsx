@@ -159,15 +159,19 @@ const FeaturedProductsSection: React.FC = () => {
                     </p>
                 </div>
 
+                {/* *** CAMBIO CLAVE PARA EL CENTRADO ***
+                  1. Se añade un contenedor `div` con `flex justify-center w-full`. 
+                  2. Este contenedor centra su contenido (la cuadrícula de tarjetas) en la página.
+                */}
                 {displayedCategories.length > 0 ? (
-                    // Cuadrícula adaptada para 4 columnas, ideal para la sección destacada
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                        {displayedCategories.map((category) => (
-                            <CategoryCard
-                                key={category.id}
-                                {...category}
-                            />
-                        ))}
+                    <div className="flex justify-center w-full"> 
+<div className="block sm:grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mx-auto w-fit sm:w-full">                            {displayedCategories.map((category) => (
+                                <CategoryCard
+                                    key={category.id}
+                                    {...category}
+                                />
+                            ))}
+                        </div>
                     </div>
                 ) : (
                     <p className="text-center text-gray-500 text-lg">

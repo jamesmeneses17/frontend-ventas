@@ -26,11 +26,12 @@ type FormData = CreateSubcategoriaData & { id?: number };
 interface Props {
   initialData?: Partial<Subcategoria> | null;
   onSubmit: (data: FormData) => Promise<any>;
+  onSuccess?: (result?: any) => Promise<void> | void;
   onCancel: () => void;
   formError?: string;
 }
 
-export default function SubcategoriasForm({ initialData, onSubmit, onCancel, formError }: Props) {
+export default function SubcategoriasForm({ initialData, onSubmit, onSuccess, onCancel, formError }: Props) {
   const {
     handleSubmit,
     formState: { isSubmitting },
@@ -164,6 +165,9 @@ export default function SubcategoriasForm({ initialData, onSubmit, onCancel, for
           console.log('[SubcategoriasForm] Imagen subida exitosamente, URL:', url);
           // Actualizar el registro con la nueva URL de imagen
           await updateSubcategoria(recordId, { imagen_url: url });
+          // Refrescar preview inmediata en el formulario
+          setImagePreview(url);
+          setValue('imagen_url' as any, url as any);
         }
       } catch (error) {
         console.error("Error al subir imagen:", error);
@@ -172,8 +176,10 @@ export default function SubcategoriasForm({ initialData, onSubmit, onCancel, for
       }
     }
     
-    // Cerrar el modal después de completar todo
-    if (onCancel) {
+    // Notificar al padre para refrescar la lista y cerrar modal
+    if (onSuccess) {
+      await onSuccess({ id: recordId });
+    } else if (onCancel) {
       onCancel();
     }
   };
@@ -204,117 +210,138 @@ export default function SubcategoriasForm({ initialData, onSubmit, onCancel, for
   }, [formValues.categoria_id, categoriaOptions, initialData?.categoria_id]);
 
   return (
-    <form onSubmit={handleSubmit(submitForm)} className="space-y-4">
-      {/* Nombre de la Subcategoría */}
-      <FormInput
-        label="Nombre de la Subcategoría"
-        name="nombre"
-        value={formValues.nombre}
-        onChange={handleChange}
-        placeholder="Ej: Laptops Gaming"
-        required
-      />
+    <div className="relative">
+      {/* Overlay de carga */}
+      {(isSubmitting || uploadingImage) && (
+        <div className="absolute inset-0 bg-white/80 backdrop-blur-sm z-50 flex items-center justify-center rounded-lg">
+          <div className="flex flex-col items-center gap-3">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+            <p className="text-gray-700 font-medium">
+              {uploadingImage ? "Subiendo imagen..." : "Guardando..."}
+            </p>
+          </div>
+        </div>
+      )}
 
-      {/* Activo */}
-      <FormSelect
-        label="Activo"
-        name="activo"
-        value={String(formValues.activo ?? 1)}
-        onChange={handleChange}
-        options={[
-          { value: "1", label: "Sí" },
-          { value: "0", label: "No" },
-        ]}
-      />
+      <form onSubmit={handleSubmit(submitForm)} className="space-y-4">
+        {/* Nombre de la Subcategoría */}
+        <FormInput
+          label="Nombre de la Subcategoría"
+          name="nombre"
+          value={formValues.nombre}
+          onChange={handleChange}
+          placeholder="Ej: Laptops Gaming"
+          required
+          disabled={isSubmitting || uploadingImage}
+        />
 
-      {/* Categoría Padre (Nivel 2) */}
-      <FormSelect
-        label="Categoría Padre"
-        name="categoria_id" // Usamos categoria_id
-        value={String(formValues.categoria_id)}
-        onChange={handleChange}
-        options={categoriaOptions}
-        disabled={loadingLookups}
-        required
-        // Error de validación si no hay opciones cargadas
-        error={
-            !loadingLookups && categoriaOptions.length === 0 
-                ? "Debe crear una Categoría (Nivel 2) primero." 
-                : undefined
-        }
-      />
+        {/* Activo */}
+        <FormSelect
+          label="Activo"
+          name="activo"
+          value={String(formValues.activo ?? 1)}
+          onChange={handleChange}
+          options={[
+            { value: "1", label: "Sí" },
+            { value: "0", label: "No" },
+          ]}
+          disabled={isSubmitting || uploadingImage}
+        />
 
-      {/* Campo de Imagen */}
-      <div className="grid grid-cols-1 gap-4">
-        <label className="block text-sm font-medium text-gray-700">
-          Imagen de la Subcategoría (Opcional)
-        </label>
+        {/* Categoría Padre (Nivel 2) */}
+        <FormSelect
+          label="Categoría Padre"
+          name="categoria_id" // Usamos categoria_id
+          value={String(formValues.categoria_id)}
+          onChange={handleChange}
+          options={categoriaOptions}
+          disabled={loadingLookups || isSubmitting || uploadingImage}
+          required
+          // Error de validación si no hay opciones cargadas
+          error={
+              !loadingLookups && categoriaOptions.length === 0 
+                  ? "Debe crear una Categoría (Nivel 2) primero." 
+                  : undefined
+          }
+        />
 
-        <div className="flex flex-col gap-2">
-          <input
-            type="file"
-            id="imagenSubcategoria"
-            accept="image/*"
-            className="hidden"
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (file) {
-                setSelectedImageFile(file);
-                setImagePreview(URL.createObjectURL(file));
-              }
-            }}
-            disabled={uploadingImage}
-          />
-
-          <label
-            htmlFor="imagenSubcategoria"
-            className="px-4 py-2 border rounded-md bg-white cursor-pointer w-fit hover:bg-gray-50 disabled:opacity-50"
-          >
-            {uploadingImage ? "Subiendo imagen..." : "Seleccionar Imagen"}
+        {/* Campo de Imagen */}
+        <div className="grid grid-cols-1 gap-4">
+          <label className="block text-sm font-medium text-gray-700">
+            Imagen de la Subcategoría (Opcional)
           </label>
 
-          {imagePreview && (
-            <div className="mt-2 relative w-32 h-32">
-              <Image
-                src={imagePreview}
-                alt="Preview"
-                width={128}
-                height={128}
-                className="w-full h-full object-cover rounded border"
-                unoptimized
-              />
-              <button
-                type="button"
-                onClick={() => {
-                  setImagePreview(null);
-                  setSelectedImageFile(null);
-                }}
-                className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600"
-              >
-                ×
-              </button>
-            </div>
-          )}
-        </div>
-      </div>
+          <div className="flex flex-col gap-2">
+            <input
+              type="file"
+              id="imagenSubcategoria"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) {
+                  setSelectedImageFile(file);
+                  setImagePreview(URL.createObjectURL(file));
+                }
+              }}
+              disabled={uploadingImage || isSubmitting}
+            />
 
-      {/* Botones */}
-      <div className="flex justify-end gap-3 pt-4">
-        <Button
-          type="button"
-          onClick={onCancel}
-          disabled={isSubmitting || loadingLookups}
-          color="secondary"
-        >
-          Cancelar
-        </Button>
-        <Button type="submit" disabled={isSubmitting || loadingLookups || categoriaOptions.length === 0}>
-          {initialData?.id ? "Guardar Cambios" : "Crear Subcategoría"}
-        </Button>
-      </div>
-      {formError && (
-        <div className="text-red-600 text-sm mt-2 text-center">{formError}</div>
-      )}
-    </form>
+            <label
+              htmlFor="imagenSubcategoria"
+              className={`px-4 py-2 border rounded-md bg-white w-fit ${
+                uploadingImage || isSubmitting
+                  ? "opacity-50 cursor-not-allowed"
+                  : "cursor-pointer hover:bg-gray-50"
+              }`}
+            >
+              {uploadingImage ? "Subiendo imagen..." : "Seleccionar Imagen"}
+            </label>
+
+            {imagePreview && (
+              <div className="mt-2 relative w-32 h-32">
+                <Image
+                  src={imagePreview}
+                  alt="Preview"
+                  width={128}
+                  height={128}
+                  className="w-full h-full object-cover rounded border"
+                  unoptimized
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    setImagePreview(null);
+                    setSelectedImageFile(null);
+                  }}
+                  disabled={uploadingImage || isSubmitting}
+                  className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  ×
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Botones */}
+        <div className="flex justify-end gap-3 pt-4">
+          <Button
+            type="button"
+            onClick={onCancel}
+            disabled={isSubmitting || loadingLookups || uploadingImage}
+            color="secondary"
+          >
+            Cancelar
+          </Button>
+          <Button type="submit" disabled={isSubmitting || loadingLookups || uploadingImage || categoriaOptions.length === 0}>
+            {initialData?.id ? "Guardar Cambios" : "Crear Subcategoría"}
+          </Button>
+        </div>
+        {formError && (
+          <div className="text-red-600 text-sm mt-2 text-center">{formError}</div>
+        )}
+      </form>
+    </div>
   );
 }
