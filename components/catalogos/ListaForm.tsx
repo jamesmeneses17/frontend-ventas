@@ -742,7 +742,7 @@ const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
 
         {galeriaImagenes.length === 0 && (
           <div className="text-center py-8 text-gray-400 border-2 border-dashed border-gray-300 rounded-lg">
-            <p className="text-sm">No hay imágenes. Haz clic en "+ Agregar más Imágenes" para comenzar.</p>
+            <p className="text-sm">No hay imágenes. Haz clic en &quot;+ Agregar más Imágenes&quot; para comenzar.</p>
           </div>
         )}
       </div>

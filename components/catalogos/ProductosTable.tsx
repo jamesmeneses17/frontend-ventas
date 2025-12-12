@@ -263,12 +263,12 @@ function RowFiles({
   uploadAsFicha?: boolean;
 }) {
   const [preview, setPreview] = React.useState<string | null>(
-    producto.imagen_url || null
+    producto.imagenes && producto.imagenes.length > 0 ? producto.imagenes[0].url_imagen : null
   );
 
   React.useEffect(() => {
-    setPreview(producto.imagen_url || null);
-  }, [producto.imagen_url]);
+    setPreview(producto.imagenes && producto.imagenes.length > 0 ? producto.imagenes[0].url_imagen : null);
+  }, [producto.imagenes]);
 
   return (
     <div className="flex items-center gap-2">
