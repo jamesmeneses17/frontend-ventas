@@ -64,7 +64,11 @@ export default function CuentasCobrarForm({ initialData = null, onSaved, onCance
       try {
         const clientes = await getClientes();
         setClientesFull(clientes || []);
-        const opts = (clientes || []).map((c:any) => ({ value: String(c.id), label: c.nombre || c.nombre_completo || c.nombre_cliente || `Cliente ${c.id}`, cedula: c.cedula || c.documento || "" }));
+        const opts = (clientes || []).map((c:any) => ({
+          value: String(c.id),
+          label: c.nombre || c.nombre_completo || c.nombre_cliente || `Cliente ${c.id}`,
+          cedula: c.cedula || c.documento || c.numero_documento || ""
+        }));
         setClientesOptions(opts);
         // No seleccionar automáticamente el primer cliente, dejar que el usuario elija
 
@@ -194,10 +198,11 @@ export default function CuentasCobrarForm({ initialData = null, onSaved, onCance
                     return;
                   }
                   const valNorm = normalizeText(val);
-                  const match = clientesOptions.find(c =>
-                    normalizeText(c.label) === valNorm ||
-                    (c.cedula && normalizeText(c.cedula) === valNorm)
-                  );
+                  const match = clientesOptions.find(c => {
+                    // Coincidencia exacta por nombre o por cédula
+                    return normalizeText(c.label) === valNorm ||
+                      (c.cedula && normalizeText(c.cedula) === valNorm);
+                  });
                   if (match) {
                     setValue("cliente_id", Number(match.value));
                   } else {
