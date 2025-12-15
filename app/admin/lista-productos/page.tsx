@@ -190,14 +190,12 @@ export default function ListaProductosPage() {
     } catch (error: any) {
       // Intenta extraer el mensaje del backend
       let msg = error?.response?.data?.message || error?.message || "Error al guardar el producto.";
-      
       // Mejorar mensajes específicos
       if (msg.toLowerCase().includes("ya existe") || msg.toLowerCase().includes("already exists")) {
         msg = `⚠️ Ya existe un producto con el código "${data.codigo}". Por favor, usa un código diferente.`;
       }
-      
       setFormError(msg);
-      throw error; // Re-lanzar para que el formulario no se cierre
+      // NO relanzar el error, así el modal no se queda abierto
     }
   };
 
@@ -379,6 +377,10 @@ export default function ListaProductosPage() {
     <ProductosForm
       initialData={editingProducto}
       onSubmit={handleFormSubmitWithStats}
+      onSuccess={async () => {
+        await updateStats();
+        handleCloseModal();
+      }}
       onCancel={handleCloseModal}
       formError={formError}
     />

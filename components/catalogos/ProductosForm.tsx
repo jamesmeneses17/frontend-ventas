@@ -39,11 +39,12 @@ const formatThousands = (val: any): string => {
 interface Props {
   initialData?: Partial<Producto> | null;
   onSubmit: (data: CreateProductoData | UpdateProductoData) => void | Promise<void>;
+  onSuccess?: () => void;
   onCancel: () => void;
   formError?: string;
 }
 
-export default function ProductosForm({ initialData, onSubmit, onCancel, formError }: Props) {
+export default function ProductosForm({ initialData, onSubmit, onSuccess, onCancel, formError }: Props) {
   const {
     handleSubmit,
     formState: { errors, isSubmitting },
@@ -143,6 +144,7 @@ export default function ProductosForm({ initialData, onSubmit, onCancel, formErr
       nombre: initialData?.nombre ?? "",
       codigo: initialData?.codigo ?? "",
       precio_venta: formatThousands((initialData as any)?.precio_venta ?? initialData?.precio),
+      promocion_porcentaje: (initialData as any)?.promocion_porcentaje ?? "",
       stock: initialData?.stock ?? 0,
       descripcion: initialData?.descripcion ?? "",
       ficha_tecnica_url: initialData?.ficha_tecnica_url ?? "",
@@ -231,10 +233,12 @@ export default function ProductosForm({ initialData, onSubmit, onCancel, formErr
     // Crear el producto primero
     try {
       await onSubmit(submittedData as CreateProductoData | UpdateProductoData);
-      // Si es creación (no tiene ID inicial) y se cargó exitosamente,
-      // el ID vendrá en los datos retornados por onSubmit
-      // Aquí solo hacemos que el formulario permanezca disponible para subir archivos
+      // Solo llamar onSuccess si no hubo error
+      if (typeof onSuccess === 'function') {
+        onSuccess();
+      }
     } catch (error) {
+      // Si hay error, NO llamar onSuccess
       console.error("Error en submitForm:", error);
     }
   };

@@ -93,16 +93,16 @@ export default function ProductosTable({
       key: "costo_unitario",
       label: "Costo Unitario",
       render: (row: ProductoInventario) => (
-        <span className="font-semibold">{formatCurrency(row.precio ?? 0)}</span>
+        <span className="font-semibold">{formatCurrency(row.precio_costo ?? 0)}</span>
       ),
     },
-    {
+    /*{
       key: "precio_venta",
       label: "Precio Venta",
       render: (row: ProductoInventario) => (
         <span className="font-semibold">{formatCurrency(row.precio_venta ?? 0)}</span>
       ),
-    },
+    },*/
     {
       key: "promocion_porcentaje",
       label: "Promoción %",
@@ -114,7 +114,7 @@ export default function ProductosTable({
     },
     {
       key: "precio_con_descuento",
-      label: "Precio con Descuento",
+      label: "Precio Venta",
       render: (row: ProductoInventario) => (
         <span className={`font-semibold ${row.promocion_porcentaje > 0 ? 'text-green-600' : 'text-gray-700'}`}>
           {formatCurrency(row.precio_con_descuento ?? 0)}

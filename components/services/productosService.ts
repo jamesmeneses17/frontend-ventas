@@ -5,6 +5,7 @@ export interface ProductoInventario extends Producto {
     utilidad: number;
     valor_inventario: number;
     precio_venta?: number; // Agregado para evitar error en la tabla
+    precio_costo?: number; // Agregado para evitar error en la tabla
 }
 import axios from "axios";
 import { API_URL } from "./apiConfig";
