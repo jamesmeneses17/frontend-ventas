@@ -140,6 +140,10 @@ function ProductDetailPageContent({ productId }: { productId: string }) {
   // Estado para la galería de imágenes
   const [selectedImage, setSelectedImage] = useState<string>("/images/imagen.webp");
   const [imagenesProducto, setImagenesProducto] = useState<string[]>([]);
+  // Estado para el zoom tipo lupa
+  const [zoomActive, setZoomActive] = useState(false);
+  const [zoomPosition, setZoomPosition] = useState({ x: 50, y: 50 });
+  const [zoomStyle, setZoomStyle] = useState({});
 
 
   useEffect(() => {
@@ -452,12 +456,46 @@ function ProductDetailPageContent({ productId }: { productId: string }) {
                   )}
 
                   {/* Imagen Principal */}
-                  <div className="relative flex-1 h-80 bg-white rounded-xl border-2 border-gray-100 overflow-hidden group">
+                  <div
+                    className="relative flex-1 h-80 bg-white rounded-xl border-2 border-gray-100 overflow-hidden group"
+                    style={{ cursor: zoomActive ? 'zoom-out' : 'zoom-in' }}
+                    onMouseMove={e => {
+                      if (!zoomActive) return;
+                      const rect = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
+                      const x = ((e.clientX - rect.left) / rect.width) * 100;
+                      const y = ((e.clientY - rect.top) / rect.height) * 100;
+                      setZoomPosition({ x, y });
+                      setZoomStyle({
+                        transform: `scale(2)`,
+                        transformOrigin: `${x}% ${y}%`,
+                        transition: 'transform 0.2s',
+                        zIndex: 10,
+                      });
+                    }}
+                    onMouseEnter={e => {
+                      setZoomActive(true);
+                      const rect = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
+                      const x = ((e.clientX - rect.left) / rect.width) * 100;
+                      const y = ((e.clientY - rect.top) / rect.height) * 100;
+                      setZoomPosition({ x, y });
+                      setZoomStyle({
+                        transform: `scale(2)`,
+                        transformOrigin: `${x}% ${y}%`,
+                        transition: 'transform 0.2s',
+                        zIndex: 10,
+                      });
+                    }}
+                    onMouseLeave={() => {
+                      setZoomActive(false);
+                      setZoomStyle({ transform: 'scale(1)', transition: 'transform 0.2s' });
+                    }}
+                  >
                     <Image
                       src={selectedImage}
                       alt={nombre}
                       fill
-                      className="object-contain p-4"
+                      className="object-contain p-4 transition-transform duration-200"
+                      style={zoomActive ? zoomStyle : { transform: 'scale(1)', transition: 'transform 0.2s' }}
                       onError={() => setSelectedImage('/images/imagen.webp')}
                     />
                     {descuento > 0 && (
