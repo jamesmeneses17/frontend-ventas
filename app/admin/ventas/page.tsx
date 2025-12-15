@@ -404,6 +404,7 @@ export default function VentasPage() {
             <VentasForm
               initialData={editingVenta}
               onSubmit={handleSubmitWithError}
+              onSuccess={handleCloseModal}
               onCancel={handleCloseModal}
               formError={formError}
             />

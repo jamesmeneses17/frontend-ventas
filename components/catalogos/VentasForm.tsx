@@ -25,7 +25,8 @@ type FormData = {
 
 interface Props {
     initialData?: Partial<FormData> | null;
-    onSubmit: (data: CreateVentaDTO) => void;
+    onSubmit: (data: CreateVentaDTO) => Promise<any> | void;
+    onSuccess?: () => void;
     onCancel: () => void;
     formError?: string;
 }
@@ -33,6 +34,7 @@ interface Props {
 export default function VentasForm({
     initialData,
     onSubmit,
+    onSuccess,
     onCancel,
     formError,
 }: Props) {
@@ -256,15 +258,34 @@ export default function VentasForm({
             stockDisponible,
         });
 
+        // Formatear fecha como 'YYYY-MM-DD'
+        const formatFecha = (fechaStr: string) => {
+            if (!fechaStr) return '';
+            // Si ya viene en formato 'YYYY-MM-DD', devolver igual
+            if (/^\d{4}-\d{2}-\d{2}$/.test(fechaStr)) return fechaStr;
+            // Si viene en otro formato, intentar extraer la parte de fecha
+            const d = new Date(fechaStr);
+            if (!isNaN(d.getTime())) {
+                return d.toISOString().substring(0, 10);
+            }
+            return fechaStr;
+        };
         const payload: CreateVentaDTO = {
-            fecha: data.fecha_venta ? new Date(data.fecha_venta).toISOString() : new Date().toISOString(),
+            fecha: formatFecha(data.fecha_venta),
             productoId: Number(data.productoId),
             cantidad: Math.max(1, cantidadVenta),
             costo_unitario: costoCosto,
             precio_venta: precioVenta,
         };
 
-        onSubmit(payload);
+        const result = onSubmit(payload);
+        if (result instanceof Promise) {
+            result.then(() => {
+                if (typeof onSuccess === 'function') onSuccess();
+            });
+        } else {
+            if (typeof onSuccess === 'function') onSuccess();
+        }
     };
 
     const productosFiltrados = productos.filter((p) => {
