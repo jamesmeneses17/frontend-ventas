@@ -1,13 +1,17 @@
+
 "use client";
 import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import Button from "../ui/button";
+import { UserPlus } from "lucide-react";
 import FormInput from "../common/form/FormInput";
 import FormSelect from "../common/form/FormSelect";
 
-import { getClientes } from "../services/clientesServices"; // asume tienes servicio clientes
+import { getClientes, createCliente } from "../services/clientesServices"; // asume tienes servicio clientes
+import ModalVentana from "../ui/ModalVentana";
+import ClientesForm from "./ClientesForm";
 import { createCredito, getCreditoById, updateCredito } from "../services/cuentasCobrarService";
 import { getProductos } from "../services/productosService";
 
@@ -34,19 +38,38 @@ export default function CuentasCobrarForm({ initialData = null, onSaved, onCance
     defaultValues: { cliente_id: 0, articulo_id: undefined, articulo: "", valor_credito: 0, fecha_inicial: "", fecha_final: "" }
   });
 
-  const [clientesOptions, setClientesOptions] = useState<{ value: string; label: string }[]>([]);
+  const [clientesOptions, setClientesOptions] = useState<{ value: string; label: string; cedula?: string }[]>([]);
+  const [clienteSearch, setClienteSearch] = useState("");
+  const [showClienteModal, setShowClienteModal] = useState(false);
+  const [clientesFull, setClientesFull] = useState<any[]>([]);
   const [productosOptions, setProductosOptions] = useState<{ value: string; label: string; nombre?: string }[]>([]);
+  const [showAutocomplete, setShowAutocomplete] = useState(false);
+  const [highlightedIndex, setHighlightedIndex] = useState(0);
 
+  // Función para quitar tildes/acentos
+  const normalizeText = (text: string) =>
+    text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+
+  let filteredClientes = clientesOptions;
+  if (clienteSearch.trim().length > 0) {
+    const searchNorm = normalizeText(clienteSearch);
+    filteredClientes = clientesOptions.filter(c =>
+      normalizeText(c.label).includes(searchNorm) ||
+      (c.cedula && normalizeText(c.cedula).includes(searchNorm))
+    );
+  }
   useEffect(() => {
     (async () => {
       // load clientes for select
       try {
         const clientes = await getClientes();
-        const opts = (clientes || []).map((c:any) => ({ value: String(c.id), label: c.nombre || c.nombre_completo || c.nombre_cliente || `Cliente ${c.id}` }));
+        setClientesFull(clientes || []);
+        const opts = (clientes || []).map((c:any) => ({ value: String(c.id), label: c.nombre || c.nombre_completo || c.nombre_cliente || `Cliente ${c.id}`, cedula: c.cedula || c.documento || "" }));
         setClientesOptions(opts);
-        if (clientes && clientes.length > 0 && !initialData) {
-          setValue("cliente_id", clientes[0].id);
-        }
+        // No seleccionar automáticamente el primer cliente, dejar que el usuario elija
+
+        // Filtrado de clientes por nombre o cédula (debe estar antes del return)
+        
       } catch (e) {
         // ignore
       }
@@ -113,22 +136,114 @@ export default function CuentasCobrarForm({ initialData = null, onSaved, onCance
   };
 
   const clienteId = watch("cliente_id");
+  // Mostrar en el input el nombre del cliente seleccionado, o el texto de búsqueda si está escribiendo
+  const selectedCliente = clientesOptions.find(c => Number(c.value) === Number(clienteId));
+  const inputValue = selectedCliente && clienteSearch === "" ? `${selectedCliente.label}${selectedCliente.cedula ? ` - ${selectedCliente.cedula}` : ''}` : clienteSearch;
+
+  // Nueva función para manejar la selección de un cliente de la lista de sugerencias
+  const handleClienteSelect = (cliente: typeof clientesOptions[0]) => {
+    setValue("cliente_id", Number(cliente.value));
+    setClienteSearch(cliente.label);
+    setShowAutocomplete(false);
+  };
 
   return (
-    <form
-      onSubmit={handleSubmit(onSubmit, (errs) => {
-        console.log("[CuentasCobrarForm] validation errors:", errs);
-      })}
-      className="space-y-4"
-    >
-      <FormSelect
-        label="Cliente"
-        name="cliente_id"
-        value={String(clienteId ?? "")}
-        onChange={(e:any) => setValue("cliente_id", Number(e.target.value))}
-        options={clientesOptions}
-        required
-      />
+    <>
+      <form
+        onSubmit={handleSubmit(onSubmit, (errs) => {
+          console.log("[CuentasCobrarForm] validation errors:", errs);
+        })}
+        className="space-y-4"
+      >
+        <div className="mb-2">
+          <label className="block text-sm font-medium text-gray-700 mb-1">Cliente <span className="text-red-500">*</span></label>
+          <div
+            className="relative flex flex-col gap-2"
+            onKeyDown={(e) => {
+              if (filteredClientes.length === 0) return;
+              if (e.key === "ArrowDown") {
+                e.preventDefault();
+                setHighlightedIndex(prev => (prev < filteredClientes.length - 1 ? prev + 1 : prev));
+              } else if (e.key === "ArrowUp") {
+                e.preventDefault();
+                setHighlightedIndex(prev => (prev > 0 ? prev - 1 : 0));
+              } else if (e.key === "Enter" && showAutocomplete) {
+                e.preventDefault();
+                handleClienteSelect(filteredClientes[highlightedIndex]);
+              } else if (e.key === "Escape") {
+                setShowAutocomplete(false);
+              }
+            }}
+            onBlur={() => {
+              setTimeout(() => setShowAutocomplete(false), 200);
+            }}
+          >
+            <div className="flex items-center">
+              <input
+                type="text"
+                className="w-full border rounded px-3 py-2 text-sm pr-10"
+                placeholder="Buscar por nombre o cédula..."
+                value={clienteSearch}
+                onChange={e => {
+                  const val = e.target.value;
+                  setClienteSearch(val);
+                  setShowAutocomplete(true);
+                  setHighlightedIndex(0);
+                  if (!val.trim()) {
+                    setValue("cliente_id", 0);
+                    return;
+                  }
+                  const valNorm = normalizeText(val);
+                  const match = clientesOptions.find(c =>
+                    normalizeText(c.label) === valNorm ||
+                    (c.cedula && normalizeText(c.cedula) === valNorm)
+                  );
+                  if (match) {
+                    setValue("cliente_id", Number(match.value));
+                  } else {
+                    setValue("cliente_id", 0);
+                  }
+                }}
+                onFocus={() => {
+                  if (clienteSearch.trim() || !clienteId) {
+                    setShowAutocomplete(true);
+                  }
+                }}
+                autoComplete="off"
+              />
+              <button
+                type="button"
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-indigo-600 hover:text-indigo-800 p-1"
+                title="Nuevo Cliente"
+                onClick={() => setShowClienteModal(true)}
+              >
+                <UserPlus className="w-5 h-5" />
+              </button>
+            </div>
+            {showAutocomplete && clienteSearch.trim() !== "" && filteredClientes.length > 0 && (
+              <ul className="absolute z-10 w-full bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto top-full mt-1">
+                {filteredClientes.map((c, index) => (
+                  <li
+                    key={c.value}
+                    className={`p-2 text-sm cursor-pointer ${index === highlightedIndex ? 'bg-indigo-100' : 'hover:bg-gray-100'}`}
+                    onMouseDown={() => handleClienteSelect(c)}
+                  >
+                    {c.label} {c.cedula ? `- ${c.cedula}` : ""}
+                  </li>
+                ))}
+              </ul>
+            )}
+            {showAutocomplete && clienteSearch.trim() !== "" && filteredClientes.length === 0 && (
+              <div className="p-2 text-sm text-gray-500 bg-white border border-gray-300 rounded-md shadow-lg absolute z-10 w-full top-full mt-1">
+                No se encontraron clientes.
+              </div>
+            )}
+            <input type="hidden" {...register("cliente_id", { valueAsNumber: true })} />
+            {errors.cliente_id && (
+              <p className="text-red-500 text-xs mt-1">El cliente es obligatorio.</p>
+            )}
+          </div>
+        </div>
       <FormSelect
         label="Artículo"
         name="articulo_id"
@@ -153,5 +268,25 @@ export default function CuentasCobrarForm({ initialData = null, onSaved, onCance
         <Button type="submit" disabled={isSubmitting}>{initialData?.id ? "Guardar" : "Crear"}</Button>
       </div>
     </form>
+
+    {/* Modal para agregar cliente */}
+    {showClienteModal && (
+      <ModalVentana isOpen={showClienteModal} onClose={() => setShowClienteModal(false)} title="Agregar Cliente">
+        <ClientesForm
+          onSuccess={async (nuevoCliente: any) => {
+            setShowClienteModal(false);
+            // Recargar clientes y seleccionar el nuevo
+            const clientes = await getClientes();
+            setClientesFull(clientes || []);
+            const opts = (clientes || []).map((c:any) => ({ value: String(c.id), label: c.nombre || c.nombre_completo || c.nombre_cliente || `Cliente ${c.id}`, cedula: c.cedula || c.documento || "" }));
+            setClientesOptions(opts);
+            setClienteSearch("");
+            setValue("cliente_id", nuevoCliente?.id);
+          }}
+          onCancel={() => setShowClienteModal(false)}
+        />
+      </ModalVentana>
+    )}
+  </>
   );
 }
