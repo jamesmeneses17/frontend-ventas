@@ -54,7 +54,10 @@ export default function InformacionEmpresaForm({ initialData, isCreation, onSave
         handleSubmit,
         formState: { isSubmitting },
         watch,
-    } = useForm<FormData>({ defaultValues });
+    } = useForm<FormData>({
+        defaultValues,
+        mode: "onBlur"
+    });
 
     const formValues = watch();
 
@@ -92,59 +95,48 @@ export default function InformacionEmpresaForm({ initialData, isCreation, onSave
             onSubmit={handleSubmit(submitForm)}
             className="space-y-8 p-4"
         >
-            <h2 className="text-xl font-semibold text-gray-800 border-b pb-2">1. Información Principal</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <FormInput
-                    label="Nombre de la Empresa *"
-                    {...register('nombreEmpresa')}
-                    required
-                />
-                
-                <FormInput
-                    label="NIT/RUC"
-                    {...register('nit')}
-                />
-                <FormInput
-                    label="URL del Logo *"
-                    {...register('urlLogo')}
-                    required
-                    placeholder="Ej: https://tudominio.com/logo.png"
-                />
-                <FormInput
-                    label="URL del Favicon"
-                    {...register('urlFavicon')}
-                    placeholder="Ej: https://tudominio.com/favicon.ico"
-                />
-            </div>
+            
 
-            <h2 className="text-xl font-semibold text-gray-800 border-b pb-2 pt-4">2. Contacto y Ubicación</h2>
+            <h2 className="text-xl font-semibold text-gray-800 border-b pb-2 pt-4">1. Contacto y Ubicación</h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <FormInput
                     label="Teléfono Fijo *"
-                    {...register('telefonoFijo')}
+                    {...register('telefonoFijo', {
+                        required: "El teléfono fijo es obligatorio",
+                        minLength: { value: 1, message: "No puede estar vacío" },
+                        maxLength: { value: 50, message: "Máximo 50 caracteres" },
+                    })}
                     required
                 />
                 <FormInput
                     label="WhatsApp *"
-                    {...register('whatsapp')}
+                    {...register('whatsapp', {
+                        required: "El WhatsApp es obligatorio"
+                    })}
                     required
                 />
                 <FormInput
                     label="Email Info *"
-                    {...register('emailInfo')}
+                    {...register('emailInfo', {
+                        required: "El email es obligatorio",
+                        minLength: { value: 1, message: "No puede estar vacío" },
+                        maxLength: { value: 100, message: "Máximo 100 caracteres" },
+                        pattern: {
+                            value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+                            message: "Debe ser un email válido"
+                        }
+                    })}
                     type="email"
                     required
                 />
-                <FormInput
-                    label="Email Ventas"
-                    {...register('emailVentas')}
-                    type="email"
-                />
+               
             </div>
             <div className="grid grid-cols-1 gap-6">
                 <FormInput 
                     label="Dirección Principal *"
-                    {...register('direccionPrincipal')}
+                    {...register('direccionPrincipal', {
+                        required: "La dirección es obligatoria"
+                    })}
                     required
                 />
             </div>
