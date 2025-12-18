@@ -100,7 +100,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
         <div className="p-4 flex flex-col">
           {/* Nombre del producto - Negrita, centrado */}
           <Link href={targetHref}>
-            <h3 className="text-center text-lg font-bold text-gray-900 line-clamp-2 mb-2 min-h-[3.5rem] hover:text-[#2e9fdb] transition-colors">
+            <h3 className="text-center text-base font-semibold text-gray-900 mb-1 hover:text-[#2e9fdb] transition-colors font-sans">
               {nombre}
             </h3>
           </Link>
