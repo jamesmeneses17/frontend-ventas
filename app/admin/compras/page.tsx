@@ -211,10 +211,7 @@ export default function ComprasPage() {
         const total = items.length;
         const start = (page - 1) * size;
         const pageItems = items.slice(start, start + size);
-        console.log("[ComprasPage] Resultado final (sin filtro):", {
-          total,
-          pageItemsLength: pageItems.length,
-        });
+        
         return { data: pageItems, total };
       },
       createItem: createCompra,

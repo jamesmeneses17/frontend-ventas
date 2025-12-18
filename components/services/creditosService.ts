@@ -1,164 +1,133 @@
+// components/services/creditosService.ts
 import axios from "axios";
 import { API_URL } from "./apiConfig";
+
 const ENDPOINT_BASE = `${API_URL}/creditos`;
 
-// ------------------------------------------------------
-// Interfaces
-// ------------------------------------------------------
+/* ============================
+   INTERFACES
+============================ */
+
+// Detalle del crédito
+export interface DetalleCredito {
+  id?: number;
+  producto_id: number;
+  cantidad: number;
+  precio_unitario?: number;
+  subtotal?: number;
+}
+
+// Crédito principal
 export interface Credito {
-    id: number;
-    cliente_id: number;
-    articulo: string;
-    articulo_id?: number;
-
-    valor_credito: number;
-    saldo_pendiente: number;
-
-    fecha_inicial: string;
-    fecha_final: string;
-
-    estado: "PENDIENTE" | "PAGADO";
-
-    pagos?: any[];
+  id: number;
+  numero_factura?: string;
+  cliente_id: number;
+  saldo_pendiente: number;
+  fecha_inicial: string;
+  fecha_final?: string;
+  estado: "PENDIENTE" | "PAGADO";
+  detalles: DetalleCredito[];
 }
 
-export interface CreateCreditoDTO {
-    cliente_id: number;
-    articulo_id?: number;
-    articulo: string;
-    valor_credito: number;
-    fecha_inicial: string;
-    fecha_final: string;
+/* ============================
+   PAYLOADS
+============================ */
+
+export interface CreateCreditoPayload {
+  numero_factura?: string;
+  cliente_id: number;
+  saldo_pendiente: number;
+  fecha_inicial: string;
+  fecha_final?: string;
+  estado?: "PENDIENTE" | "PAGADO";
+  detalles: DetalleCredito[];
 }
 
-export interface UpdateCreditoDTO extends Partial<CreateCreditoDTO> {}
+export type UpdateCreditoPayload = Partial<CreateCreditoPayload>;
 
-export interface PaginacionResponse<T> {
-    data: T[];
-    total: number;
+/* ============================
+   RESPUESTAS
+============================ */
+
+export interface GetCreditosResponse {
+  data: Credito[];
+  total: number;
 }
 
-// ------------------------------------------------------
-// Obtener créditos con paginación
-// ------------------------------------------------------
+/* ============================
+   CRUD
+============================ */
+
+/**
+ * Crear crédito
+ */
+export const createCredito = async (
+  data: CreateCreditoPayload
+): Promise<Credito> => {
+  const payload: any = {
+    ...data,
+    cliente_id: Number(data.cliente_id),
+    saldo_pendiente: Number(data.saldo_pendiente) || 0,
+  };
+
+  Object.keys(payload).forEach(
+    (k) => payload[k] === undefined && delete payload[k]
+  );
+
+  const res = await axios.post(ENDPOINT_BASE, payload);
+  return res.data;
+};
+
+/**
+ * Obtener créditos (paginado + búsqueda)
+ */
 export const getCreditos = async (
-    page: number = 1,
-    size: number = 10,
-    search: string = ""
-): Promise<PaginacionResponse<Credito>> => {
+  page: number,
+  limit: number,
+  search: string
+): Promise<GetCreditosResponse> => {
+  const res = await axios.get(ENDPOINT_BASE, {
+    params: {
+      page,
+      limit,
+      search,
+    },
+  });
 
-    const params = new URLSearchParams();
-    params.append("page", String(page));
-    params.append("limit", String(size));
-    if (search) params.append("search", search);
-
-    const endpoint = `${ENDPOINT_BASE}?${params.toString()}`;
-
-    console.log("[getCreditos] GET:", endpoint);
-
-    try {
-        const res = await axios.get(endpoint);
-
-        // Manejo de posibles errores enviados como body
-        if (res.data && (res.data.statusCode || res.data.status)) {
-            const code = res.data.statusCode ?? res.data.status;
-            if (code >= 400) {
-                console.error("[getCreditos] API error:", res.data);
-                return { data: [], total: 0 };
-            }
-        }
-
-        let items = res.data;
-        let creditos: Credito[] = [];
-        let total = 0;
-
-        // Respuesta NestJS paginada
-        if (items && Array.isArray(items.data)) {
-            creditos = items.data;
-            total = items.total || creditos.length;
-        }
-        // Array plano
-        else if (Array.isArray(items)) {
-            creditos = items;
-            total = creditos.length;
-        }
-
-        return { data: creditos, total };
-    } catch (err: any) {
-        console.error("[getCreditos] Error:", err?.message ?? err);
-        throw err;
-    }
+  return {
+    data: res.data.data ?? res.data,
+    total: res.data.total ?? res.data.length ?? 0,
+  };
 };
 
-// ------------------------------------------------------
-// Obtener crédito por ID
-// ------------------------------------------------------
+/**
+ * Obtener crédito por ID
+ */
 export const getCreditoById = async (id: number): Promise<Credito> => {
-    const endpoint = `${ENDPOINT_BASE}/${id}`;
-    console.log("[getCreditoById] GET:", endpoint);
-
-    try {
-        const res = await axios.get(endpoint);
-        return res.data as Credito;
-    } catch (err: any) {
-        console.error("[getCreditoById] Error:", err);
-        throw err;
-    }
+  const res = await axios.get(`${ENDPOINT_BASE}/${id}`);
+  return res.data;
 };
 
-// ------------------------------------------------------
-// Crear crédito
-// ------------------------------------------------------
-export const createCredito = async (data: CreateCreditoDTO): Promise<Credito> => {
+/**
+ * Actualizar crédito
+ */
+export const updateCredito = async (
+  id: number,
+  data: UpdateCreditoPayload
+): Promise<Credito> => {
+  const payload: any = { ...data };
 
-    const payload = {
-        cliente_id: Number(data.cliente_id),
-        articulo_id: typeof (data as any).articulo_id !== 'undefined' ? Number((data as any).articulo_id) : undefined,
-        articulo: String(data.articulo ?? "").trim(),
-        valor_credito: Number(String(data.valor_credito).replace(/[^0-9.\-]/g, "")) || 0,
-        fecha_inicial: data.fecha_inicial,
-        fecha_final: data.fecha_final,
-    };
+  Object.keys(payload).forEach(
+    (k) => payload[k] === undefined && delete payload[k]
+  );
 
-    console.log("[createCredito] POST:", ENDPOINT_BASE, payload);
-
-    try {
-        const res = await axios.post(ENDPOINT_BASE, payload);
-        return res.data as Credito;
-    } catch (err: any) {
-        console.error("[createCredito] Error:", err);
-        throw err;
-    }
+  const res = await axios.put(`${ENDPOINT_BASE}/${id}`, payload);
+  return res.data;
 };
 
-// ------------------------------------------------------
-// Actualizar crédito
-// ------------------------------------------------------
-export const updateCredito = async (id: number, data: UpdateCreditoDTO): Promise<Credito> => {
-    const endpoint = `${ENDPOINT_BASE}/${id}`;
-
-    console.log("[updateCredito] PATCH:", endpoint, data);
-
-    try {
-        const res = await axios.patch(endpoint, data);
-        return res.data as Credito;
-    } catch (err: any) {
-        console.error("[updateCredito] Error:", err);
-        throw err;
-    }
-};
-
-// ------------------------------------------------------
-// Eliminar crédito
-// ------------------------------------------------------
+/**
+ * Eliminar crédito
+ */
 export const deleteCredito = async (id: number): Promise<void> => {
-    const endpoint = `${ENDPOINT_BASE}/${id}`;
-    console.log("[deleteCredito] DELETE:", endpoint);
-
-    try {
-        await axios.delete(endpoint);
-    } catch (err: any) {
-        console.error("[deleteCredito] Error:", err);
-        throw err;
-    }
+  await axios.delete(`${ENDPOINT_BASE}/${id}`);
 };

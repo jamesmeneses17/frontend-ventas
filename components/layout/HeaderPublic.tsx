@@ -34,7 +34,7 @@ const HeaderPublic: React.FC = () => {
   const navigationItems = [
     { name: "Inicio", href: "/", isDropdown: false },
     { name: "Productos", href: "/productos", isDropdown: true },
-    { name: "Nosotros", href: "/nosotros", isDropdown: false },
+   /* { name: "Nosotros", href: "/nosotros", isDropdown: false },*/
     { name: "Contacto", href: "/contacto", isDropdown: false },
   ];
 
