@@ -44,9 +44,9 @@ const navigation = [
     items: [
       // Marcamos individualmente qué rutas están en desarrollo (dev: true)
       { name: "Información de Empresa", href: "/admin/info_empresa", icon: FileText },
-      { name: "Banners y Carrusel", href: "/admin/banners_carrusel", icon: Image },
-      { name: "Sedes y Direcciones", href: "/admin/sedes", icon: MapPin, dev: true },
-      { name: "Secciones de Contenido", href: "/admin/secciones-contenido", icon: Type, dev: true },
+      /*{ name: "Banners y Carrusel", href: "/admin/banners_carrusel", icon: Image },*/
+      /*{ name: "Sedes y Direcciones", href: "/admin/sedes", icon: MapPin, dev: true },
+      { name: "Secciones de Contenido", href: "/admin/secciones-contenido", icon: Type, dev: true },*/
     ],
   },
   {
