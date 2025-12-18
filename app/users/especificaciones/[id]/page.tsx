@@ -564,15 +564,7 @@ function ProductDetailPageContent({ productId }: { productId: string }) {
                   />
                 </div>
 
-                {/* Descripción Corta */}
-                {descripcion && (
-                  <div className="mb-6 p-4 bg-white rounded-lg border border-gray-200">
-                    <h3 className="text-sm font-semibold text-gray-700 mb-2">Descripción:</h3>
-                    <p className="text-sm text-gray-600 leading-relaxed line-clamp-4">
-                      {descripcion}
-                    </p>
-                  </div>
-                )}
+             
 
                 {/* Selector de Cantidad */}
                 <div className="mb-6">

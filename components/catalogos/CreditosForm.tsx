@@ -80,12 +80,12 @@ export default function CreditosForm({
   // Pagos
   const [pagos, setPagos] = React.useState<any[]>([]);
   const [nuevoPago, setNuevoPago] = React.useState("");
+  const [notasPago, setNotasPago] = React.useState("");
   const [pagosLoading, setPagosLoading] = React.useState(false);
   const [pagoError, setPagoError] = React.useState<string | null>(null);
 
-  // Calcular total productos y total pagos (debe ir después de definir pagos y detalles)
-  const detallesForm = values.detalles && Array.isArray(values.detalles) ? values.detalles : detalles;
-  const totalProductos = detallesForm.reduce((sum, d) => sum + (Number(d.subtotal) || 0), 0);
+  // Calcular total productos y total pagos usando SIEMPRE el estado local detalles
+  const totalProductos = detalles.reduce((sum, d) => sum + (Number(d.subtotal) || 0), 0);
   const totalPagos = pagos.reduce((sum, p) => sum + (Number(p.monto_pago) || 0), 0);
   const saldoPendiente = Math.max(totalProductos - totalPagos, 0);
 
@@ -183,12 +183,21 @@ export default function CreditosForm({
                 onSubmit={async (e) => {
                   e.preventDefault();
                   setPagoError(null);
-                  if (!initialData?.id) return setPagoError("No hay crédito seleccionado");
+                  // Validar que el crédito exista
+                  if (!initialData?.id) {
+                    setPagoError("Primero debes guardar el crédito antes de registrar un abono.");
+                    return;
+                  }
+                  // Validar monto
                   const monto = Number(nuevoPago);
-                  if (isNaN(monto) || monto <= 0) return setPagoError("Monto inválido");
+                  if (nuevoPago === "" || isNaN(monto) || monto <= 0) {
+                    setPagoError("Ingresa un monto válido mayor a 0.");
+                    return;
+                  }
                   try {
-                    await registrarPago({ credito_id: initialData.id, monto_pago: monto });
+                    await registrarPago({ credito_id: initialData.id, monto_pago: monto, notas: notasPago });
                     setNuevoPago("");
+                    setNotasPago("");
                     // Recargar pagos
                     setPagosLoading(true);
                     const pagosActualizados = await getPagosByCredito(initialData.id);
@@ -207,6 +216,13 @@ export default function CreditosForm({
                   placeholder="Monto del pago"
                   value={nuevoPago}
                   onChange={e => setNuevoPago(e.target.value)}
+                />
+                <input
+                  type="text"
+                  className="form-input w-48"
+                  placeholder="Notas (opcional)"
+                  value={notasPago}
+                  onChange={e => setNotasPago(e.target.value)}
                 />
                 <button type="submit" className="bg-green-600 text-white rounded px-3 py-2 ml-2">Registrar Pago</button>
                 {pagoError && <span className="text-red-600 text-xs ml-2">{pagoError}</span>}

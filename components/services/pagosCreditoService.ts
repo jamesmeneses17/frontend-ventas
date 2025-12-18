@@ -27,17 +27,17 @@ export const registrarPago = async (
     nuevo_saldo: number;
     estado: "PENDIENTE" | "PAGADO";
 }> => {
-
     // Normalizar y forzar el payload esperado por el backend
     const payload = {
         credito_id: Number(data.credito_id ?? data.creditoId ?? data.credito_id),
         monto_pago: Number(String(data.monto_pago ?? data.montoPago ?? data.monto).replace(/[^0-9.\-]/g, "")) || 0,
     };
 
-    console.log("[registrarPago] POST (normalized payload):", ENDPOINT_BASE, payload);
+    const endpointAbono = `${ENDPOINT_BASE}/abono`;
+    console.log("[registrarPago] POST (normalized payload):", endpointAbono, payload);
 
     try {
-        const res = await axios.post(ENDPOINT_BASE, payload);
+        const res = await axios.post(endpointAbono, payload);
         console.log("[registrarPago] response:", res.status, res.data);
         return res.data;
     } catch (err: any) {
@@ -49,9 +49,8 @@ export const registrarPago = async (
 // ------------------------------------------------------
 // Obtener pagos por crédito (opcional si los usas en UI)
 // ------------------------------------------------------
-// AJUSTA AQUÍ la ruta según tu backend, por ejemplo:
-// const endpoint = `${ENDPOINT_BASE}/by-credito/${creditoId}`;
-const endpointPagosByCredito = (creditoId: number) => `${ENDPOINT_BASE}/by-credito/${creditoId}`;
+// Usar el endpoint correcto según el backend: /pagos-credito/historial/{creditoId}
+const endpointPagosByCredito = (creditoId: number) => `${ENDPOINT_BASE}/historial/${creditoId}`;
 export const getPagosByCredito = async (creditoId: number): Promise<PagoCredito[]> => {
     const endpoint = endpointPagosByCredito(creditoId);
 

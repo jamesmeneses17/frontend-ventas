@@ -58,7 +58,8 @@ const SearchDropdown: React.FC<SearchDropdownProps> = ({
     onSearchTermChange, 
     onSearchSubmit, 
     maxResults = 5, 
-    debounceMs = 300 
+    debounceMs = 300,
+    onSelect
 }) => {
     const [searchTerm, setSearchTerm] = useState('');
     const [results, setResults] = useState<SearchResultItem[]>([]);
