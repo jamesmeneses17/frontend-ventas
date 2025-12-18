@@ -143,7 +143,8 @@ export default function ListaForm({
     if (sub && sub.categoria_id !== formValues.categoriaId) {
       setValue("categoriaId", sub.categoria_id);
     }
-  }, [formValues.subcategoriaId]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formValues.subcategoriaId, formValues.categoriaId, setValue, subcategorias]);
 
   /* =========================
      HANDLERS
@@ -189,16 +190,21 @@ export default function ListaForm({
   /* =========================
      OPTIONS
   ========================= */
-  const categoriaOptions = categorias.map((c) => ({
-    value: String(c.id),
-    label: c.nombre,
-  }));
+  // Agregar opción para eliminar la categoría (Sin categoría)
+  const categoriaOptions = [
+    { value: "0", label: "Sin categoría" },
+    ...categorias.map((c) => ({
+      value: String(c.id),
+      label: c.nombre,
+    })),
+  ];
 
+  // Opción para eliminar subcategoría (Sin subcategoría)
   const subcategoriaOptions = [
     { value: "0", label: "Sin subcategoría" },
     ...subcategorias
       .filter((s) =>
-        formValues.categoriaId
+        formValues.categoriaId && formValues.categoriaId !== 0
           ? s.categoria_id === formValues.categoriaId
           : true
       )
@@ -232,7 +238,6 @@ export default function ListaForm({
           value={String(formValues.categoriaId ?? 0)}
           onChange={handleChange}
           options={categoriaOptions}
-          required
         />
         <FormSelect
           label="Activo"

@@ -3,8 +3,8 @@ import { createSlug } from './slug';
 
 
 export interface BaseProductType {
-    id: number;
-    nombre: string;
+	id: number;
+	nombre: string;
 	precios?: { valor_unitario: string | number; descuento_porcentaje?: number; descuento?: number; valor_final?: number }[];
 	inventario?: { stock: number }[];
 	// La API puede devolver `categoria` como objeto o string
@@ -12,6 +12,11 @@ export interface BaseProductType {
 	// Posible campo de ventas si el backend lo entrega
 	ventas?: number;
 	sales?: number;
+	/**
+	 * Indica si el producto está activo (visible públicamente).
+	 * Puede venir como booleano o como 1/0 del backend, pero se normaliza a booleano en el servicio.
+	 */
+	activo?: boolean;
 }
 
 
