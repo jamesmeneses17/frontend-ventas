@@ -65,10 +65,7 @@ export default function CreditosTable({
      COLUMNAS
   ======================= */
   const columns = [
-    {
-      key: "id",
-      label: "#",
-    },
+    
     {
       key: "numero_factura",
       label: "Factura",

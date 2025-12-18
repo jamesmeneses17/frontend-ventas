@@ -8,7 +8,6 @@ import AuthenticatedLayout from "../../../components/layout/AuthenticatedLayout"
 import CardStat from "../../../components/ui/CardStat";
 import FilterBar from "../../../components/common/FilterBar";
 import Paginator from "../../../components/common/Paginator";
-import ModalVentana from "../../../components/ui/ModalVentana";
 import Alert from "../../../components/ui/Alert";
 import ActionButton from "../../../components/common/ActionButton";
 
@@ -21,6 +20,7 @@ import {
   createCredito,
 } from "../../../components/services/creditosService";
 import CreditosForm from "../../../components/catalogos/CreditosForm";
+import ModalVentana from "../../../components/ui/ModalVentana";
 
 /* ============================
    PAGE

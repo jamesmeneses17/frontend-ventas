@@ -45,14 +45,12 @@ const fetchSearchProducts = async (query: string, limit: number): Promise<Search
 
 interface SearchDropdownProps {
     placeholder: string;
-    // Callback opcional para notificar el término de búsqueda al componente padre (debounced)
     onSearchTermChange?: (value: string) => void;
-    // Callback opcional cuando el usuario hace submit (Enter o "Ver todos...")
     onSearchSubmit?: (value: string) => void;
-    // Número máximo de resultados a mostrar en el desplegable
     maxResults?: number;
-    // Tiempo de debounce en ms (por defecto 300)
     debounceMs?: number;
+    // Nuevo: callback para selección directa (no navegar)
+    onSelect?: (item: SearchResultItem) => void;
 }
 
 const SearchDropdown: React.FC<SearchDropdownProps> = ({ 
@@ -178,39 +176,40 @@ const SearchDropdown: React.FC<SearchDropdownProps> = ({
                                     Resultados sugeridos
                                 </p>
                                 {results.map((item) => (
-                                    <Link
+                                    <div
                                         key={`${item.tipo}-${item.id}`}
-                                        href={item.href}
-                                        onClick={() => { setIsFocused(false); setSearchTerm(''); }}
-                                        className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition duration-150"
+                                        className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition duration-150 cursor-pointer"
+                                        style={{ minWidth: 260, maxWidth: 400 }}
+                                        onClick={e => {
+                                            setIsFocused(false);
+                                            setSearchTerm('');
+                                            if (typeof onSelect === 'function') {
+                                                e.preventDefault();
+                                                onSelect(item);
+                                            } else {
+                                                window.location.href = item.href;
+                                            }
+                                        }}
                                     >
-                                        {/* Icono dinámico: CubeIcon para Producto, TagIcon para Categoría */}
                                         {item.tipo === 'producto' ? (
-                                            <CubeIcon className="h-5 w-5 mr-3 text-amber-500" />
+                                            <CubeIcon className="h-5 w-5 mr-3 text-amber-500 flex-shrink-0" />
                                         ) : (
-                                            <TagIcon className="h-5 w-5 mr-3 text-blue-500" />
+                                            <TagIcon className="h-5 w-5 mr-3 text-blue-500 flex-shrink-0" />
                                         )}
-
-                                        <span className="truncate">{item.nombre}</span>
-
+                                        <span className="whitespace-normal break-words flex-1 pr-2" style={{maxWidth:220}}>{item.nombre}</span>
                                         <div className="ml-auto flex items-center gap-3">
-                                            {/* MOSTRAR PRECIO: Solo si es producto y tiene precio */}
                                             {item.tipo === 'producto' && item.precio !== undefined && (
                                                 <span className="text-sm font-semibold text-gray-800">
                                                     {formatCurrency(item.precio, '$')}
                                                 </span>
                                             )}
-
-                                            {/* Etiqueta de tipo: solo mostrar para categorías */}
                                             {item.tipo === 'categoria' && (
-                                                <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${
-                                                    'bg-blue-100 text-blue-800'
-                                                }`}>
+                                                <span className={`px-2 py-0.5 text-xs font-medium rounded-full bg-blue-100 text-blue-800`}>
                                                     Categoría
                                                 </span>
                                             )}
                                         </div>
-                                    </Link>
+                                    </div>
                                 ))}
 
                                 {/* Opción de Búsqueda Completa */}

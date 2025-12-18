@@ -4,48 +4,61 @@
 
 import { ReactNode } from "react";
 
+import { Fragment } from "react";
+import { Dialog, Transition } from "@headlessui/react";
+
 interface ModalProps {
     children: ReactNode;
-    isOpen: boolean; 
-    onClose: () => void; // Hacemos onClose requerido
+    isOpen: boolean;
+    onClose: () => void;
     title?: string;
-    // Opcional: Permite cambiar el ancho del modal, por si lo necesitas más grande después.
-    maxWidth?: string; 
 }
 
-export default function Modal({ 
-    children, 
-    isOpen, 
-    onClose, 
-    title, 
-    // 🔥 CLAVE DEL DISEÑO: Usamos 'max-w-md' como valor predeterminado
-    // Esto asegura que el formulario se vea compacto como antes.
-    maxWidth = "max-w-md" 
-}: ModalProps) {
-    
-    if (!isOpen) return null;
-
+export default function ModalVentana({ children, isOpen, onClose, title }: ModalProps) {
     return (
-        // 1. Fondo (Overlay): Fijo, ocupa toda la pantalla, z-index alto.
-        // Hacemos que el clic en el fondo oscuro lo cierre.
-        <div 
-            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
-            onClick={onClose} 
-        >
-            {/* 2. Contenedor del Modal */}
-            <div 
-                // Detiene la propagación del evento, para que el clic dentro del modal no lo cierre
-                onClick={(e) => e.stopPropagation()}
-                // Clases del contenedor: fondo blanco, redondeado, shadow, w-full, centrado
-                // y usamos la clase maxWidth.
-                className={`bg-white rounded-lg shadow-2xl p-6 w-full ${maxWidth} mx-4`}
-            >
-                {/* Título (Usa el mismo estilo que tenías antes: text-xl font-bold) */}
-                {title && <h2 className="text-xl font-bold mb-4">{title}</h2>}
-                
-                {/* Contenido del formulario */}
-                {children}
-            </div>
-        </div>
+        <Transition.Root show={isOpen} as={Fragment}>
+            <Dialog as="div" className="relative z-50" onClose={onClose}>
+                <Transition.Child
+                    as={Fragment}
+                    enter="ease-out duration-300"
+                    enterFrom="opacity-0"
+                    enterTo="opacity-100"
+                    leave="ease-in duration-200"
+                    leaveFrom="opacity-100"
+                    leaveTo="opacity-0"
+                >
+                    <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" />
+                </Transition.Child>
+
+                <div className="fixed inset-0 z-50 overflow-y-auto">
+                    <div className="flex min-h-full items-center justify-center p-4 text-center sm:p-0">
+                        <Transition.Child
+                            as={Fragment}
+                            enter="ease-out duration-300"
+                            enterFrom="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+                            enterTo="opacity-100 translate-y-0 sm:scale-100"
+                            leave="ease-in duration-200"
+                            leaveFrom="opacity-100 translate-y-0 sm:scale-100"
+                            leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+                        >
+                            <Dialog.Panel className="relative bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:w-full sm:max-w-2xl">
+                                {/* Título */}
+                                {title && (
+                                    <div className="px-6 py-4 border-b">
+                                        <Dialog.Title as="h3" className="text-lg font-medium leading-6 text-gray-900">
+                                            {title}
+                                        </Dialog.Title>
+                                    </div>
+                                )}
+                                {/* Contenido con scroll */}
+                                <div className="px-6 py-4 max-h-[80vh] overflow-y-auto">
+                                    {children}
+                                </div>
+                            </Dialog.Panel>
+                        </Transition.Child>
+                    </div>
+                </div>
+            </Dialog>
+        </Transition.Root>
     );
 }
