@@ -149,6 +149,16 @@ export default function ListaTable({
       label: "Ficha Técnica",
       render: (row: Producto) => <RowFiles producto={row} uploadAsFicha />,
     },
+    {
+      key: "activo",
+      label: "Activo",
+      render: (row: Producto) =>
+        row.activo === true ? (
+          <span className="text-green-600 font-semibold">Sí</span>
+        ) : (
+          <span className="text-red-500 font-semibold">No</span>
+        ),
+    },
    
     
    

@@ -97,8 +97,10 @@ export const useProductListLogic = (initialSort: SortOption = 'relevancia') => {
 
     // 4. Mapeo y Ordenamiento (Memorizado)
     const displayedProducts = useMemo(() => {
+        // Filtrar productos inactivos (solo mostrar activos)
+        const productosActivos = productos.filter((p) => p.activo === true);
         // Mapeo: Transformar datos de la API a formato de tarjeta
-        let mappedProducts: ProductCardData[] = productos.map((p) => {
+        let mappedProducts: ProductCardData[] = productosActivos.map((p) => {
             // Preferir precio activo/proyecto desde el servicio de `precios` si existe
             const precioEntry = preciosList.find(pr => Number(pr.productoId ?? pr.producto?.id) === Number(p.id));
             

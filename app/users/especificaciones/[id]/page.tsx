@@ -220,11 +220,11 @@ function ProductDetailPageContent({ productId }: { productId: string }) {
     );
   }
 
-  if (error || !product) {
+  if (error || !product || product.activo === false) {
     return (
       <PublicLayout>
         <div className="text-center py-20 text-red-600">
-          {error ?? "Producto no encontrado."}
+          {error ?? (!product ? 'Producto no encontrado.' : 'Este producto no está disponible para consulta pública.')}
         </div>
       </PublicLayout>
     );

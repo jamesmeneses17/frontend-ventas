@@ -188,17 +188,17 @@ export interface Producto {
     codigo: string;
     descripcion?: string; 
     ficha_tecnica_url?: string;
-    imagenes?: ProductoImagen[];    // ✅ Campos aplanados/calculados que vienen del backend
-    stock: number;             // DEBE SER OBLIGATORIO si siempre viene del backend
-    precio: number;            // DEBE SER OBLIGATORIO
+    imagenes?: ProductoImagen[];    // ✅ Campos aplanados/calculados que vienen del backend
+    stock: number;             // DEBE SER OBLIGATORIO si siempre viene del backend
+    precio: number;            // DEBE SER OBLIGATORIO
     // ✅ Campo de Stock Mínimo (Necesario para el formulario de edición)
     stockMinimo?: number;
-    estado_stock: 'Disponible' | 'Stock Bajo' | 'Agotado'; // DEBE SER OBLIGATORIO
-    
-    // Relaciones 
-    caracteristicas?: any[];
-    precios?: Precio[]; 
-    inventario?: any[]; // La entidad inventario completa
+    estado_stock: 'Disponible' | 'Stock Bajo' | 'Agotado'; // DEBE SER OBLIGATORIO
+    activo?: boolean; // Nuevo campo para estado activo
+    // Relaciones 
+    caracteristicas?: any[];
+    precios?: Precio[]; 
+    inventario?: any[]; // La entidad inventario completa
     // Campos copiados desde la relación inventario (opcional, el backend puede exponerlos en la raíz)
     compras?: number;
     ventas?: number;
@@ -298,30 +298,34 @@ export const getProductos = async (
         // Usar product.stock como primera opción; fallback a product.inventario?.stock si existe.
 
         const normalized = productos.map((it: any) => {
-            // El backend puede enviar `precio_costo` o `precio`. Preferimos usar
-            // `precio_costo` cuando es mayor a 0. Si es 0 o nulo, usamos `precio`.
-            // Preferir en este orden: precio_venta (si existe), precio_costo, luego precio
+            // Normalizar el campo activo: puede venir como 1/0, true/false, o string
+            let activoBool: boolean | undefined = undefined;
+            if (typeof it.activo !== 'undefined') {
+                if (typeof it.activo === 'boolean') {
+                    activoBool = it.activo;
+                } else if (typeof it.activo === 'number') {
+                    activoBool = it.activo === 1;
+                } else if (typeof it.activo === 'string') {
+                    activoBool = it.activo === '1' || it.activo.toLowerCase() === 'true';
+                }
+            }
             const precioVentaNum = Number(it.precio_venta ?? it.precioVenta ?? 0);
             const precioCostoNum = Number(it.precio_costo ?? 0);
             const precioNum = Number(it.precio ?? 0);
             const finalPrice = precioVentaNum > 0 ? precioVentaNum : (precioCostoNum > 0 ? precioCostoNum : precioNum);
-            // Priorizar el campo `stock` en la raíz del producto (setiado por el backend).
-            // Si no existe, intentar leer `it.inventario?.stock` o `it.inventario?.[0]?.stock`.
             const finalStock = Number(it.stock ?? it.inventario?.[0]?.stock) || 0;
             const finalStockMinimo = Number(it.stockMinimo) || 5;
-            // Normalizar subcategoriaId: aceptar tanto camelCase como snake_case del backend
             const finalSubcategoriaId = it.subcategoriaId ?? it.subcategoria_id;
             const finalCategoriaId = it.categoriaId ?? it.categoria_id;
             return {
                 ...it,
-                // 🛑 CAMBIO CRÍTICO: la columna 'precio' que muestra la tabla
-                // debe tomar el valor de 'precio_costo' proporcionado por el backend.
-                    precio: finalPrice,
-                    stock: finalStock,
-                    stockMinimo: finalStockMinimo,
-                    categoriaId: finalCategoriaId,
-                    subcategoriaId: finalSubcategoriaId,
-                    imagenes: it.imagenes || [],
+                precio: finalPrice,
+                stock: finalStock,
+                stockMinimo: finalStockMinimo,
+                categoriaId: finalCategoriaId,
+                subcategoriaId: finalSubcategoriaId,
+                imagenes: it.imagenes || [],
+                activo: activoBool,
             };
         });
 
@@ -349,14 +353,25 @@ export const getProductoById = async (id: number): Promise<Producto> => {
     try {
         const res = await axios.get(`${ENDPOINT_BASE}/${id}/with-relations`);
         const data = res.data;
-        // Normalizar campos numéricos
-    const precioVentaNum = Number(data.precio_venta ?? data.precioVenta ?? 0);
-    const precioCostoNum = Number(data.precio_costo ?? 0);
-    const precioNum = Number(data.precio ?? 0);
+        // Normalizar campos numéricos y el campo activo
+        const precioVentaNum = Number(data.precio_venta ?? data.precioVenta ?? 0);
+        const precioCostoNum = Number(data.precio_costo ?? 0);
+        const precioNum = Number(data.precio ?? 0);
+        let activoBool: boolean | undefined = undefined;
+        if (typeof data.activo !== 'undefined') {
+            if (typeof data.activo === 'boolean') {
+                activoBool = data.activo;
+            } else if (typeof data.activo === 'number') {
+                activoBool = data.activo === 1;
+            } else if (typeof data.activo === 'string') {
+                activoBool = data.activo === '1' || data.activo.toLowerCase() === 'true';
+            }
+        }
         data.precio = precioVentaNum > 0 ? precioVentaNum : (precioCostoNum > 0 ? precioCostoNum : precioNum);
         data.stock = Number(data.stock) || 0;
         data.stockMinimo = Number(data.stockMinimo) || 5;
         data.imagenes = data.imagenes || [];
+        data.activo = activoBool;
         return data as Producto;
     } catch (err: any) {
         lastError = err;
@@ -442,13 +457,24 @@ export const getProductosSimple = async (productosArray: any[]): Promise<Product
         const precioVentaNum = Number(p.precio_venta ?? p.precioVenta ?? 0);
         const precioCostoNum = Number(p.precio_costo ?? 0);
         const precioNum = Number(p.precio ?? 0);
+        // Normalizar el campo activo
+        let activoBool: boolean | undefined = undefined;
+        if (typeof p.activo !== 'undefined') {
+            if (typeof p.activo === 'boolean') {
+                activoBool = p.activo;
+            } else if (typeof p.activo === 'number') {
+                activoBool = p.activo === 1;
+            } else if (typeof p.activo === 'string') {
+                activoBool = p.activo === '1' || p.activo.toLowerCase() === 'true';
+            }
+        }
         return {
             ...p,
-            // Preferir en este orden: precio_venta, precio_costo, precio
             precio: precioVentaNum > 0 ? precioVentaNum : (precioCostoNum > 0 ? precioCostoNum : precioNum),
             stock: Number(p.stock ?? 0),
             stockMinimo: finalStockMinimo,
             estado_stock: calculated_estado_stock,
+            activo: activoBool,
         } as Producto;
     });
 

@@ -29,7 +29,9 @@ const fetchSearchProducts = async (query: string, limit: number): Promise<Search
     // getProductos(page, size, stockFiltro, searchTerm, subcategoriaId?, categoriaId?)
     const response = await getProductos(1, limit, "", query);
     const items = response?.data || [];
-    const mapped: SearchResultItem[] = items.map((p: any) => ({
+    // Filtrar solo productos activos
+    const activos = items.filter((p: any) => p.activo === true);
+    const mapped: SearchResultItem[] = activos.map((p: any) => ({
         id: p.id,
         nombre: p.nombre,
         tipo: 'producto',

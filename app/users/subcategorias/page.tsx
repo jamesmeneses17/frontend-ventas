@@ -206,16 +206,23 @@ function SubcategoriasClientePageContent() {
   }, [categoriaPrincipalId, categoriaId]);
 
   // Mapear subcategorías a formato de display
+
   const displayedSubcategories: SubcategoryCardDisplayProps[] = subcategories
     .filter(sub => sub.activo === 1)
     .sort((a, b) => a.nombre.localeCompare(b.nombre))
     .map((sub) => ({
       id: sub.id,
       nombre: sub.nombre,
-      // Usar imagen_url de la BD si está disponible, si no usar fallback
       imageSrc: sub.imagen_url || mapCategoryToImage(sub.nombre, sub.id),
       href: `/users/productos?subcategoriaId=${sub.id}`,
     }));
+
+  // Redirigir si no hay subcategorías activas y hay una categoría seleccionada
+  useEffect(() => {
+    if (!loading && displayedSubcategories.length === 0 && categoria && categoria.id) {
+      router.replace(`/users/productos?categoriaId=${categoria.id}`);
+    }
+  }, [loading, displayedSubcategories.length, categoria, router]);
 
   return (
     <PublicLayout>
