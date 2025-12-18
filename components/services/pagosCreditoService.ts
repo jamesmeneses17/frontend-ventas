@@ -49,8 +49,11 @@ export const registrarPago = async (
 // ------------------------------------------------------
 // Obtener pagos por crédito (opcional si los usas en UI)
 // ------------------------------------------------------
+// AJUSTA AQUÍ la ruta según tu backend, por ejemplo:
+// const endpoint = `${ENDPOINT_BASE}/by-credito/${creditoId}`;
+const endpointPagosByCredito = (creditoId: number) => `${ENDPOINT_BASE}/by-credito/${creditoId}`;
 export const getPagosByCredito = async (creditoId: number): Promise<PagoCredito[]> => {
-    const endpoint = `${ENDPOINT_BASE}/credito/${creditoId}`;
+    const endpoint = endpointPagosByCredito(creditoId);
 
     console.log("[getPagosByCredito] GET:", endpoint);
 

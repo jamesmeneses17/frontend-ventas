@@ -1,6 +1,7 @@
 "use client";
 
-import React from "react";
+import React, { useEffect } from "react";
+import { getPagosByCredito, registrarPago } from "../services/pagosCreditoService";
 import { useForm, SubmitHandler } from "react-hook-form";
 import FormInput from "../common/form/FormInput";
 import FormSelect from "../common/form/FormSelect";
@@ -16,6 +17,7 @@ type ProductoDetalle = {
   subtotal: number;
 };
 
+
 type FormData = {
   numero_factura?: string;
   cliente_id: number;
@@ -26,12 +28,16 @@ type FormData = {
   detalles: ProductoDetalle[];
 };
 
+// Extiende el tipo para permitir id opcional en initialData
+type CreditoWithId = Partial<CreateCreditoPayload> & { id?: number };
+
+
 interface Props {
-  initialData?: Partial<CreateCreditoPayload> | null;
+  initialData?: CreditoWithId | null;
   onSubmit: (data: CreateCreditoPayload) => Promise<void> | void;
   onCancel: () => void;
   formError?: string;
-  onSaved: () => void | Promise<void>; // 👈 clave
+  onSaved: () => void | Promise<void>;
 }
 
 export default function CreditosForm({
@@ -62,7 +68,37 @@ export default function CreditosForm({
   const values = watch();
 
   // Manejo de productos seleccionados
-  const [detalles, setDetalles] = React.useState<ProductoDetalle[]>(initialData?.detalles || []);
+  // Adaptar detalles para que siempre tengan producto_nombre (si viene de la API sin esa propiedad)
+  const detallesIniciales: ProductoDetalle[] = (initialData?.detalles || []).map((d: any) => ({
+    producto_id: d.producto_id,
+    producto_nombre: d.producto_nombre || d.producto?.nombre || "",
+    cantidad: d.cantidad,
+    precio_unitario: d.precio_unitario,
+    subtotal: d.subtotal,
+  }));
+  const [detalles, setDetalles] = React.useState<ProductoDetalle[]>(detallesIniciales);
+  // Pagos
+  const [pagos, setPagos] = React.useState<any[]>([]);
+  const [nuevoPago, setNuevoPago] = React.useState("");
+  const [pagosLoading, setPagosLoading] = React.useState(false);
+  const [pagoError, setPagoError] = React.useState<string | null>(null);
+
+  // Calcular total productos y total pagos (debe ir después de definir pagos y detalles)
+  const detallesForm = values.detalles && Array.isArray(values.detalles) ? values.detalles : detalles;
+  const totalProductos = detallesForm.reduce((sum, d) => sum + (Number(d.subtotal) || 0), 0);
+  const totalPagos = pagos.reduce((sum, p) => sum + (Number(p.monto_pago) || 0), 0);
+  const saldoPendiente = Math.max(totalProductos - totalPagos, 0);
+
+  // Cargar historial de pagos si estamos editando
+  useEffect(() => {
+    if (initialData && initialData.id) {
+      setPagosLoading(true);
+      getPagosByCredito(initialData.id)
+        .then(setPagos)
+        .catch(() => setPagos([]))
+        .finally(() => setPagosLoading(false));
+    }
+  }, [initialData]);
   // Para autocompletar
   const [selectedProduct, setSelectedProduct] = React.useState<any | null>(null);
   const [cantidadTmp, setCantidadTmp] = React.useState(1);
@@ -71,7 +107,7 @@ export default function CreditosForm({
     const payload: CreateCreditoPayload = {
       numero_factura: data.numero_factura?.trim(),
       cliente_id: Number(data.cliente_id),
-      saldo_pendiente: Number(String(data.saldo_pendiente).replace(/\./g, "")),
+      saldo_pendiente: saldoPendiente,
       fecha_inicial: data.fecha_inicial,
       fecha_final: data.fecha_final || undefined,
       estado: data.estado,
@@ -138,6 +174,70 @@ export default function CreditosForm({
 
       {/* Detalle */}
       {/* Sección para agregar productos al crédito */}
+            {/* Registro e historial de pagos */}
+            <div className="mb-4 p-2 border rounded-lg bg-gray-50">
+              <h4 className="font-semibold mb-2">Pagos del Crédito</h4>
+              {/* Formulario para registrar un nuevo pago */}
+              <form
+                className="flex flex-col md:flex-row gap-2 items-end mb-2"
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  setPagoError(null);
+                  if (!initialData?.id) return setPagoError("No hay crédito seleccionado");
+                  const monto = Number(nuevoPago);
+                  if (isNaN(monto) || monto <= 0) return setPagoError("Monto inválido");
+                  try {
+                    await registrarPago({ credito_id: initialData.id, monto_pago: monto });
+                    setNuevoPago("");
+                    // Recargar pagos
+                    setPagosLoading(true);
+                    const pagosActualizados = await getPagosByCredito(initialData.id);
+                    setPagos(pagosActualizados);
+                    setPagosLoading(false);
+                  } catch (err: any) {
+                    setPagoError("Error registrando pago");
+                    setPagosLoading(false);
+                  }
+                }}
+              >
+                <input
+                  type="number"
+                  min={1}
+                  className="form-input w-32"
+                  placeholder="Monto del pago"
+                  value={nuevoPago}
+                  onChange={e => setNuevoPago(e.target.value)}
+                />
+                <button type="submit" className="bg-green-600 text-white rounded px-3 py-2 ml-2">Registrar Pago</button>
+                {pagoError && <span className="text-red-600 text-xs ml-2">{pagoError}</span>}
+              </form>
+              {/* Historial de pagos */}
+              {pagosLoading ? (
+                <div className="text-xs text-gray-500">Cargando pagos...</div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="min-w-full text-xs border">
+                    <thead>
+                      <tr className="bg-gray-100">
+                        <th className="px-2 py-1">Fecha</th>
+                        <th className="px-2 py-1">Monto</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {pagos.length === 0 && (
+                        <tr><td colSpan={2} className="text-center text-gray-400 py-2">Sin pagos registrados</td></tr>
+                      )}
+                      {pagos.map((p) => (
+                        <tr key={p.id}>
+                          <td className="px-2 py-1">{p.fecha_pago?.substring(0,10) ?? p.fecha_pago}</td>
+                          <td className="px-2 py-1 font-semibold">{Number(p.monto_pago).toLocaleString("es-CO", { style: "currency", currency: "COP" })}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
       <div className="mb-4 p-2 border rounded-lg bg-gray-50">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-2 items-end">
           <div>
@@ -249,9 +349,9 @@ export default function CreditosForm({
       <FormInput
         label="Saldo pendiente"
         name="saldo_pendiente"
-        value={values.saldo_pendiente}
-        onChange={(e) => setValue("saldo_pendiente", e.target.value)}
-        required
+        value={saldoPendiente.toLocaleString("es-CO", { style: "currency", currency: "COP" })}
+        readOnly
+        disabled
       />
 
       {/* Botones */}
