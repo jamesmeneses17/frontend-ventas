@@ -1,9 +1,10 @@
 "use client";
 
-import React from "react";
-import { ShieldCheck, Package, AlertCircle } from "lucide-react";
+import React, { useState } from "react";
+import { ShieldCheck, Package, AlertCircle, CheckCircle, Loader2 } from "lucide-react";
 import { formatCurrency } from "../../utils/formatters";
 import Button from "../ui/button";
+import { updateEstadoPedido } from "../services/pedidosOnlineService";
 
 interface Props {
   pedido: any;
@@ -11,10 +12,31 @@ interface Props {
 }
 
 export default function DetallePedidoModal({ pedido, onClose }: Props) {
-  
+  const [loading, setLoading] = useState(false);
+
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
     alert("Código copiado: " + text);
+  };
+
+  /**
+   * Cambia el estado del pedido a CONFIRMADO.
+   * Esto hace que desaparezca de la campana de pendientes.
+   */
+  const handleConfirmarPedido = async () => {
+    if (!window.confirm("¿Confirmas que el HASH coincide y el pago es real?")) return;
+    
+    setLoading(true);
+    try {
+      await updateEstadoPedido(pedido.id, 'CONFIRMADO');
+      alert("✅ Pedido validado correctamente.");
+      onClose();
+      window.location.reload(); // Recarga para limpiar la campana y la tabla
+    } catch (err) {
+      alert("Error al actualizar el estado del pedido.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -24,7 +46,7 @@ export default function DetallePedidoModal({ pedido, onClose }: Props) {
         <div className="bg-emerald-100 p-2 rounded-lg">
           <ShieldCheck className="w-6 h-6 text-emerald-600" />
         </div>
-        <div>
+        <div className="flex-1">
           <h4 className="text-emerald-800 font-bold text-sm uppercase tracking-wider">
             Código de Verificación (HASH)
           </h4>
@@ -82,7 +104,7 @@ export default function DetallePedidoModal({ pedido, onClose }: Props) {
             </tbody>
             <tfoot className="bg-gray-50 font-bold border-t">
               <tr>
-                <td colSpan={3} className="px-4 py-3 text-right text-gray-600">TOTAL A VALIDAR</td>
+                <td colSpan={3} className="px-4 py-3 text-right text-gray-600 uppercase">Total a Validar</td>
                 <td className="px-4 py-3 text-right text-indigo-700 text-base">
                   {formatCurrency(pedido.total)}
                 </td>
@@ -94,19 +116,34 @@ export default function DetallePedidoModal({ pedido, onClose }: Props) {
 
       <div className="flex items-center gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg text-amber-800 text-[10px] italic">
         <AlertCircle className="w-4 h-4 flex-shrink-0" />
-        Una vez verificado el HASH y el pago, registre la venta manualmente en la sección de Ventas.
+        Una vez verificado el HASH y el pago, presione "Validación Exitosa" para despachar de la campana.
       </div>
 
-      <div className="flex justify-end gap-3 pt-4 border-t">
-        <Button onClick={onClose}>
+      {/* --- ACCIONES --- */}
+      <div className="flex flex-wrap justify-end gap-3 pt-4 border-t">
+        <Button onClick={onClose} variant="secondary" disabled={loading}>
           Cerrar
         </Button>
+        
         <Button 
           onClick={() => copyToClipboard(pedido.codigo_pedido)}
-          className=" bg-indigo-600  text-white"
+          className="bg-gray-800 text-white hover:bg-black"
+          disabled={loading}
         >
-          Copiar Código para Venta
+          Copiar Código
         </Button>
+
+        {/* Botón de Validación: Solo aparece si el pedido está PENDIENTE */}
+        {pedido.estado === 'PENDIENTE' && (
+          <Button 
+            onClick={handleConfirmarPedido}
+            className="bg-emerald-600 text-white hover:bg-emerald-700 flex items-center gap-2"
+            disabled={loading}
+          >
+            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
+            Validación Exitosa
+          </Button>
+        )}
       </div>
     </div>
   );

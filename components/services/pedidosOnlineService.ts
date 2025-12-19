@@ -46,7 +46,6 @@ export const getPedidosOnline = async (
   try {
     const res = await axios.get(ENDPOINT_BASE, { params });
     
-    // Si el backend responde con el objeto de paginación estándar
     let items: any = res.data;
     let data: PedidoOnline[] = [];
     let total = 0;
@@ -59,7 +58,6 @@ export const getPedidosOnline = async (
       total = items.length;
     }
 
-    // Normalización de datos numéricos (asegurar que sean números y no strings)
     const normalized = data.map((pedido) => ({
       ...pedido,
       total: Number(pedido.total) || 0,
@@ -86,7 +84,6 @@ export const getPedidoById = async (id: number): Promise<PedidoOnline> => {
     const res = await axios.get(`${ENDPOINT_BASE}/${id}`);
     const data = res.data;
     
-    // Normalización
     return {
       ...data,
       total: Number(data.total),
@@ -104,10 +101,9 @@ export const getPedidoById = async (id: number): Promise<PedidoOnline> => {
 };
 
 /**
- * Función para que el Carrito de Compras (Web) registre el pedido
- * antes de redirigir a WhatsApp.
+ * Registra el pedido en la BD (Usado por el Carrito/WhatsApp)
  */
-export const crearPedidoOnline = async (payload: {
+export const registrarPedidoOnline = async (payload: {
   total: number;
   detalles: Array<{ producto_id: number; cantidad: number; precio_unitario: number }>;
 }): Promise<any> => {
@@ -116,6 +112,27 @@ export const crearPedidoOnline = async (payload: {
     return res.data;
   } catch (err: any) {
     console.error("Error al registrar pedido online desde carrito:", err);
+    throw err;
+  }
+};
+
+// Mantenemos este alias por compatibilidad con componentes antiguos
+export const crearPedidoOnline = registrarPedidoOnline;
+
+/**
+ * ✅ NUEVA FUNCIÓN: Actualiza el estado del pedido (Confirmar/Cancelar)
+ * Esto permite que la campana de notificaciones se actualice.
+ */
+export const updateEstadoPedido = async (
+  id: number, 
+  estado: 'CONFIRMADO' | 'CANCELADO'
+): Promise<any> => {
+  try {
+    // Usamos PATCH para actualizar solo el campo estado
+    const res = await axios.patch(`${ENDPOINT_BASE}/${id}`, { estado });
+    return res.data;
+  } catch (err: any) {
+    console.error("Error al actualizar estado del pedido:", err);
     throw err;
   }
 };

@@ -1,101 +1,99 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { formatCurrency } from "../../utils/formatters";
-import { Send } from "lucide-react";
+import { Send, Loader2 } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
+import { registrarPedidoOnline } from "../services/pedidosOnlineService";
 
 interface WhatsAppButtonProps {
-  items: {
-    id?: number;
-    codigo?: string;
-    nombre: string;
-    quantity: number;
-    precio: number;
-    descuento: number;
-  }[];
-  finalTotal: number;
-  currency: string;
+  items: any[];
+  finalTotal: number;
+  currency: string;
 }
 
 const BUSINESS_PHONE = "573206197545";
 
 export const WhatsAppOrderButton: React.FC<WhatsAppButtonProps> = ({
-  items,
-  finalTotal,
-  currency,
+  items,
+  finalTotal,
+  currency,
 }) => {
-  const { user } = useAuth();
-  // Generar mensaje profesional para WhatsApp
-  const generateMessage = () => {
-    if (items.length === 0) return "Hola, quiero consultar por un producto.";
+  const { user } = useAuth();
+  const [loading, setLoading] = useState(false);
 
-    const now = new Date();
-    const when = now.toLocaleString();
+  const handleOrderCapture = async () => {
+    if (items.length === 0) return;
+    setLoading(true);
 
-    // Generador de número de pedido ÚNICO y CORTO (VTA-YYMMDD-XXXX)
-    const generateOrderNumber = () => {
-      const pad = (n: number) => String(n).padStart(2, "0");
-      // Usamos slice(2) para obtener solo los últimos dos dígitos del año (ej: 25)
-      const y = String(now.getFullYear()).slice(2); 
-      const m = pad(now.getMonth() + 1);
-      const d = pad(now.getDate());
-      // 4 dígitos aleatorios para hacerlo único en el instante
-      const rnd = Math.floor(Math.random() * 9000) + 1000; 
-      return `VTA-${y}${m}${d}-${rnd}`;
-    };
+    try {
+      // 1. REGISTRO OFICIAL EN BASE DE DATOS
+      const payload = {
+        total: finalTotal,
+        detalles: items.map(item => ({
+          producto_id: item.id,
+          cantidad: item.quantity,
+          precio_unitario: item.precio * (1 - item.descuento / 100)
+        }))
+      };
 
-    const orderNumber = generateOrderNumber();
+      // Llamamos al backend para que genere el Código y el Hash
+      const pedidoOficial = await registrarPedidoOnline(payload);
 
-    const lineItems = items
-      .map((item, index) => {
-        const finalPrice = item.precio * (1 - item.descuento / 100);
-        const subtotal = finalPrice * item.quantity;
+      // 2. GENERAR MENSAJE CON DATOS INALTERABLES DEL BACKEND
+      const mensaje = generateSecureMessage(pedidoOficial);
+      
+      // 3. ABRIR WHATSAPP
+      const whatsappLink = `https://wa.me/${BUSINESS_PHONE}?text=${encodeURIComponent(mensaje)}`;
+      window.open(whatsappLink, "_blank");
 
-        // Incluimos el código justo después del nombre
-        const codePart = item.codigo ? ` (Código: ${item.codigo})` : '';
+    } catch (error) {
+      console.error("Error registrando pedido:", error);
+      alert("No se pudo procesar el pedido. Intenta nuevamente.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-        return `
-  ${index + 1}) ${item.nombre}${codePart}
-     - Cantidad: ${item.quantity}
-     - P. Unitario: ${formatCurrency(finalPrice, currency)}
-     - Subtotal: ${formatCurrency(subtotal, currency)}`;
-      })
-      .join("\n");
+  const generateSecureMessage = (pedido: any) => {
+    const now = new Date();
+    const lineItems = items.map((item, index) => {
+        const finalPrice = item.precio * (1 - item.descuento / 100);
+        return `  ${index + 1}) ${item.nombre}\n     - Cantidad: ${item.quantity}\n     - P. Unitario: ${formatCurrency(finalPrice, currency)}`;
+    }).join("\n");
 
-      // Información del cliente si está autenticado, con mejor formato
-      const clientInfo = user 
-        ? `Cliente: ${user.nombre ?? user.correo}\nID Cliente: ${user.id}\n` 
-        : "";
+    const clientInfo = user ? `Cliente: ${user.nombre || user.correo}\nID Cliente: ${user.id}\n` : "";
 
-      return `*--- NUEVO PEDIDO ONLINE - DISEM ---*
+    return `
+*--- NUEVO PEDIDO ONLINE - DISEM ---*
 
-    Pedido: ${orderNumber}
-    Fecha: ${when}
-    ${clientInfo ? `\n${clientInfo}\n` : ""}
-    *DETALLE DE PRODUCTOS:*
-    ${lineItems}
+Pedido: ${pedido.codigo_pedido}
+Fecha: ${now.toLocaleString()}
+${clientInfo}
+*DETALLE DE PRODUCTOS:*
+${lineItems}
 
-    ---------------------------
+---------------------------
+*TOTAL A PAGAR:* ${formatCurrency(pedido.total, currency)}
 
-    *TOTAL A PAGAR:* ${formatCurrency(finalTotal, currency)}
+🔐 *CÓDIGO DE VERIFICACIÓN:* ${pedido.hash_verificacion}
+_(Este código garantiza que los precios no han sido modificados)_
 
-    Por favor confirmar disponibilidad, tiempos de entrega y forma de pago.
-    Gracias por su atención.`.trim();
-  };
+Por favor confirmar disponibilidad y forma de pago.`.trim();
+  };
 
-  const message = encodeURIComponent(generateMessage());
-  const whatsappLink = `https://wa.me/${BUSINESS_PHONE}?text=${message}`;
-
-  return (
-    <a
-      href={whatsappLink}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="w-full flex items-center justify-center px-6 py-3 border border-transparent rounded-xl shadow-lg text-lg font-bold text-white transition duration-300 bg-green-600 hover:bg-green-700 focus:ring-4 focus:ring-green-500 focus:ring-opacity-50"
-    >
-      <Send className="w-6 h-6 mr-3" />
-      Enviar Pedido por WhatsApp
-    </a>
-  );
+  return (
+    <button
+      onClick={handleOrderCapture}
+      disabled={loading || items.length === 0}
+      className="w-full flex items-center justify-center px-6 py-3 rounded-xl shadow-lg text-lg font-bold text-white transition duration-300 bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+    >
+      {loading ? (
+        <Loader2 className="w-6 h-6 mr-3 animate-spin" />
+      ) : (
+        <Send className="w-6 h-6 mr-3" />
+      )}
+      {loading ? "Procesando..." : "Confirmar y Enviar Pedido"}
+    </button>
+  );
 };
