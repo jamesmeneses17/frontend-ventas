@@ -65,6 +65,7 @@ const navigation = [
     items: [
       { name: "Compras", href: "/admin/compras", icon: ShoppingCart },
       { name: "Ventas", href: "/admin/ventas", icon: ShoppingCart },
+      { name: "Pedidos-Online", href: "/admin/pedidos", icon: ShoppingCart },
     ],
   },
   {
