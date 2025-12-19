@@ -116,7 +116,7 @@ export default function DetallePedidoModal({ pedido, onClose }: Props) {
 
       <div className="flex items-center gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg text-amber-800 text-[10px] italic">
         <AlertCircle className="w-4 h-4 flex-shrink-0" />
-        Una vez verificado el HASH y el pago, presione "Validación Exitosa" para despachar de la campana.
+        Una vez verificado el HASH y el pago, presione &quot;Validación Exitosa&quot; para despachar de la campana.
       </div>
 
       {/* --- ACCIONES --- */}

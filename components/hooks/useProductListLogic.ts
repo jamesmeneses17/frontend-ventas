@@ -100,8 +100,9 @@ export const useProductListLogic = (initialSort: SortOption = 'relevancia') => {
         // Filtrar productos inactivos (solo mostrar activos)
             // Filtrar productos activos y que su subcategoría esté activa (o no tenga subcategoría)
             const productosActivos = productos.filter((p) => {
+                // Algunos productos pueden tener subcategoria, otros no
                 const subcatActivo =
-                    p.subcategoria?.activo === undefined || p.subcategoria?.activo === true || p.subcategoria?.activo === 1;
+                    (p as any).subcategoria?.activo === undefined || (p as any).subcategoria?.activo === true || (p as any).subcategoria?.activo === 1;
                 return p.activo === true && subcatActivo;
             });
         // Mapeo: Transformar datos de la API a formato de tarjeta

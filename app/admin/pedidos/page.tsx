@@ -15,21 +15,22 @@ import PedidosTable from "../../../components/catalogos/PedidosTable";
 
 // Servicios (Debes crear este archivo basado en el módulo del backend)
 
+
+import { useCallback } from "react";
+
 export default function PedidosOnlinePage() {
   const [pedidos, setPedidos] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [totalItems, setTotalItems] = useState(0);
-  
   // Filtros y Paginación
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [searchTerm, setSearchTerm] = useState("");
-  
   // Modales
   const [selectedPedido, setSelectedPedido] = useState<any | null>(null);
   const [showDetail, setShowDetail] = useState(false);
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     setLoading(true);
     try {
       const res = await getPedidosOnline(page, pageSize, searchTerm);
@@ -40,11 +41,11 @@ export default function PedidosOnlinePage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [page, pageSize, searchTerm]);
 
   useEffect(() => {
     loadData();
-  }, [page, pageSize, searchTerm]);
+  }, [loadData]);
 
   const stats = {
     total: totalItems,
