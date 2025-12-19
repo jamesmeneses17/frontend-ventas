@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { getPagosByCredito, registrarPago } from "../services/pagosCreditoService";
 import { useForm, SubmitHandler } from "react-hook-form";
 import FormInput from "../common/form/FormInput";
@@ -17,7 +17,6 @@ type ProductoDetalle = {
   subtotal: number;
 };
 
-
 type FormData = {
   numero_factura?: string;
   cliente_id: number;
@@ -28,9 +27,7 @@ type FormData = {
   detalles: ProductoDetalle[];
 };
 
-// Extiende el tipo para permitir id opcional en initialData
 type CreditoWithId = Partial<CreateCreditoPayload> & { id?: number };
-
 
 interface Props {
   initialData?: CreditoWithId | null;
@@ -44,7 +41,7 @@ export default function CreditosForm({
   initialData,
   onSubmit,
   onCancel,
-  onSaved, // 👈 ahora lo recibimos
+  onSaved,
   formError,
 }: Props) {
   const {
@@ -60,15 +57,13 @@ export default function CreditosForm({
       fecha_inicial: initialData?.fecha_inicial || "",
       fecha_final: initialData?.fecha_final || "",
       estado: initialData?.estado || "PENDIENTE",
-
       detalles: initialData?.detalles || [],
     },
   });
 
   const values = watch();
 
-  // Manejo de productos seleccionados
-  // Adaptar detalles para que siempre tengan producto_nombre (si viene de la API sin esa propiedad)
+  // --- ESTADOS LOCALES ---
   const detallesIniciales: ProductoDetalle[] = (initialData?.detalles || []).map((d: any) => ({
     producto_id: d.producto_id,
     producto_nombre: d.producto_nombre || d.producto?.nombre || "",
@@ -76,22 +71,24 @@ export default function CreditosForm({
     precio_unitario: d.precio_unitario,
     subtotal: d.subtotal,
   }));
-  const [detalles, setDetalles] = React.useState<ProductoDetalle[]>(detallesIniciales);
-  // Pagos
-  const [pagos, setPagos] = React.useState<any[]>([]);
-  const [nuevoPago, setNuevoPago] = React.useState("");
-  const [notasPago, setNotasPago] = React.useState("");
-  const [pagosLoading, setPagosLoading] = React.useState(false);
-  const [pagoError, setPagoError] = React.useState<string | null>(null);
 
-  // Calcular total productos y total pagos usando SIEMPRE el estado local detalles
+  const [detalles, setDetalles] = useState<ProductoDetalle[]>(detallesIniciales);
+  const [pagos, setPagos] = useState<any[]>([]);
+  const [nuevoPago, setNuevoPago] = useState("");
+  const [notasPago, setNotasPago] = useState("");
+  const [pagosLoading, setPagosLoading] = useState(false);
+  const [pagoError, setPagoError] = useState<string | null>(null);
+  const [selectedProduct, setSelectedProduct] = useState<any | null>(null);
+  const [cantidadTmp, setCantidadTmp] = useState(1);
+
+  // --- CÁLCULOS ---
   const totalProductos = detalles.reduce((sum, d) => sum + (Number(d.subtotal) || 0), 0);
   const totalPagos = pagos.reduce((sum, p) => sum + (Number(p.monto_pago) || 0), 0);
   const saldoPendiente = Math.max(totalProductos - totalPagos, 0);
 
-  // Cargar historial de pagos si estamos editando
+  // --- EFECTOS ---
   useEffect(() => {
-    if (initialData && initialData.id) {
+    if (initialData?.id) {
       setPagosLoading(true);
       getPagosByCredito(initialData.id)
         .then(setPagos)
@@ -99,9 +96,45 @@ export default function CreditosForm({
         .finally(() => setPagosLoading(false));
     }
   }, [initialData]);
-  // Para autocompletar
-  const [selectedProduct, setSelectedProduct] = React.useState<any | null>(null);
-  const [cantidadTmp, setCantidadTmp] = React.useState(1);
+
+  // --- HANDLERS ---
+  const handleRegistrarAbono = async () => {
+    setPagoError(null);
+    const idActivo = initialData?.id;
+
+    if (!idActivo) {
+      setPagoError("Guarde el crédito");
+      return;
+    }
+
+    const monto = Number(nuevoPago);
+    if (!nuevoPago || isNaN(monto) || monto <= 0) {
+      setPagoError("Ingrese un monto válido.");
+      return;
+    }
+
+    try {
+      setPagosLoading(true);
+      await registrarPago({ 
+        credito_id: Number(idActivo), 
+        monto_pago: monto, 
+        notas: notasPago 
+      });
+      
+      setNuevoPago("");
+      setNotasPago("");
+      
+      const actualizados = await getPagosByCredito(Number(idActivo));
+      setPagos(actualizados);
+      
+      if (onSaved) await onSaved(); 
+    } catch (err: any) {
+      const msg = err.response?.data?.message || "Error al registrar el abono";
+      setPagoError(Array.isArray(msg) ? msg[0] : msg);
+    } finally {
+      setPagosLoading(false);
+    }
+  };
 
   const submitForm: SubmitHandler<FormData> = async (data) => {
     const payload: CreateCreditoPayload = {
@@ -113,14 +146,12 @@ export default function CreditosForm({
       estado: data.estado,
       detalles: detalles,
     };
-
     await onSubmit(payload);
     await onSaved();
   };
 
   return (
     <form onSubmit={handleSubmit(submitForm)} className="space-y-4">
-      {/* Factura */}
       <FormInput
         label="Número de factura"
         name="numero_factura"
@@ -129,7 +160,6 @@ export default function CreditosForm({
         placeholder="FAC-001"
       />
 
-      {/* Cliente */}
       <FormInput
         label="ID Cliente"
         name="cliente_id"
@@ -139,162 +169,107 @@ export default function CreditosForm({
         required
       />
 
-      {/* Fechas */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <FormInput
-          label="Fecha inicial"
-          name="fecha_inicial"
-          type="date"
-          value={values.fecha_inicial}
-          onChange={(e) => setValue("fecha_inicial", e.target.value)}
-          required
-        />
-        <FormInput
-          label="Fecha final"
-          name="fecha_final"
-          type="date"
-          value={values.fecha_final}
-          onChange={(e) => setValue("fecha_final", e.target.value)}
-        />
+        <FormInput label="Fecha inicial" name="fecha_inicial" type="date" value={values.fecha_inicial} onChange={(e) => setValue("fecha_inicial", e.target.value)} required />
+        <FormInput label="Fecha final" name="fecha_final" type="date" value={values.fecha_final} onChange={(e) => setValue("fecha_final", e.target.value)} />
       </div>
 
-      {/* Estado */}
       <FormSelect
         label="Estado"
         name="estado"
         value={values.estado}
-        onChange={(e) =>
-          setValue("estado", e.target.value as "PENDIENTE" | "PAGADO")
-        }
+        onChange={(e) => setValue("estado", e.target.value as any)}
         options={[
           { value: "PENDIENTE", label: "Pendiente" },
           { value: "PAGADO", label: "Pagado" },
         ]}
       />
 
-      {/* Detalle */}
-      {/* Sección para agregar productos al crédito */}
-            {/* Registro e historial de pagos */}
-            <div className="mb-4 p-2 border rounded-lg bg-gray-50">
-              <h4 className="font-semibold mb-2">Pagos del Crédito</h4>
-              {/* Formulario para registrar un nuevo pago */}
-              <form
-                className="flex flex-col md:flex-row gap-2 items-end mb-2"
-                onSubmit={async (e) => {
-                  e.preventDefault();
-                  setPagoError(null);
-                  // Validar que el crédito exista
-                  if (!initialData?.id) {
-                    setPagoError("Primero debes guardar el crédito antes de registrar un abono.");
-                    return;
-                  }
-                  // Validar monto
-                  const monto = Number(nuevoPago);
-                  if (nuevoPago === "" || isNaN(monto) || monto <= 0) {
-                    setPagoError("Ingresa un monto válido mayor a 0.");
-                    return;
-                  }
-                  try {
-                    await registrarPago({ credito_id: initialData.id, monto_pago: monto, notas: notasPago });
-                    setNuevoPago("");
-                    setNotasPago("");
-                    // Recargar pagos
-                    setPagosLoading(true);
-                    const pagosActualizados = await getPagosByCredito(initialData.id);
-                    setPagos(pagosActualizados);
-                    setPagosLoading(false);
-                  } catch (err: any) {
-                    setPagoError("Error registrando pago");
-                    setPagosLoading(false);
-                  }
-                }}
-              >
-                <input
-                  type="number"
-                  min={1}
-                  className="form-input w-32"
-                  placeholder="Monto del pago"
-                  value={nuevoPago}
-                  onChange={e => setNuevoPago(e.target.value)}
-                />
-                <input
-                  type="text"
-                  className="form-input w-48"
-                  placeholder="Notas (opcional)"
-                  value={notasPago}
-                  onChange={e => setNotasPago(e.target.value)}
-                />
-                <button type="submit" className="bg-green-600 text-white rounded px-3 py-2 ml-2">Registrar Pago</button>
-                {pagoError && <span className="text-red-600 text-xs ml-2">{pagoError}</span>}
-              </form>
-              {/* Historial de pagos */}
-              {pagosLoading ? (
-                <div className="text-xs text-gray-500">Cargando pagos...</div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="min-w-full text-xs border">
-                    <thead>
-                      <tr className="bg-gray-100">
-                        <th className="px-2 py-1">Fecha</th>
-                        <th className="px-2 py-1">Monto</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {pagos.length === 0 && (
-                        <tr><td colSpan={2} className="text-center text-gray-400 py-2">Sin pagos registrados</td></tr>
-                      )}
-                      {pagos.map((p) => (
-                        <tr key={p.id}>
-                          <td className="px-2 py-1">{p.fecha_pago?.substring(0,10) ?? p.fecha_pago}</td>
-                          <td className="px-2 py-1 font-semibold">{Number(p.monto_pago).toLocaleString("es-CO", { style: "currency", currency: "COP" })}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
+      {/* --- SECCIÓN DE ABONOS --- */}
+      {initialData?.id ? (
+        <div className="mb-4 p-3 border-2 border-green-100 rounded-lg bg-green-50/20">
+          <h4 className="font-bold text-green-800 mb-2">Pagos del Crédito</h4>
+          <div className="flex flex-col md:flex-row gap-2 items-end mb-2">
+            <div className="flex-1">
+              <input
+                type="number"
+                className="form-input w-full border-green-300"
+                placeholder="Monto"
+                value={nuevoPago}
+                onChange={e => setNuevoPago(e.target.value)}
+              />
             </div>
+            <div className="flex-[2]">
+              <input
+                type="text"
+                className="form-input w-full border-green-300"
+                placeholder="Notas (opcional)"
+                value={notasPago}
+                onChange={e => setNotasPago(e.target.value)}
+              />
+            </div>
+            <button 
+              type="button" 
+              onClick={handleRegistrarAbono}
+              className="bg-green-600 hover:bg-green-700 text-white rounded px-4 py-2 font-bold transition-colors disabled:opacity-50"
+              disabled={pagosLoading}
+            >
+              {pagosLoading ? "..." : "Abonar"}
+            </button>
+          </div>
+          {pagoError && <p className="text-red-600 text-xs font-bold mb-2">{pagoError}</p>}
+
+          <div className="overflow-x-auto max-h-40 overflow-y-auto border bg-white rounded">
+            <table className="min-w-full text-xs">
+              <thead className="bg-gray-100 sticky top-0">
+                <tr>
+                  <th className="px-2 py-1 text-left">Fecha</th>
+                  <th className="px-2 py-1 text-left">Monto</th>
+                </tr>
+              </thead>
+              <tbody>
+                {pagos.length === 0 ? (
+                  <tr><td colSpan={2} className="text-center py-2 text-gray-400">Sin abonos registrados</td></tr>
+                ) : (
+                  pagos.map((p) => (
+                    <tr key={p.id} className="border-t">
+                      <td className="px-2 py-1">{p.fecha_pago?.substring(0,10)}</td>
+                      <td className="px-2 py-1 font-bold text-green-700">
+                        {Number(p.monto_pago).toLocaleString("es-CO", { style: "currency", currency: "COP" })}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ) : (
+        /* Estilo simple sin icono */
+        <div className="mb-4 py-2 text-center">
+          <p className="text-red-500 text-sm font-medium">
+            Guarde el crédito para habilitar la sección de abonos
+          </p>
+        </div>
+      )}
+
+      {/* --- SECCIÓN DE PRODUCTOS --- */}
       <div className="mb-4 p-2 border rounded-lg bg-gray-50">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-2 items-end">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Producto</label>
-            <ProductAutocomplete
-              placeholder="Buscar producto..."
-              maxResults={8}
-              onSelect={(item: any) => {
-                setSelectedProduct(item);
-                setCantidadTmp(1);
-              }}
-              disabled={false}
-            />
+          <div className="md:col-span-1">
+            <label className="block text-sm font-medium mb-1">Producto</label>
+            <ProductAutocomplete onSelect={(item: any) => setSelectedProduct(item)} placeholder="Buscar..." />
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Cantidad</label>
-            <input
-              type="number"
-              min={1}
-              className="form-input w-full"
-              value={cantidadTmp}
-              onChange={e => setCantidadTmp(Number(e.target.value))}
-              disabled={!selectedProduct}
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Precio unitario</label>
-            <input
-              type="number"
-              className="form-input w-full"
-              value={selectedProduct?.precio || 0}
-              disabled
-            />
+          <div className="w-full">
+            <label className="block text-sm font-medium mb-1">Cant.</label>
+            <input type="number" className="form-input w-full" value={cantidadTmp} onChange={e => setCantidadTmp(Number(e.target.value))} />
           </div>
           <button
             type="button"
-            className="bg-blue-600 text-white rounded px-3 py-2 mt-2 md:mt-0 disabled:opacity-50"
+            className="bg-blue-600 text-white rounded px-3 py-2 disabled:opacity-50 font-bold"
             disabled={!selectedProduct}
             onClick={() => {
               if (!selectedProduct) return;
-              // Evitar duplicados
               if (detalles.some(d => d.producto_id === selectedProduct.id)) return;
               const nuevo: ProductoDetalle = {
                 producto_id: selectedProduct.id,
@@ -305,53 +280,31 @@ export default function CreditosForm({
               };
               setDetalles([...detalles, nuevo]);
               setSelectedProduct(null);
-              setCantidadTmp(1);
             }}
-          >Agregar</button>
+          >+ Agregar</button>
         </div>
-        {/* Tabla de productos agregados */}
+        
         {detalles.length > 0 && (
-          <div className="mt-4">
-            <table className="min-w-full text-xs border">
-              <thead>
-                <tr className="bg-gray-100">
-                  <th className="px-2 py-1">Producto</th>
-                  <th className="px-2 py-1">Cantidad</th>
-                  <th className="px-2 py-1">Precio unitario</th>
-                  <th className="px-2 py-1">Subtotal</th>
+          <div className="mt-3 overflow-x-auto border rounded bg-white">
+            <table className="min-w-full text-xs">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="p-1 text-left">Producto</th>
+                  <th className="p-1 text-left">Cant.</th>
+                  <th className="p-1 text-left">Precio</th>
+                  <th className="p-1 text-left">Subtotal</th>
                   <th></th>
                 </tr>
               </thead>
               <tbody>
                 {detalles.map((d, idx) => (
-                  <tr key={d.producto_id}>
-                    <td className="px-2 py-1">{d.producto_nombre}</td>
-                    <td className="px-2 py-1">
-                      <input
-                        type="number"
-                        min={1}
-                        className="w-16 border rounded"
-                        value={d.cantidad}
-                        onChange={e => {
-                          const nueva = detalles.map((item, i) => i === idx ? { ...item, cantidad: Number(e.target.value), subtotal: item.precio_unitario * Number(e.target.value) } : item);
-                          setDetalles(nueva);
-                        }}
-                      />
-                    </td>
-                    <td className="px-2 py-1">
-                      <input
-                        type="number"
-                        className="w-20 border rounded"
-                        value={d.precio_unitario}
-                        onChange={e => {
-                          const nueva = detalles.map((item, i) => i === idx ? { ...item, precio_unitario: Number(e.target.value), subtotal: Number(e.target.value) * item.cantidad } : item);
-                          setDetalles(nueva);
-                        }}
-                      />
-                    </td>
-                    <td className="px-2 py-1">{d.subtotal}</td>
-                    <td>
-                      <button type="button" className="text-red-600" onClick={() => setDetalles(detalles.filter((_, i) => i !== idx))}>Eliminar</button>
+                  <tr key={idx} className="border-t">
+                    <td className="p-1">{d.producto_nombre}</td>
+                    <td className="p-1">{d.cantidad}</td>
+                    <td className="p-1">{d.precio_unitario}</td>
+                    <td className="p-1">{d.subtotal}</td>
+                    <td className="p-1 text-center">
+                      <button type="button" className="text-red-500 font-bold" onClick={() => setDetalles(detalles.filter((_, i) => i !== idx))}>✕</button>
                     </td>
                   </tr>
                 ))}
@@ -361,7 +314,6 @@ export default function CreditosForm({
         )}
       </div>
 
-      {/* Total */}
       <FormInput
         label="Saldo pendiente"
         name="saldo_pendiente"
@@ -370,19 +322,14 @@ export default function CreditosForm({
         disabled
       />
 
-      {/* Botones */}
-      <div className="flex justify-end gap-3 pt-4">
-        <Button type="button" onClick={onCancel}>
-          Cancelar
-        </Button>
+      <div className="flex justify-end gap-3 pt-4 border-t">
+        <Button type="button" onClick={onCancel}>Cancelar</Button>
         <Button type="submit" disabled={isSubmitting}>
-          Guardar Crédito
+          {isSubmitting ? "Guardando..." : "Guardar Crédito"}
         </Button>
       </div>
 
-      {formError && (
-        <div className="text-red-600 text-sm text-center">{formError}</div>
-      )}
+      {formError && <p className="text-red-600 text-sm text-center font-bold">{formError}</p>}
     </form>
   );
 }

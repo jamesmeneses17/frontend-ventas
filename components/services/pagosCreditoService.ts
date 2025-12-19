@@ -1,78 +1,80 @@
 import axios from "axios";
 import { API_URL } from "./apiConfig";
+
+// 1. Base del endpoint para este módulo
 const ENDPOINT_BASE = `${API_URL}/pagos-credito`;
 
 // ------------------------------------------------------
 // Interfaces
 // ------------------------------------------------------
 export interface PagoCredito {
-    id: number;
-    credito_id: number;
-    monto_pago: number;
-    fecha_pago: string;
+  id: number;
+  credito_id: number;
+  monto_pago: number;
+  fecha_pago: string;
+  notas?: string;
 }
 
-export interface CreatePagoCreditoDTO {
-    credito_id: number;
-    monto_pago: number;
+export interface RegistrarPagoResponse {
+  mensaje: string;
+  nuevo_saldo: number;
+  estado: "PENDIENTE" | "PAGADO";
 }
 
 // ------------------------------------------------------
-// Registrar un pago
+// Registrar un pago (Abono)
 // ------------------------------------------------------
 export const registrarPago = async (
-    data: any
-): Promise<{
-    mensaje: string;
-    nuevo_saldo: number;
-    estado: "PENDIENTE" | "PAGADO";
-}> => {
-    // Normalizar y forzar el payload esperado por el backend
-    const payload = {
-        credito_id: Number(data.credito_id ?? data.creditoId ?? data.credito_id),
-        monto_pago: Number(String(data.monto_pago ?? data.montoPago ?? data.monto).replace(/[^0-9.\-]/g, "")) || 0,
-    };
+  data: any
+): Promise<RegistrarPagoResponse> => {
+  // Normalizar payload para que coincida exactamente con el CreatePagoDto del Backend
+  const payload = {
+    credito_id: Number(data.credito_id ?? data.creditoId),
+    monto_pago: Number(data.monto_pago ?? data.montoPago ?? data.monto),
+    notas: data.notas || "",
+  };
 
-    const endpointAbono = `${ENDPOINT_BASE}/abono`;
-    console.log("[registrarPago] POST (normalized payload):", endpointAbono, payload);
+  // URL CORREGIDA: ENDPOINT_BASE ya incluye "/pagos-credito"
+  const endpointAbono = `${ENDPOINT_BASE}/abono`;
 
-    try {
-        const res = await axios.post(endpointAbono, payload);
-        console.log("[registrarPago] response:", res.status, res.data);
-        return res.data;
-    } catch (err: any) {
-        console.error("[registrarPago] Error: Request failed", err?.response?.status, err?.response?.data ?? err?.message ?? err);
-        throw err;
-    }
+  console.log("[registrarPago] POST:", endpointAbono, payload);
+
+  try {
+    const res = await axios.post(endpointAbono, payload);
+    return res.data;
+  } catch (err: any) {
+    console.error(
+      "[registrarPago] Error:",
+      err?.response?.data || err.message
+    );
+    throw err;
+  }
 };
 
 // ------------------------------------------------------
-// Obtener pagos por crédito (opcional si los usas en UI)
+// Obtener historial de pagos
 // ------------------------------------------------------
-// Usar el endpoint correcto según el backend: /pagos-credito/historial/{creditoId}
-const endpointPagosByCredito = (creditoId: number) => `${ENDPOINT_BASE}/historial/${creditoId}`;
-export const getPagosByCredito = async (creditoId: number): Promise<PagoCredito[]> => {
-    const endpoint = endpointPagosByCredito(creditoId);
+export const getPagosByCredito = async (
+  creditoId: number
+): Promise<PagoCredito[]> => {
+  // URL CORREGIDA: /pagos-credito/historial/{id}
+  const endpoint = `${ENDPOINT_BASE}/historial/${creditoId}`;
 
-    console.log("[getPagosByCredito] GET:", endpoint);
+  console.log("[getPagosByCredito] GET:", endpoint);
 
-    try {
-        const res = await axios.get(endpoint);
-        console.log("[getPagosByCredito] response:", res.status, res.data);
-        // Aceptar distintas formas de respuesta: array directo o { data: [...] }
-        if (Array.isArray(res.data)) return res.data as PagoCredito[];
-        if (res.data && Array.isArray(res.data.data)) return res.data.data as PagoCredito[];
-        // Si viene un objeto con la lista en otra propiedad, intentar devolver lo que tenga
-        if (res.data && typeof res.data === 'object') {
-            // buscar la primera propiedad que sea array
-            for (const key of Object.keys(res.data)) {
-                if (Array.isArray((res.data as any)[key])) return (res.data as any)[key] as PagoCredito[];
-            }
-        }
-        // fallback: devolver vacío
-        return [];
-    } catch (err: any) {
-        console.error("[getPagosByCredito] Error:", err);
-        throw err;
+  try {
+    const res = await axios.get(endpoint);
+    
+    // Manejo flexible de la respuesta del backend
+    if (Array.isArray(res.data)) {
+      return res.data;
+    } else if (res.data && Array.isArray(res.data.data)) {
+      return res.data.data;
     }
+    
+    return [];
+  } catch (err: any) {
+    console.error("[getPagosByCredito] Error:", err.message);
+    return [];
+  }
 };
