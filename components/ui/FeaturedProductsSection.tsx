@@ -155,7 +155,7 @@ const FeaturedProductsSection: React.FC = () => {
                         Explora Nuestras Categorías
                     </h2>
                     <p className="mt-4 text-xl text-gray-600 max-w-2xl mx-auto">
-                        Encuentra rápidamente la sección de productos solares que necesitas.
+                        Encuentra rápidamente la sección de productos  que necesitas.
                     </p>
                 </div>
 
