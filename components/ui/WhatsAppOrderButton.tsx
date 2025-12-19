@@ -3,7 +3,6 @@
 import React, { useState } from "react";
 import { formatCurrency } from "../../utils/formatters";
 import { Send, Loader2 } from "lucide-react";
-import { useAuth } from "../../contexts/AuthContext";
 import { registrarPedidoOnline } from "../services/pedidosOnlineService";
 
 interface WhatsAppButtonProps {
@@ -19,7 +18,6 @@ export const WhatsAppOrderButton: React.FC<WhatsAppButtonProps> = ({
   finalTotal,
   currency,
 }) => {
-  const { user } = useAuth();
   const [loading, setLoading] = useState(false);
 
   const handleOrderCapture = async () => {
@@ -27,20 +25,19 @@ export const WhatsAppOrderButton: React.FC<WhatsAppButtonProps> = ({
     setLoading(true);
 
     try {
-      // 1. REGISTRO OFICIAL EN BASE DE DATOS
+      // 1. REGISTRO EN BASE DE DATOS (Mantiene la integridad en el Panel)
       const payload = {
         total: finalTotal,
         detalles: items.map(item => ({
           producto_id: item.id,
           cantidad: item.quantity,
-          precio_unitario: item.precio * (1 - item.descuento / 100)
+          precio_unitario: item.precio * (1 - (item.descuento || 0) / 100)
         }))
       };
 
-      // Llamamos al backend para que genere el Código y el Hash
       const pedidoOficial = await registrarPedidoOnline(payload);
 
-      // 2. GENERAR MENSAJE CON DATOS INALTERABLES DEL BACKEND
+      // 2. GENERAR MENSAJE PARA EL CLIENTE
       const mensaje = generateSecureMessage(pedidoOficial);
       
       // 3. ABRIR WHATSAPP
@@ -57,29 +54,33 @@ export const WhatsAppOrderButton: React.FC<WhatsAppButtonProps> = ({
 
   const generateSecureMessage = (pedido: any) => {
     const now = new Date();
+    
+    // Formato de productos: Nombre + Código + Cantidad + Precio Unitario
     const lineItems = items.map((item, index) => {
-        const finalPrice = item.precio * (1 - item.descuento / 100);
-        return `  ${index + 1}) ${item.nombre}\n     - Cantidad: ${item.quantity}\n     - P. Unitario: ${formatCurrency(finalPrice, currency)}`;
-    }).join("\n");
-
-    const clientInfo = user ? `Cliente: ${user.nombre || user.correo}\nID Cliente: ${user.id}\n` : "";
+        const finalUnitPrice = item.precio * (1 - (item.descuento || 0) / 100);
+        const codePart = item.codigo ? `[Ref: ${item.codigo}]` : '';
+        
+        return `*${index + 1}) ${item.nombre}* ${codePart}
+   - Cantidad: ${item.quantity}
+   - Precio Unit: ${formatCurrency(finalUnitPrice, currency)}`;
+    }).join("\n\n");
 
     return `
 *--- NUEVO PEDIDO ONLINE - DISEM ---*
 
-Pedido: ${pedido.codigo_pedido}
-Fecha: ${now.toLocaleString()}
-${clientInfo}
+*Pedido:* ${pedido.codigo_pedido}
+*Fecha:* ${now.toLocaleString()}
+
 *DETALLE DE PRODUCTOS:*
 ${lineItems}
 
 ---------------------------
-*TOTAL A PAGAR:* ${formatCurrency(pedido.total, currency)}
+*TOTAL ESTIMADO:* ${formatCurrency(pedido.total, currency)}
 
-🔐 *CÓDIGO DE VERIFICACIÓN:* ${pedido.hash_verificacion}
-_(Este código garantiza que los precios no han sido modificados)_
+*CÓDIGO DE VERIFICACIÓN: ${pedido.hash_verificacion}*
+_(Verifique que este código coincida en su entrega)_
 
-Por favor confirmar disponibilidad y forma de pago.`.trim();
+Quedo a la espera de la confirmación de disponibilidad.`.trim();
   };
 
   return (
