@@ -98,7 +98,12 @@ export const useProductListLogic = (initialSort: SortOption = 'relevancia') => {
     // 4. Mapeo y Ordenamiento (Memorizado)
     const displayedProducts = useMemo(() => {
         // Filtrar productos inactivos (solo mostrar activos)
-        const productosActivos = productos.filter((p) => p.activo === true);
+            // Filtrar productos activos y que su subcategoría esté activa (o no tenga subcategoría)
+            const productosActivos = productos.filter((p) => {
+                const subcatActivo =
+                    p.subcategoria?.activo === undefined || p.subcategoria?.activo === true || p.subcategoria?.activo === 1;
+                return p.activo === true && subcatActivo;
+            });
         // Mapeo: Transformar datos de la API a formato de tarjeta
         let mappedProducts: ProductCardData[] = productosActivos.map((p) => {
             // Preferir precio activo/proyecto desde el servicio de `precios` si existe
