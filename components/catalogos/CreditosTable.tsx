@@ -61,52 +61,77 @@ export default function CreditosTable({
     }
   };
 
-  /* =======================
-     COLUMNAS
-  ======================= */
-  const columns = [
-    
-    {
-      key: "numero_factura",
-      label: "Factura",
-      render: (row: Credito) => (
-        <span className="font-medium">
-          {row.numero_factura || "—"}
+ /* =======================
+     COLUMNAS ACTUALIZADAS
+======================= */
+const columns = [
+  {
+    key: "numero_factura",
+    label: "Factura",
+    render: (row: Credito) => (
+      <span className="font-medium text-gray-900">
+        {row.numero_factura || "—"}
+      </span>
+    ),
+  },
+  {
+    key: "cliente",
+    label: "Cliente",
+    headerClass: "px-4 py-3 text-left text-sm font-semibold text-gray-700",
+    cellClass: "px-4 py-2",
+    render: (row: any) => 
+      row.cliente?.nombre ?? (row.cliente_id ? `ID: ${row.cliente_id}` : "-"),
+  },
+  {
+    key: "fecha_inicial",
+    label: "Fecha Inicial",
+    render: (row: Credito) => (
+      <span className="text-sm text-gray-600">
+        {row.fecha_inicial}
+      </span>
+    ),
+  },
+  {
+    key: "fecha_final",
+    label: "Fecha Final",
+    render: (row: Credito) => (
+      <span className={`text-sm ${row.fecha_final ? 'text-blue-600 font-medium' : 'text-gray-400'}`}>
+        {row.fecha_final || "—"}
+      </span>
+    ),
+  },
+  {
+    key: "total_credito",
+    label: "Total Crédito",
+    render: (row: Credito) => {
+      // Cálculo basado en los detalles del backend
+      const totalOriginal = row.detalles?.reduce((acc, det) => acc + Number(det.subtotal), 0) || 0;
+      return (
+        <span className="font-medium text-gray-600">
+          {formatCurrency(totalOriginal)}
         </span>
-      ),
+      );
     },
-    {
-      key: "cliente_id",
-      label: "Cliente ID",
-    },
-    {
-      key: "fecha_inicial",
-      label: "Fecha",
-      render: (row: Credito) => (
-        <span className="text-sm text-gray-700">
-          {row.fecha_inicial}
-        </span>
-      ),
-    },
-    {
-      key: "saldo_pendiente",
-      label: "Saldo Pendiente",
-      render: (row: Credito) => (
-        <span className="font-semibold text-gray-800">
-          {formatCurrency(row.saldo_pendiente)}
-        </span>
-      ),
-    },
-    {
-      key: "estado",
-      label: "Estado",
-      render: (row: Credito) => (
-        <span className={`inline-flex items-center ${getEstadoClasses(row.estado)}`}>
-          {row.estado}
-        </span>
-      ),
-    },
-  ];
+  },
+  {
+    key: "saldo_pendiente",
+    label: "Saldo Pendiente",
+    render: (row: Credito) => (
+      <span className="font-bold text-red-600">
+        {formatCurrency(row.saldo_pendiente)}
+      </span>
+    ),
+  },
+  {
+    key: "estado",
+    label: "Estado",
+    render: (row: Credito) => (
+      <span className={`inline-flex items-center ${getEstadoClasses(row.estado)}`}>
+        {row.estado}
+      </span>
+    ),
+  },
+];
 
   /* =======================
      RENDER

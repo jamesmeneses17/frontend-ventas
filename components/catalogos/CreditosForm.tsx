@@ -8,7 +8,11 @@ import FormSelect from "../common/form/FormSelect";
 import ProductAutocomplete from "../common/form/ProductAutocomplete";
 import Button from "../ui/button";
 import { CreateCreditoPayload } from "../services/creditosService";
+import ClienteAutocomplete from "../common/form/ClienteAutocomplete";
 
+/* ==========================================================
+   TIPOS Y AYUDANTES
+   ========================================================== */
 type ProductoDetalle = {
   producto_id: number;
   producto_nombre: string;
@@ -27,7 +31,21 @@ type FormData = {
   detalles: ProductoDetalle[];
 };
 
-type CreditoWithId = Partial<CreateCreditoPayload> & { id?: number };
+type CreditoWithId = Partial<CreateCreditoPayload> & { 
+  id?: number;
+  cliente?: { nombre: string }; 
+};
+
+// Función para formatear visualmente mientras el usuario escribe
+const formatInputAsCurrency = (value: string) => {
+  const number = value.replace(/\D/g, "");
+  if (!number) return "";
+  return new Intl.NumberFormat("es-CO", {
+    style: "currency",
+    currency: "COP",
+    maximumFractionDigits: 0,
+  }).format(Number(number));
+};
 
 interface Props {
   initialData?: CreditoWithId | null;
@@ -44,10 +62,13 @@ export default function CreditosForm({
   onSaved,
   formError,
 }: Props) {
+  const isEditing = !!initialData?.id;
+
   const {
     handleSubmit,
     setValue,
     watch,
+    register,
     formState: { isSubmitting },
   } = useForm<FormData>({
     defaultValues: {
@@ -63,30 +84,28 @@ export default function CreditosForm({
 
   const values = watch();
 
-  // --- ESTADOS LOCALES ---
-  const detallesIniciales: ProductoDetalle[] = (initialData?.detalles || []).map((d: any) => ({
-    producto_id: d.producto_id,
-    producto_nombre: d.producto_nombre || d.producto?.nombre || "",
-    cantidad: d.cantidad,
-    precio_unitario: d.precio_unitario,
-    subtotal: d.subtotal,
-  }));
-
-  const [detalles, setDetalles] = useState<ProductoDetalle[]>(detallesIniciales);
+  const [detalles, setDetalles] = useState<ProductoDetalle[]>(
+    (initialData?.detalles || []).map((d: any) => ({
+      producto_id: d.producto_id,
+      producto_nombre: d.producto_nombre || d.producto?.nombre || "",
+      cantidad: d.cantidad,
+      precio_unitario: d.precio_unitario,
+      subtotal: d.subtotal,
+    }))
+  );
+  
   const [pagos, setPagos] = useState<any[]>([]);
-  const [nuevoPago, setNuevoPago] = useState("");
+  const [nuevoPago, setNuevoPago] = useState(""); // Valor numérico puro
   const [notasPago, setNotasPago] = useState("");
   const [pagosLoading, setPagosLoading] = useState(false);
   const [pagoError, setPagoError] = useState<string | null>(null);
   const [selectedProduct, setSelectedProduct] = useState<any | null>(null);
   const [cantidadTmp, setCantidadTmp] = useState(1);
 
-  // --- CÁLCULOS ---
   const totalProductos = detalles.reduce((sum, d) => sum + (Number(d.subtotal) || 0), 0);
   const totalPagos = pagos.reduce((sum, p) => sum + (Number(p.monto_pago) || 0), 0);
   const saldoPendiente = Math.max(totalProductos - totalPagos, 0);
 
-  // --- EFECTOS ---
   useEffect(() => {
     if (initialData?.id) {
       setPagosLoading(true);
@@ -97,15 +116,9 @@ export default function CreditosForm({
     }
   }, [initialData]);
 
-  // --- HANDLERS ---
   const handleRegistrarAbono = async () => {
     setPagoError(null);
-    const idActivo = initialData?.id;
-
-    if (!idActivo) {
-      setPagoError("Guarde el crédito");
-      return;
-    }
+    if (!initialData?.id) return;
 
     const monto = Number(nuevoPago);
     if (!nuevoPago || isNaN(monto) || monto <= 0) {
@@ -115,22 +128,19 @@ export default function CreditosForm({
 
     try {
       setPagosLoading(true);
-      await registrarPago({ 
-        credito_id: Number(idActivo), 
-        monto_pago: monto, 
-        notas: notasPago 
+      await registrarPago({
+        credito_id: Number(initialData.id),
+        monto_pago: monto,
+        notas: notasPago,
       });
-      
+
       setNuevoPago("");
       setNotasPago("");
-      
-      const actualizados = await getPagosByCredito(Number(idActivo));
+      const actualizados = await getPagosByCredito(Number(initialData.id));
       setPagos(actualizados);
-      
-      if (onSaved) await onSaved(); 
+      if (onSaved) await onSaved();
     } catch (err: any) {
-      const msg = err.response?.data?.message || "Error al registrar el abono";
-      setPagoError(Array.isArray(msg) ? msg[0] : msg);
+      setPagoError("Error al registrar el abono");
     } finally {
       setPagosLoading(false);
     }
@@ -138,12 +148,9 @@ export default function CreditosForm({
 
   const submitForm: SubmitHandler<FormData> = async (data) => {
     const payload: CreateCreditoPayload = {
-      numero_factura: data.numero_factura?.trim(),
+      ...data,
       cliente_id: Number(data.cliente_id),
       saldo_pendiente: saldoPendiente,
-      fecha_inicial: data.fecha_inicial,
-      fecha_final: data.fecha_final || undefined,
-      estado: data.estado,
       detalles: detalles,
     };
     await onSubmit(payload);
@@ -151,185 +158,210 @@ export default function CreditosForm({
   };
 
   return (
-    <form onSubmit={handleSubmit(submitForm)} className="space-y-4">
-      <FormInput
-        label="Número de factura"
-        name="numero_factura"
-        value={values.numero_factura}
-        onChange={(e) => setValue("numero_factura", e.target.value)}
-        placeholder="FAC-001"
-      />
-
-      <FormInput
-        label="ID Cliente"
-        name="cliente_id"
-        type="number"
-        value={values.cliente_id}
-        onChange={(e) => setValue("cliente_id", Number(e.target.value))}
-        required
-      />
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <FormInput label="Fecha inicial" name="fecha_inicial" type="date" value={values.fecha_inicial} onChange={(e) => setValue("fecha_inicial", e.target.value)} required />
-        <FormInput label="Fecha final" name="fecha_final" type="date" value={values.fecha_final} onChange={(e) => setValue("fecha_final", e.target.value)} />
-      </div>
-
-      <FormSelect
-        label="Estado"
-        name="estado"
-        value={values.estado}
-        onChange={(e) => setValue("estado", e.target.value as any)}
-        options={[
-          { value: "PENDIENTE", label: "Pendiente" },
-          { value: "PAGADO", label: "Pagado" },
-        ]}
-      />
-
-      {/* --- SECCIÓN DE ABONOS --- */}
-      {initialData?.id ? (
-        <div className="mb-4 p-3 border-2 border-green-100 rounded-lg bg-green-50/20">
-          <h4 className="font-bold text-green-800 mb-2">Pagos del Crédito</h4>
-          <div className="flex flex-col md:flex-row gap-2 items-end mb-2">
-            <div className="flex-1">
-              <input
-                type="number"
-                className="form-input w-full border-green-300"
-                placeholder="Monto"
-                value={nuevoPago}
-                onChange={e => setNuevoPago(e.target.value)}
-              />
+    <div className="space-y-6">
+      {isEditing ? (
+        /* ==========================================================
+           MODO ACTUALIZAR: FOCO EN ABONOS
+           ========================================================== */
+        <div className="space-y-4">
+          <div className="bg-blue-50 p-4 rounded-lg flex justify-between items-center border border-blue-100">
+            <div>
+              <p className="text-xs text-blue-600 font-bold uppercase">Cliente</p>
+              <p className="text-lg font-bold text-blue-900">{initialData?.cliente?.nombre || 'Héctor Rojas'}</p>
+              <p className="text-sm text-blue-700">Factura: {initialData?.numero_factura || 'N/A'}</p>
             </div>
-            <div className="flex-[2]">
-              <input
-                type="text"
-                className="form-input w-full border-green-300"
-                placeholder="Notas (opcional)"
-                value={notasPago}
-                onChange={e => setNotasPago(e.target.value)}
-              />
+            <div className="text-right">
+              <p className="text-xs text-blue-600 font-bold uppercase">Saldo Actual</p>
+              <p className="text-2xl font-black text-blue-700">
+                {saldoPendiente.toLocaleString("es-CO", { style: "currency", currency: "COP" })}
+              </p>
             </div>
-            <button 
-              type="button" 
-              onClick={handleRegistrarAbono}
-              className="bg-green-600 hover:bg-green-700 text-white rounded px-4 py-2 font-bold transition-colors disabled:opacity-50"
-              disabled={pagosLoading}
-            >
-              {pagosLoading ? "..." : "Abonar"}
-            </button>
           </div>
-          {pagoError && <p className="text-red-600 text-xs font-bold mb-2">{pagoError}</p>}
 
-          <div className="overflow-x-auto max-h-40 overflow-y-auto border bg-white rounded">
-            <table className="min-w-full text-xs">
-              <thead className="bg-gray-100 sticky top-0">
+          <div className="p-4 border-2 border-green-100 rounded-xl bg-green-50/30">
+            <h4 className="font-bold text-green-800 mb-4 flex items-center gap-2 text-base">
+               Registrar Nuevo Abono
+            </h4>
+            <div className="flex flex-col md:flex-row gap-3 items-start">
+              <div className="w-full md:w-1/3">
+                {/* Input con máscara de miles integrada */}
+                <input
+                  type="text"
+                  className="form-input w-full border-green-300 focus:ring-green-500 rounded-lg font-bold text-lg text-green-700"
+                  placeholder="$ 0"
+                  value={nuevoPago ? formatInputAsCurrency(nuevoPago) : ""}
+                  onChange={(e) => {
+                    const rawValue = e.target.value.replace(/\D/g, "");
+                    setNuevoPago(rawValue);
+                  }}
+                />
+              </div>
+              <div className="w-full md:flex-1">
+                <input
+                  type="text"
+                  className="form-input w-full border-green-300 focus:ring-green-500 rounded-lg py-2.5"
+                  placeholder="Notas o concepto del pago"
+                  value={notasPago}
+                  onChange={(e) => setNotasPago(e.target.value)}
+                />
+              </div>
+              <button
+                type="button"
+                onClick={handleRegistrarAbono}
+                className="w-full md:w-auto bg-green-600 hover:bg-green-700 text-white rounded-lg px-6 py-2.5 font-bold transition-all disabled:opacity-50 shadow-md"
+                disabled={pagosLoading}
+              >
+                {pagosLoading ? "Procesando..." : "Confirmar Abono"}
+              </button>
+            </div>
+            {pagoError && <p className="text-red-600 text-xs font-bold mt-2">{pagoError}</p>}
+          </div>
+
+          <div className="border rounded-xl overflow-hidden bg-white shadow-sm">
+            <div className="bg-gray-50 px-4 py-2 border-b">
+               <span className="text-sm font-bold text-gray-700">Historial de Pagos</span>
+            </div>
+            <table className="min-w-full text-sm">
+              <thead className="bg-gray-100 text-gray-600">
                 <tr>
-                  <th className="px-2 py-1 text-left">Fecha</th>
-                  <th className="px-2 py-1 text-left">Monto</th>
+                  <th className="px-4 py-2 text-left">Fecha</th>
+                  <th className="px-4 py-2 text-left">Monto</th>
+                  <th className="px-4 py-2 text-left">Notas</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="divide-y">
                 {pagos.length === 0 ? (
-                  <tr><td colSpan={2} className="text-center py-2 text-gray-400">Sin abonos registrados</td></tr>
+                  <tr><td colSpan={3} className="text-center py-6 text-gray-400 italic">No hay abonos registrados aún</td></tr>
                 ) : (
                   pagos.map((p) => (
-                    <tr key={p.id} className="border-t">
-                      <td className="px-2 py-1">{p.fecha_pago?.substring(0,10)}</td>
-                      <td className="px-2 py-1 font-bold text-green-700">
+                    <tr key={p.id} className="hover:bg-gray-50">
+                      <td className="px-4 py-2">{p.fecha_pago?.substring(0, 10)}</td>
+                      <td className="px-4 py-2 font-bold text-green-700">
                         {Number(p.monto_pago).toLocaleString("es-CO", { style: "currency", currency: "COP" })}
                       </td>
+                      <td className="px-4 py-2 text-gray-500 text-xs italic">{p.notas || "-"}</td>
                     </tr>
                   ))
                 )}
               </tbody>
             </table>
           </div>
+
+          <div className="flex justify-end pt-4">
+            <Button type="button" onClick={onCancel} className="bg-gray-500 px-8">Cerrar</Button>
+          </div>
         </div>
       ) : (
-        /* Estilo simple sin icono */
-        <div className="mb-4 py-2 text-center">
-          <p className="text-red-500 text-sm font-medium">
-            Guarde el crédito para habilitar la sección de abonos
-          </p>
-        </div>
-      )}
+        /* ==========================================================
+           MODO CREACIÓN: FORMULARIO COMPLETO
+           ========================================================== */
+        <form onSubmit={handleSubmit(submitForm)} className="space-y-4">
+          <FormInput
+            label="Número de factura"
+            name="numero_factura"
+            value={values.numero_factura}
+            onChange={(e) => setValue("numero_factura", e.target.value)}
+            placeholder="FAC-001"
+          />
 
-      {/* --- SECCIÓN DE PRODUCTOS --- */}
-      <div className="mb-4 p-2 border rounded-lg bg-gray-50">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-2 items-end">
-          <div className="md:col-span-1">
-            <label className="block text-sm font-medium mb-1">Producto</label>
-            <ProductAutocomplete onSelect={(item: any) => setSelectedProduct(item)} placeholder="Buscar..." />
-          </div>
           <div className="w-full">
-            <label className="block text-sm font-medium mb-1">Cant.</label>
-            <input type="number" className="form-input w-full" value={cantidadTmp} onChange={e => setCantidadTmp(Number(e.target.value))} />
+            <label className="block text-sm font-medium mb-1 text-gray-700">
+              Cliente (Cédula o Nombre) <span className="text-red-500">*</span>
+            </label>
+            <ClienteAutocomplete
+              onSelect={(cliente) => setValue("cliente_id", cliente.id)}
+              initialValue=""
+              placeholder="Escriba nombre o documento..."
+            />
+            <input type="hidden" value={watch("cliente_id") || ""} />
           </div>
-          <button
-            type="button"
-            className="bg-blue-600 text-white rounded px-3 py-2 disabled:opacity-50 font-bold"
-            disabled={!selectedProduct}
-            onClick={() => {
-              if (!selectedProduct) return;
-              if (detalles.some(d => d.producto_id === selectedProduct.id)) return;
-              const nuevo: ProductoDetalle = {
-                producto_id: selectedProduct.id,
-                producto_nombre: selectedProduct.nombre,
-                cantidad: cantidadTmp,
-                precio_unitario: selectedProduct.precio || 0,
-                subtotal: (selectedProduct.precio || 0) * cantidadTmp,
-              };
-              setDetalles([...detalles, nuevo]);
-              setSelectedProduct(null);
-            }}
-          >+ Agregar</button>
-        </div>
-        
-        {detalles.length > 0 && (
-          <div className="mt-3 overflow-x-auto border rounded bg-white">
-            <table className="min-w-full text-xs">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="p-1 text-left">Producto</th>
-                  <th className="p-1 text-left">Cant.</th>
-                  <th className="p-1 text-left">Precio</th>
-                  <th className="p-1 text-left">Subtotal</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                {detalles.map((d, idx) => (
-                  <tr key={idx} className="border-t">
-                    <td className="p-1">{d.producto_nombre}</td>
-                    <td className="p-1">{d.cantidad}</td>
-                    <td className="p-1">{d.precio_unitario}</td>
-                    <td className="p-1">{d.subtotal}</td>
-                    <td className="p-1 text-center">
-                      <button type="button" className="text-red-500 font-bold" onClick={() => setDetalles(detalles.filter((_, i) => i !== idx))}>✕</button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <FormInput
+              label="Fecha inicial"
+              name="fecha_inicial"
+              type="date"
+              value={values.fecha_inicial}
+              onChange={(e) => setValue("fecha_inicial", e.target.value)}
+              required
+            />
+            <FormInput
+              label="Fecha final (opcional)"
+              name="fecha_final"
+              type="date"
+              value={values.fecha_final}
+              onChange={(e) => setValue("fecha_final", e.target.value)}
+            />
           </div>
-        )}
-      </div>
 
-      <FormInput
-        label="Saldo pendiente"
-        name="saldo_pendiente"
-        value={saldoPendiente.toLocaleString("es-CO", { style: "currency", currency: "COP" })}
-        readOnly
-        disabled
-      />
+          <div className="mb-4 p-4 border rounded-xl bg-gray-50">
+            <p className="text-sm font-bold text-gray-700 mb-3">Detalle de Productos</p>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-2 items-end">
+              <div className="md:col-span-2">
+                <ProductAutocomplete onSelect={(item: any) => setSelectedProduct(item)} placeholder="Buscar producto..." />
+              </div>
+              <div>
+                <input type="number" className="form-input w-full" value={cantidadTmp} onChange={(e) => setCantidadTmp(Number(e.target.value))} />
+              </div>
+              <button
+                type="button"
+                className="bg-blue-600 text-white rounded-lg px-3 py-2 font-bold hover:bg-blue-700"
+                disabled={!selectedProduct}
+                onClick={() => {
+                  if (!selectedProduct) return;
+                  setDetalles([...detalles, {
+                    producto_id: selectedProduct.id,
+                    producto_nombre: selectedProduct.nombre,
+                    cantidad: cantidadTmp,
+                    precio_unitario: selectedProduct.precio || 0,
+                    subtotal: (selectedProduct.precio || 0) * cantidadTmp,
+                  }]);
+                  setSelectedProduct(null);
+                }}
+              > + Agregar </button>
+            </div>
 
-      <div className="flex justify-end gap-3 pt-4 border-t">
-        <Button type="button" onClick={onCancel}>Cancelar</Button>
-        <Button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? "Guardando..." : "Guardar Crédito"}
-        </Button>
-      </div>
+            {detalles.length > 0 && (
+              <div className="mt-3 border rounded-lg bg-white overflow-hidden">
+                <table className="min-w-full text-xs">
+                  <thead className="bg-gray-100">
+                    <tr>
+                      <th className="p-2 text-left">Producto</th>
+                      <th className="p-2 text-left">Cant.</th>
+                      <th className="p-2 text-left">Subtotal</th>
+                      <th className="p-2"></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {detalles.map((d, idx) => (
+                      <tr key={idx} className="border-t">
+                        <td className="p-2">{d.producto_nombre}</td>
+                        <td className="p-2">{d.cantidad}</td>
+                        <td className="p-2 font-bold text-gray-800">{d.subtotal.toLocaleString()}</td>
+                        <td className="p-2 text-center">
+                          <button type="button" className="text-red-500 hover:scale-110" onClick={() => setDetalles(detalles.filter((_, i) => i !== idx))}>✕</button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
 
-      {formError && <p className="text-red-600 text-sm text-center font-bold">{formError}</p>}
-    </form>
+          <div className="bg-blue-900 p-5 rounded-xl text-white flex justify-between items-center shadow-inner">
+            <span className="font-bold uppercase tracking-wider text-blue-200">Total Deuda Inicial:</span>
+            <span className="text-2xl font-black">{totalProductos.toLocaleString("es-CO", { style: "currency", currency: "COP" })}</span>
+          </div>
+
+          <div className="flex justify-end gap-3 pt-6 border-t mt-4">
+            <Button type="button" onClick={onCancel} className="bg-gray-100 text-gray-600 hover:bg-gray-200">Cancelar</Button>
+            <Button type="submit" disabled={isSubmitting} className="px-10">
+              {isSubmitting ? "Procesando..." : "Crear Crédito Nuevo"}
+            </Button>
+          </div>
+        </form>
+      )}
+    </div>
   );
 }

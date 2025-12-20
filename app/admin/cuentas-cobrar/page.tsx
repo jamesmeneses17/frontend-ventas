@@ -205,22 +205,21 @@ export default function CuentasCobrarPage() {
             title={editing ? "Editar Crédito" : "Nuevo Crédito"}
           >
             <CreditosForm
-  initialData={editing}
-  onCancel={() => setShowModal(false)}
-  onSaved={async () => {
-    setShowModal(false);
-    await load();
-    setNotification({
-      message: "Guardado correctamente",
-      type: "success",
-    });
-  }}
-  onSubmit={async (payload) => {
-    // ✅ Llama a la función real del servicio
-    await createCredito(payload);
-  }}
-/>
-
+              initialData={editing}
+              onCancel={() => setShowModal(false)}
+              onSaved={async () => {
+                setShowModal(false);
+                await load();
+                setNotification({
+                  message: "Guardado correctamente",
+                  type: "success",
+                });
+              }}
+              onSubmit={async (payload) => {
+                // ✅ Llama a la función real del servicio
+                await createCredito(payload);
+              }}
+            />
           </ModalVentana>
         )}
 
