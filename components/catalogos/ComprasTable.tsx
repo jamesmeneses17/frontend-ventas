@@ -40,15 +40,18 @@ export default function ComprasTable({
       cellClass: "px-4 py-2",
       render: (row: Compra) => {
         if (!row.fecha) return "-";
-        try {
-          const d = new Date(row.fecha);
-          const day = d.getDate().toString().padStart(2, '0');
-          const month = d.toLocaleString("es-CO", { month: "short" }).replace('.', '');
-          const year = d.getFullYear();
-          return `${day}/${month}/${year}`;
-        } catch {
-          return String(row.fecha);
+        // Si la fecha ya viene como 'YYYY-MM-DD', mostrarla formateada sin crear un Date (evita desfase)
+        const fechaStr = String(row.fecha);
+        const match = fechaStr.match(/^(\d{4})-(\d{2})-(\d{2})/);
+        if (match) {
+          const [_, year, month, day] = match;
+          // Opcional: mostrar como DD/mmm/YYYY
+          const meses = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
+          const mesNombre = meses[parseInt(month, 10) - 1] || month;
+          return `${day}/${mesNombre}/${year}`;
         }
+        // Si no es formato esperado, mostrar como está
+        return fechaStr;
       },
     },
     {

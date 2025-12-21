@@ -249,29 +249,10 @@ export default function VentasForm({
         const precioVenta = Number(data.precio_unitario) || 0;
         const costoCosto = Number((productoSel as any).precio_costo ?? 0);
 
-        console.log("[VentasForm] Submit payload:", {
-            fecha: data.fecha_venta,
-            productoId: Number(data.productoId),
-            cantidad: Number(data.cantidad),
-            costo_unitario: costoCosto,
-            precio_venta: precioVenta,
-            stockDisponible,
-        });
-
-        // Formatear fecha como 'YYYY-MM-DD'
-        const formatFecha = (fechaStr: string) => {
-            if (!fechaStr) return '';
-            // Si ya viene en formato 'YYYY-MM-DD', devolver igual
-            if (/^\d{4}-\d{2}-\d{2}$/.test(fechaStr)) return fechaStr;
-            // Si viene en otro formato, intentar extraer la parte de fecha
-            const d = new Date(fechaStr);
-            if (!isNaN(d.getTime())) {
-                return d.toISOString().substring(0, 10);
-            }
-            return fechaStr;
-        };
+        // Guardar la fecha como string 'YYYY-MM-DD' para evitar desfase de zona horaria
+        const fechaVenta = data.fecha_venta || new Date().toISOString().substring(0, 10);
         const payload: CreateVentaDTO = {
-            fecha: formatFecha(data.fecha_venta),
+            fecha: fechaVenta,
             productoId: Number(data.productoId),
             cantidad: Math.max(1, cantidadVenta),
             costo_unitario: costoCosto,
@@ -279,12 +260,15 @@ export default function VentasForm({
         };
 
         const result = onSubmit(payload);
+        // Cerrar el formulario automáticamente después de guardar o actualizar
         if (result instanceof Promise) {
             result.then(() => {
                 if (typeof onSuccess === 'function') onSuccess();
+                onCancel();
             });
         } else {
             if (typeof onSuccess === 'function') onSuccess();
+            onCancel();
         }
     };
 

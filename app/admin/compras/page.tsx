@@ -229,6 +229,8 @@ export default function ComprasPage() {
     setFormError("");
     try {
       await handleFormSubmit(data);
+      // Cerrar el modal automáticamente después de éxito
+      handleCloseModal();
     } catch (err: any) {
       const remote = err?.response?.data;
       let msg: string;

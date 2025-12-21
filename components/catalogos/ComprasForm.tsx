@@ -254,14 +254,11 @@ export default function ComprasForm({
       );
     }
 
-    // Construir payload mínimo tal como pide el backend: fecha, producto_id, cantidad, costo_unitario
+    // Guardar la fecha como string 'YYYY-MM-DD' para evitar desfase de zona horaria
     const payload: any = {
-      fecha: data.fecha_compra
-        ? new Date(data.fecha_compra).toISOString()
-        : new Date().toISOString(),
+      fecha: data.fecha_compra || new Date().toISOString().substring(0, 10),
       producto_id: Number(data.productoId),
       cantidad: Math.max(1, Number(data.cantidad) || 0),
-      // Asegurar número puro (permitir decimales)
       // El valor ya está limpio porque handlePriceChange lo convierte a número
       costo_unitario: Number(data.costo_unitario) || 0,
     };
