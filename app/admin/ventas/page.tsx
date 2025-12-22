@@ -215,6 +215,8 @@ export default function VentasPage() {
       await handleFormSubmit(data);
       // Forzar recálculo de totales después de crear/actualizar venta
       await recalculateTotalsAll();
+      // Cerrar el modal automáticamente después de guardar o actualizar
+      handleCloseModal();
     } catch (err: any) {
       const remote = err?.response?.data;
       let msg: string;

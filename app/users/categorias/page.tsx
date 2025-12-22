@@ -123,8 +123,11 @@ function CategoriasClientePageContent() {
     fetchCategories();
   }, []);
 
+  // Filtrar para mostrar solo categorías activas (activo === 1)
+  const filteredCategories = categories.filter(cat => Number(cat.activo) === 1);
+
   // Mapear categorías principales a formato de display
-  const displayedCategories: CategoryCardDisplayProps[] = categories.map((cat) => ({
+  const displayedCategories: CategoryCardDisplayProps[] = filteredCategories.map((cat) => ({
     id: cat.id,
     nombre: cat.nombre,
     // Usar imagen_url de la BD si está disponible, si no usar fallback

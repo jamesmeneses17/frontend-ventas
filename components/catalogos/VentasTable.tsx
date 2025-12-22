@@ -23,6 +23,15 @@ export default function VentasTable({
 }: Props) {
   const [productMap, setProductMap] = React.useState<Record<number, Producto | null>>({});
 
+  // Ordenar ventas por fecha descendente (más reciente primero)
+  const sortedData = React.useMemo(() => {
+    return [...(data || [])].sort((a, b) => {
+      const dateA = new Date(a.fecha || 0).getTime();
+      const dateB = new Date(b.fecha || 0).getTime();
+      return dateB - dateA;
+    });
+  }, [data]);
+
   React.useEffect(() => {
     // Buscar productIds que no estén en cache
     const ids = Array.from(
@@ -80,15 +89,16 @@ export default function VentasTable({
       cellClass: "px-4 py-2",
       render: (row: Venta) => {
         if (!row.fecha) return "-";
-        try {
-          const d = new Date(row.fecha);
-          const day = String(d.getDate()).padStart(2, "0");
-          const month = String(d.getMonth() + 1).padStart(2, "0");
-          const year = d.getFullYear();
+        // Si la fecha ya viene como 'YYYY-MM-DD', mostrarla formateada sin crear un Date (evita desfase)
+        const fechaStr = String(row.fecha);
+        const match = fechaStr.match(/^(\d{4})-(\d{2})-(\d{2})/);
+        if (match) {
+          const [_, year, month, day] = match;
+          // Opcional: mostrar como DD/MM/YYYY
           return `${day}/${month}/${year}`;
-        } catch {
-          return String(row.fecha);
         }
+        // Si no es formato esperado, mostrar como está
+        return fechaStr;
       },
     },
     
@@ -163,7 +173,7 @@ export default function VentasTable({
       ============================== */}
       <CrudTable
         columns={columns}
-        data={data}
+        data={sortedData}
         loading={loading}
         tableClass="min-w-full divide-y divide-gray-200"
         headerClass="bg-gray-50 border-b"
