@@ -208,7 +208,7 @@ function SubcategoriasClientePageContent() {
   // Mapear subcategorías a formato de display
 
   const displayedSubcategories: SubcategoryCardDisplayProps[] = subcategories
-    .filter(sub => sub.activo === 1 || sub.activo === true)
+    .filter(sub => Number(sub.activo) === 1)
     .sort((a, b) => a.nombre.localeCompare(b.nombre))
     .map((sub) => ({
       id: sub.id,
