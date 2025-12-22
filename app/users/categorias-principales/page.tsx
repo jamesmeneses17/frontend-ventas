@@ -121,7 +121,7 @@ function CategoriasPrincipalesPageContent() {
           // Filtrar categorías que pertenecen a esta categoría principal
             const filtered = categoriasArray.filter(
               (c) =>
-                (c.activo === 1 || c.activo === true) &&
+                Number(c.activo) === 1 &&
                 (!categoriaPrincipalId || Number(c.categoriaPrincipalId) === Number(categoriaPrincipalId))
           );
           setCategories(filtered);
