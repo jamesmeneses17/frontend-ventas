@@ -18,35 +18,6 @@ const fallbackImages = [
   "/images/iluminacion-solar.webp",
 ];
 
-const mapCategoryToImage = (nombre: string, id: number): string => {
-  const slug = createSlug(nombre);
-
-  switch (slug) {
-    case "accesorios-ac":
-    case "bombillo-110-ac":
-    case "panel-cuadrado-110-ac":
-    case "reflectores-ac":
-    case "panel-redondo-110-ac":
-    case "toma-corriente":
-    case "interruptor":
-    case "alambre-cobre":
-      return "/images/iluminacion-solar.webp";
-    case "pwm":
-    case "mppt":
-      return "/images/controladores.webp";
-    case "gel":
-    case "litio":
-    case "agm":
-      return "/images/bateria.webp";
-    case "onda-pura":
-    case "inversor-cargado":
-    case "onda-modificada":
-      return "/images/panel.webp";
-    default:
-      const index = id % fallbackImages.length;
-      return fallbackImages[index];
-  }
-};
 
 interface CategoryCardDisplayProps {
   id: number;
@@ -118,18 +89,17 @@ function CategoriasPrincipalesPageContent() {
           );
           setPrincipal(foundPrincipal || null);
 
-          // Filtrar categorías que pertenecen a esta categoría principal
-            const filtered = categoriasArray.filter(
-              (c) =>
-                Number(c.activo) === 1 &&
-                (!categoriaPrincipalId || Number(c.categoriaPrincipalId) === Number(categoriaPrincipalId))
+          // Filtrar categorías que pertenecen a esta categoría principal Y que estén activas
+          const filtered = categoriasArray.filter(
+            (c) => String(c.categoriaPrincipalId) === String(categoriaPrincipalId) && c.activo === 1
           );
           setCategories(filtered);
 
           console.log('[CategoriasPrincipales Page] Categoría Principal:', foundPrincipal?.nombre);
-          console.log('[CategoriasPrincipales Page] Categorías encontradas:', filtered.length, filtered.map(c => c.nombre));
+          console.log('[CategoriasPrincipales Page] Categorías filtradas (activas):', filtered.length);
         } else {
-          setCategories(categoriasArray);
+          // Si no hay filtro, mostrar todas las activas
+          setCategories(categoriasArray.filter(c => c.activo === 1));
         }
       } catch (err) {
         console.error("Error al cargar datos:", err);
@@ -142,11 +112,14 @@ function CategoriasPrincipalesPageContent() {
 
   // Mapear categorías a formato de display
   const displayedCategories: CategoryCardDisplayProps[] = categories
+    .filter(c => c.activo === 1) // Asegurar que solo se muestran activas (redundante pero seguro)
     .sort((a, b) => a.nombre.localeCompare(b.nombre))
     .map((cat) => ({
       id: cat.id,
       nombre: cat.nombre,
-      imageSrc: mapCategoryToImage(cat.nombre, cat.id),
+      // USAR IMAGEN DE LA BASE DE DATOS
+      // Si no existe, usar un fallback genérico
+      imageSrc: cat.imagen_url || fallbackImages[0],
       href: `/users/subcategorias?categoriaId=${cat.id}`,
     }));
 
@@ -185,7 +158,7 @@ function CategoriasPrincipalesPageContent() {
                 {displayedCategories.length > 0 ? (
                   <>
                     {/* Grid de tarjetas - Responsive */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-5">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-5">
                       {displayedCategories.map((cat) => (
                         <CategoryCard
                           key={cat.id}
