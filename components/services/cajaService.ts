@@ -141,4 +141,42 @@ export const deleteMovimiento = async (id: number): Promise<void> => {
         console.error("[deleteMovimiento] Error:", err.message);
         throw err;
     }
+}
+
+
+export interface ReporteAnualData {
+    mes: string;
+    ingresos: number;
+    egresos: number;
+    gastos: number;
+    saldo: number;
+}
+
+export interface ReporteDiarioData {
+    fecha: string; // YYYY-MM-DD
+    mes: string;
+    ingreso: number;
+    egreso: number;
+    gasto: number;
+    saldo: number;
+}
+
+export const getReporteAnual = async (anio: number): Promise<ReporteAnualData[]> => {
+    try {
+        const res = await axios.get(`${ENDPOINT_BASE}/reporte/anual/${anio}`);
+        return res.data;
+    } catch (err: any) {
+        console.error("[getReporteAnual] Error:", err.message);
+        return [];
+    }
+};
+
+export const getReporteDiario = async (anio: number, mes: number): Promise<ReporteDiarioData[]> => {
+    try {
+        const res = await axios.get(`${ENDPOINT_BASE}/reporte/diario/${anio}/${mes}`);
+        return res.data;
+    } catch (err: any) {
+        console.error("[getReporteDiario] Error:", err.message);
+        return [];
+    }
 };
