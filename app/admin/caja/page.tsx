@@ -11,26 +11,13 @@ import ModalVentana from "../../../components/ui/ModalVentana";
 import Alert from "../../../components/ui/Alert";
 import ActionButton from "../../../components/common/ActionButton";
 import FilterBar from "../../../components/common/FilterBar";
-import CardStat from "../../../components/ui/CardStat"; 
+import CardStat from "../../../components/ui/CardStat";
 
-// Componentes específicos de Movimientos de Caja
-
-// Iconos y Servicios (Ajustar rutas según tu estructura real)
-import { DollarSign, ArrowUpRight, ArrowDownLeft, AlertTriangle } from "lucide-react"; 
-import { createMovimiento, CreateMovimientoData, deleteMovimiento, getMovimientosCaja, MovimientoCaja, updateMovimiento, UpdateMovimientoData } from "../../../components/services/movimientosService";
+import { DollarSign, ArrowUpRight, ArrowDownLeft, AlertTriangle } from "lucide-react";
+import { createMovimiento, CreateMovimientoData, deleteMovimiento, getMovimientosCaja, MovimientoCaja, updateMovimiento, UpdateMovimientoData, getCajaStats, CajaStats } from "../../../components/services/cajaService";
 import MovimientosTable from "../../../components/catalogos/MovimientosTable";
 import MovimientosForm from "../../../components/catalogos/MovimientosForm";
- // Asegúrate de crear este servicio
- 
- 
-// Tipos para el resumen de widgets (Ajustar según tu backend)
-interface CajaSummary {
-  saldoActual: number;
-  totalIngresosHoy: number;
-  totalEgresosHoy: number;
-}
 
-// Opciones de filtro por tipo de movimiento (Ingreso, Egreso, Gasto)
 const TIPO_MOVIMIENTO_FILTRO = [
   { label: "Filtrar por: Todos los Tipos", value: "" },
   { label: "Ingreso", value: "INGRESO" },
@@ -42,7 +29,7 @@ const TIPO_MOVIMIENTO_FILTRO = [
 export default function CajaPage() {
   const [formError, setFormError] = React.useState<string>("");
   const [tipoMovimientoFiltro, setTipoMovimientoFiltro] = React.useState<string>("");
-  
+
   // Hook CRUD principal
   const {
     currentItems,
@@ -56,7 +43,7 @@ export default function CajaPage() {
     notification,
     setSearchTerm,
     handlePageChange,
-    handlePageSizeChange, 
+    handlePageSizeChange,
     handleAdd,
     handleEdit,
     handleDelete,
@@ -75,37 +62,43 @@ export default function CajaPage() {
         }
       },
       createItem: createMovimiento,
-      updateItem: (id: number, data: UpdateMovimientoData) => updateMovimiento({ id, ...(data as any) }),
+      updateItem: (id: number, data: UpdateMovimientoData) => updateMovimiento(id, data),
       deleteItem: deleteMovimiento,
     },
     "Movimiento de Caja",
     // Pasamos el filtro de tipo de movimiento como dependencia custom
-    { customDependencies: [tipoMovimientoFiltro] } 
+    { customDependencies: [tipoMovimientoFiltro] }
   );
 
   const editingMovimiento = editingItem as MovimientoCaja | null;
 
-  // Estado y función para los stats (simulación)
-  const [stats, setStats] = React.useState<CajaSummary>({ saldoActual: 0, totalIngresosHoy: 0, totalEgresosHoy: 0 });
+  // Estado para los stats reales
+  const [stats, setStats] = React.useState<CajaStats>({ saldoActual: 0, totalIngresosHoy: 0, totalEgresosHoy: 0 });
 
-  // Simulación de carga de stats
+  // Función para cargar stats
+  const fetchStats = async () => {
+    try {
+      const data = await getCajaStats();
+      setStats(data);
+    } catch (error) {
+      console.error("Error al cargar las estadísticas de caja:", error);
+      // Opcional: mostrar un mensaje de error al usuario
+    }
+  };
+
+  // Cargar stats al inicio y cuando cambie la lista (totalItems es un buen trigger indirecto)
   React.useEffect(() => {
-    // Aquí deberías llamar a tu API para obtener el saldo actual, etc.
-    // Ejemplo de datos simulados:
-    setStats({ 
-        saldoActual: 1500000, 
-        totalIngresosHoy: 500000, 
-        totalEgresosHoy: 150000 
-    });
-  }, [totalItems]); // Recargar stats cuando haya un cambio en la lista
+    fetchStats();
+  }, [totalItems]);
 
-  // Handlers para la lógica de stats (similar al ProductsPage)
+  // Handlers para la lógica de stats (actualizar después de guardar/borrar)
   const handleFormSubmitWithStats = async (data: CreateMovimientoData | UpdateMovimientoData) => {
     setFormError("");
     try {
       await handleFormSubmit(data);
-      // Después de guardar, recargar stats (o actualizar el estado local)
-      // En un entorno real, la API te devolvería el nuevo saldo.
+      // Recargar stats
+      fetchStats();
+      handleCloseModal();
     } catch (error: any) {
       const msg = error?.response?.data?.message || error?.message || "Error al guardar el movimiento.";
       setFormError(msg);
@@ -133,7 +126,7 @@ export default function CajaPage() {
 
   const handleDeleteWithStats = async (id: number) => {
     await handleDelete(id);
-    // Después de borrar, recargar stats.
+    fetchStats();
   };
 
   // Handler para el filtro de tipo de movimiento
@@ -142,42 +135,42 @@ export default function CajaPage() {
     setTipoMovimientoFiltro(value);
     handlePageChange(1); // Resetear a la primera página cuando el filtro cambia
   };
-  
+
   return (
     <AuthenticatedLayout>
       <div className="space-y-6">
 
         {/* --- WIDGETS DE RESUMEN (Simulando el Excel de Ingresos/Egresos) --- */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <CardStat 
-            title="Saldo Actual de Caja" 
+          <CardStat
+            title="Saldo Actual de Caja"
             value={stats.saldoActual ? `$${stats.saldoActual.toLocaleString('es-CO')}` : "$0.00"}
-            color="text-indigo-600" 
-            icon={<DollarSign className="h-4 w-4" />} 
+            color="text-indigo-600"
+            icon={<DollarSign className="h-4 w-4" />}
           />
-          <CardStat 
-            title="Ingresos Hoy" 
+          <CardStat
+            title="Ingresos Hoy"
             value={stats.totalIngresosHoy ? `$${stats.totalIngresosHoy.toLocaleString('es-CO')}` : "$0.00"}
-            color="text-green-600" 
-            icon={<ArrowUpRight className="h-4 w-4" />} 
+            color="text-green-600"
+            icon={<ArrowUpRight className="h-4 w-4" />}
           />
-          <CardStat 
-            title="Egresos y Gastos Hoy" 
+          <CardStat
+            title="Egresos y Gastos Hoy"
             value={stats.totalEgresosHoy ? `$${stats.totalEgresosHoy.toLocaleString('es-CO')}` : "$0.00"}
-            color="text-red-600" 
-            icon={<ArrowDownLeft className="h-4 w-4" />} 
+            color="text-red-600"
+            icon={<ArrowDownLeft className="h-4 w-4" />}
           />
-           <CardStat 
-            title="Movimientos Totales" 
-            value={String(totalItems ?? 0)} 
-            color="text-yellow-600" 
-            icon={<AlertTriangle className="h-4 w-4" />} 
+          <CardStat
+            title="Movimientos Totales"
+            value={String(totalItems ?? 0)}
+            color="text-yellow-600"
+            icon={<AlertTriangle className="h-4 w-4" />}
           />
         </div>
 
         {/* --- CONTENIDO PRINCIPAL: TABLA DE MOVIMIENTOS --- */}
         <div className="bg-white shadow rounded-2xl p-6 border border-gray-300">
-          
+
           {/* TÍTULO Y BOTONES */}
           <div className="flex justify-between items-start mb-6">
             <div>
@@ -186,13 +179,13 @@ export default function CajaPage() {
                 Registro de Caja y Movimientos
               </h1>
               <p className="text-gray-600 mt-2">
-                Ingreso de Ingresos, Egresos y Gastos diarios 
+                Ingreso de Ingresos, Egresos y Gastos diarios
               </p>
             </div>
-            
+
             <ActionButton
               icon={<svg className="-ml-1 mr-2 h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
+                <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
               </svg>}
               label="Nuevo Movimiento"
               onClick={handleAdd}
@@ -206,10 +199,10 @@ export default function CajaPage() {
               searchTerm={searchTerm}
               onSearchChange={setSearchTerm}
               searchPlaceholder="Buscar por descripción o concepto..."
-              
+
               selectOptions={TIPO_MOVIMIENTO_FILTRO}
               selectFilterValue={tipoMovimientoFiltro}
-              onSelectFilterChange={handleTipoFilterChange} 
+              onSelectFilterChange={handleTipoFilterChange}
             />
           </div>
 
@@ -224,8 +217,8 @@ export default function CajaPage() {
           {/* PAGINADOR */}
           <div className="flex justify-between items-center mt-4">
             <p className="text-sm text-gray-600">
-              {!loading && totalItems > 0 
-                ? `Mostrando ${currentItems.length} de ${totalItems} movimientos` 
+              {!loading && totalItems > 0
+                ? `Mostrando ${currentItems.length} de ${totalItems} movimientos`
                 : (loading ? "Cargando..." : "No hay movimientos registrados")}
             </p>
             {!loading && totalItems > 0 && (
@@ -248,7 +241,7 @@ export default function CajaPage() {
             title={editingMovimiento ? "Editar Movimiento" : "Nuevo Movimiento"}
           >
             {/* Debes crear el componente MovimientosForm */}
-            <MovimientosForm 
+            <MovimientosForm
               initialData={editingMovimiento}
               onSubmit={handleMovimientosFormSubmit}
               onCancel={handleCloseModal}

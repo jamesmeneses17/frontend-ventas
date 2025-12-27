@@ -18,7 +18,7 @@ export interface MovimientoCaja {
     monto: number;
     // Campos de auditoría (opcional)
     creado_por?: string;
-    fecha_creacion?: string; 
+    fecha_creacion?: string;
 }
 
 // Tipos para crear un nuevo movimiento (no necesita ID)
@@ -43,26 +43,26 @@ export interface MovimientosResponse {
  */
 
 const DUMMY_DATA: MovimientoCaja[] = [
-    { 
-        id: 1, 
-        fecha: '2025-12-01', 
-        tipo_movimiento: 'INGRESO', 
-        concepto: 'Venta Diaria Reflector X20', 
-        monto: 550000 
+    {
+        id: 1,
+        fecha: '2025-12-01',
+        tipo_movimiento: 'INGRESO',
+        concepto: 'Venta Diaria Reflector X20',
+        monto: 550000
     },
-    { 
-        id: 2, 
-        fecha: '2025-12-01', 
-        tipo_movimiento: 'GASTO', 
-        concepto: 'Pago de servicio de internet', 
-        monto: 120000 
+    {
+        id: 2,
+        fecha: '2025-12-01',
+        tipo_movimiento: 'GASTO',
+        concepto: 'Pago de servicio de internet',
+        monto: 120000
     },
-    { 
-        id: 3, 
-        fecha: '2025-12-02', 
-        tipo_movimiento: 'EGRESO', 
-        concepto: 'Compra a Proveedor de Cableado', 
-        monto: 850000 
+    {
+        id: 3,
+        fecha: '2025-12-02',
+        tipo_movimiento: 'EGRESO',
+        concepto: 'Compra a Proveedor de Cableado',
+        monto: 850000
     },
 ];
 
@@ -87,9 +87,9 @@ const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
  * @param searchTerm Buscar por concepto
  */
 export async function getMovimientosCaja(
-    page: number = 1, 
-    size: number = 10, 
-    tipoFiltro: string = '', 
+    page: number = 1,
+    size: number = 10,
+    tipoFiltro: string = '',
     searchTerm: string = ''
 ): Promise<MovimientosResponse> {
     await delay(500); // Simula la carga
@@ -100,11 +100,11 @@ export async function getMovimientosCaja(
     if (tipoFiltro) {
         filteredData = filteredData.filter(item => item.tipo_movimiento === tipoFiltro);
     }
-    
+
     // Filtro por término de búsqueda (concepto)
     if (searchTerm) {
         const lowerSearchTerm = searchTerm.toLowerCase();
-        filteredData = filteredData.filter(item => 
+        filteredData = filteredData.filter(item =>
             item.concepto.toLowerCase().includes(lowerSearchTerm)
         );
     }
@@ -130,9 +130,9 @@ export async function createMovimiento(data: CreateMovimientoData): Promise<Movi
         id: nextId++,
         fecha_creacion: new Date().toISOString(),
         // Asegurar que la fecha sea YYYY-MM-DD
-        fecha: data.fecha || new Date().toISOString().split('T')[0], 
+        fecha: data.fecha || new Date().toISOString().split('T')[0],
     };
-    
+
     // Agregar a la lista simulada
     DUMMY_DATA.push(nuevoMovimiento);
     console.log("[Service] Movimiento Creado:", nuevoMovimiento);
@@ -154,12 +154,12 @@ export async function updateMovimiento(data: UpdateMovimientoData): Promise<Movi
     }
 
     // Aplicar la actualización parcial y asegurar la fecha
-    DUMMY_DATA[index] = { 
-        ...DUMMY_DATA[index], 
+    DUMMY_DATA[index] = {
+        ...DUMMY_DATA[index],
         ...data,
         fecha: data.fecha || DUMMY_DATA[index].fecha,
     };
-    
+
     console.log("[Service] Movimiento Actualizado:", DUMMY_DATA[index]);
 
     return DUMMY_DATA[index];

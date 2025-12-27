@@ -7,7 +7,7 @@ import CrudTable from "../common/CrudTable";
 import ActionButton from "../common/ActionButton";
 import { Trash, Pencil, Tag, DollarSign } from "lucide-react";
 import { formatCurrency, formatDate } from "../../utils/formatters";
-import { MovimientoCaja } from "../services/movimientosService";
+import { MovimientoCaja } from "../services/cajaService";
 
 // Define los tipos (Asegúrate de que esta ruta es correcta para tus servicios)
 
@@ -24,10 +24,12 @@ export default function MovimientosTable({
   onEdit,
   onDelete,
 }: Props) {
-  
+
   // ✅ Estilo según el tipo de movimiento
-  const getTipoMovimientoClasses = (tipo: string) => {
-    switch (tipo) {
+  const getTipoMovimientoClasses = (tipo?: string) => {
+    if (!tipo) return "bg-gray-200 text-gray-800 px-3 py-1 rounded-full text-xs font-semibold";
+    const upper = tipo.toUpperCase();
+    switch (upper) {
       case "INGRESO":
         return "bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-semibold";
       case "EGRESO":
@@ -41,37 +43,41 @@ export default function MovimientosTable({
 
   // ✅ Columnas de la tabla (Refleja el Excel de Ingresos/Egresos)
   const columns = [
-    { 
-        key: "fecha", 
-        label: "Fecha", 
-        render: (row: MovimientoCaja) => formatDate(row.fecha) 
+    {
+      key: "fecha",
+      label: "Fecha",
+      render: (row: MovimientoCaja) => formatDate(row.fecha)
     },
-    { 
-        key: "tipo_movimiento", 
-        label: "Tipo",
-        render: (row: MovimientoCaja) => (
-            <span className={getTipoMovimientoClasses(row.tipo_movimiento)}>
-                {row.tipo_movimiento}
-            </span>
+    {
+      key: "tipo_movimiento",
+      label: "Tipo",
+      render: (row: MovimientoCaja) => {
+        const nombreTipo = row.tipoMovimiento?.nombre || "N/A";
+        return (
+          <span className={getTipoMovimientoClasses(nombreTipo)}>
+            {nombreTipo}
+          </span>
         )
+      }
     },
-    { 
-        key: "concepto", 
-        label: "Descripción / Concepto",
-        // Aquí simulamos que el campo es 'concepto' o 'descripcion'
-        render: (row: MovimientoCaja) => row.concepto || "N/A"
+    {
+      key: "concepto",
+      label: "Descripción / Concepto",
+      // Aquí simulamos que el campo es 'concepto' o 'descripcion'
+      render: (row: MovimientoCaja) => row.concepto || "N/A"
     },
-    { 
-        key: "monto", 
-        label: "Monto",
-        render: (row: MovimientoCaja) => {
-            const isNegative = row.tipo_movimiento !== 'INGRESO';
-            return (
-                <span className={`font-semibold ${isNegative ? 'text-red-600' : 'text-green-600'}`}>
-                    {formatCurrency(row.monto)}
-                </span>
-            );
-        }
+    {
+      key: "monto",
+      label: "Monto",
+      render: (row: MovimientoCaja) => {
+        const nombreTipo = row.tipoMovimiento?.nombre?.toUpperCase() || "";
+        const isNegative = nombreTipo !== 'INGRESO';
+        return (
+          <span className={`font-semibold ${isNegative ? 'text-red-600' : 'text-green-600'}`}>
+            {formatCurrency(row.monto)}
+          </span>
+        );
+      }
     },
     // Podrías añadir una columna para Referencia (Venta ID, Compra ID)
     // { key: "referencia", label: "Referencia Doc" },
