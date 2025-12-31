@@ -31,6 +31,8 @@ export default function MovimientosTable({
     const upper = tipo.toUpperCase();
     switch (upper) {
       case "INGRESO":
+      case "VENTA":
+      case "INGRESO POR VENTA":
         return "bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-semibold";
       case "EGRESO":
         return "bg-red-100 text-red-700 px-3 py-1 rounded-full text-xs font-semibold";
@@ -52,9 +54,15 @@ export default function MovimientosTable({
       key: "tipo_movimiento",
       label: "Tipo",
       render: (row: MovimientoCaja) => {
-        const nombreTipo = row.tipoMovimiento?.nombre || "N/A";
+        let nombreTipo = row.tipoMovimiento?.nombre || "N/A";
+        if (nombreTipo.toUpperCase() === 'VENTA') {
+          nombreTipo = 'Ingreso por Venta';
+        } else if (nombreTipo.toUpperCase() === 'EGRESO') {
+          nombreTipo = 'Egreso por Compra';
+        }
+
         return (
-          <span className={getTipoMovimientoClasses(nombreTipo)}>
+          <span className={getTipoMovimientoClasses(row.tipoMovimiento?.nombre)}>
             {nombreTipo}
           </span>
         )
@@ -71,7 +79,7 @@ export default function MovimientosTable({
       label: "Monto",
       render: (row: MovimientoCaja) => {
         const nombreTipo = row.tipoMovimiento?.nombre?.toUpperCase() || "";
-        const isNegative = nombreTipo !== 'INGRESO';
+        const isNegative = nombreTipo !== 'INGRESO' && nombreTipo !== 'VENTA';
         return (
           <span className={`font-semibold ${isNegative ? 'text-red-600' : 'text-green-600'}`}>
             {formatCurrency(row.monto)}

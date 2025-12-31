@@ -62,10 +62,12 @@ export default function MovimientosForm({
   useEffect(() => {
     const fetchTipos = async () => {
       const tipos = await getTiposMovimiento();
-      const options = tipos.map((t: TipoMovimiento) => ({
-        value: String(t.id),
-        label: t.nombre
-      }));
+      const options = tipos
+        .filter((t: TipoMovimiento) => t.id !== 4 && t.nombre.toLowerCase() !== 'venta') // Excluir Venta (ID 4) para creación manual
+        .map((t: TipoMovimiento) => ({
+          value: String(t.id),
+          label: t.nombre
+        }));
       setTipoOptions(options);
 
       // Si es nuevo, poner el primero por defecto

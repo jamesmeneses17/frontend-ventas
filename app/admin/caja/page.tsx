@@ -21,7 +21,8 @@ import MovimientosForm from "../../../components/catalogos/MovimientosForm";
 const TIPO_MOVIMIENTO_FILTRO = [
   { label: "Filtrar por: Todos los Tipos", value: "" },
   { label: "Ingreso", value: "INGRESO" },
-  { label: "Egreso", value: "EGRESO" },
+  { label: "Ingreso por Venta", value: "VENTA" },
+  { label: "Egreso por Compra", value: "EGRESO" },
   { label: "Gasto", value: "GASTO" },
 ];
 
@@ -29,6 +30,9 @@ const TIPO_MOVIMIENTO_FILTRO = [
 export default function CajaPage() {
   const [formError, setFormError] = React.useState<string>("");
   const [tipoMovimientoFiltro, setTipoMovimientoFiltro] = React.useState<string>("");
+
+  // Estado para el total filtrado
+  const [totalFilteredAmount, setTotalFilteredAmount] = React.useState(0);
 
   // Hook CRUD principal
   const {
@@ -55,7 +59,16 @@ export default function CajaPage() {
       loadItems: async (all, page, size, searchTerm, tipoFiltro) => {
         try {
           // El useCrudCatalog pasa el customDependency como último argumento
-          return await getMovimientosCaja(page, size, tipoFiltro, searchTerm);
+          const response = await getMovimientosCaja(page, size, tipoFiltro, searchTerm);
+
+          // Calcular suma total de los items traídos (filtrados)
+          // Nota: Esto asume que el backend devuelve todos los items filtrados (sin paginación real)
+          // O devuelve la página actual. Si fuera paginado real, necesitaríamos que el backend devuelva el 'sum'.
+          // Dado que backend 'findAll' usa 'getMany' sin limit, devuelve todo.
+          const sum = response.data.reduce((acc, item) => acc + Number(item.monto), 0);
+          setTotalFilteredAmount(sum);
+
+          return response;
         } catch (err: any) {
           console.error('[CajaPage.loadItems] Error cargando movimientos:', err);
           return { data: [], total: 0 };
@@ -136,6 +149,16 @@ export default function CajaPage() {
     handlePageChange(1); // Resetear a la primera página cuando el filtro cambia
   };
 
+  // Utilidad para formatear moneda
+  const formatMoney = (amount: number) => {
+    return new Intl.NumberFormat("es-CO", {
+      style: "currency",
+      currency: "COP",
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount);
+  };
+
   return (
     <AuthenticatedLayout>
       <div className="space-y-6">
@@ -193,17 +216,28 @@ export default function CajaPage() {
             />
           </div>
 
-          {/* BUSCADOR Y FILTROS */}
-          <div className="w-full mb-6">
-            <FilterBar
-              searchTerm={searchTerm}
-              onSearchChange={setSearchTerm}
-              searchPlaceholder="Buscar por descripción o concepto..."
+          {/* BUSCADOR Y FILTROS + TOTAL FILTRADO */}
+          <div className="w-full mb-6 flex flex-col md:flex-row md:items-end gap-4 justify-between">
+            <div className="flex-1">
+              <FilterBar
+                searchTerm={searchTerm}
+                onSearchChange={setSearchTerm}
+                searchPlaceholder="Buscar por descripción o concepto..."
 
-              selectOptions={TIPO_MOVIMIENTO_FILTRO}
-              selectFilterValue={tipoMovimientoFiltro}
-              onSelectFilterChange={handleTipoFilterChange}
-            />
+                selectOptions={TIPO_MOVIMIENTO_FILTRO}
+                selectFilterValue={tipoMovimientoFiltro}
+                onSelectFilterChange={handleTipoFilterChange}
+              />
+            </div>
+            {/* Mostrar Total Filtrado si hay filtro o incluso si no (Total general en pantalla) */}
+            <div className="bg-gray-50 border border-gray-200 px-4 py-2 rounded-lg flex flex-col items-end min-w-[200px]">
+              <span className="text-xs text-gray-500 font-semibold uppercase tracking-wider">
+                Total {tipoMovimientoFiltro ? `(Filtrado)` : `(Listado)`}
+              </span>
+              <span className="text-xl font-bold text-gray-800">
+                {formatMoney(totalFilteredAmount)}
+              </span>
+            </div>
           </div>
 
           {/* TABLA DE MOVIMIENTOS */}
