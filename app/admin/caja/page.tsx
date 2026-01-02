@@ -160,6 +160,30 @@ export default function CajaPage() {
     }).format(amount);
   };
 
+  const handleExportExcel = async () => {
+    try {
+      // 1. Fetch all data with current filters
+      // Backend returns all data (not paginated), so we can just call the service.
+      const response = await getMovimientosCaja(1, 10000, tipoMovimientoFiltro, searchTerm);
+      const dataToExport = response.data.map(item => ({
+        ID: item.id,
+        FECHA: item.fecha, // Already formatted string or date? Backend sends YYYY-MM-DD usually
+        TIPO: item.tipoMovimiento?.nombre || 'N/A',
+        CONCEPTO: item.concepto,
+        MONTO: item.monto,
+        // Add more fields if needed
+      }));
+
+      // 2. Export
+      const { exportToExcel } = await import('../../../utils/exportUtils');
+      exportToExcel(dataToExport, `Movimientos_Caja_${new Date().toISOString().split('T')[0]}`);
+
+    } catch (error) {
+      console.error("Error exporting to Excel:", error);
+      setNotification({ type: 'error', message: 'Error al exportar a Excel' });
+    }
+  };
+
   return (
     <AuthenticatedLayout>
       <div className="space-y-6">
@@ -207,14 +231,22 @@ export default function CajaPage() {
               </p>
             </div>
 
-            <ActionButton
-              icon={<svg className="-ml-1 mr-2 h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
-              </svg>}
-              label="Nuevo Movimiento"
-              onClick={handleAdd}
-              color="primary"
-            />
+            <div className="flex gap-2">
+              <ActionButton
+                icon={<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-file-spreadsheet"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" /><path d="M14 2v4a2 2 0 0 0 2 2h4" /><path d="M8 13h2" /><path d="M8 17h2" /><path d="M14 13h2" /><path d="M14 17h2" /></svg>}
+                label="Exportar Excel"
+                onClick={handleExportExcel}
+                className="bg-green-600 hover:bg-green-700 text-white"
+              />
+              <ActionButton
+                icon={<svg className="-ml-1 mr-2 h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
+                </svg>}
+                label="Nuevo Movimiento"
+                onClick={handleAdd}
+                color="primary"
+              />
+            </div>
           </div>
 
           {/* BUSCADOR Y FILTROS + TOTAL FILTRADO */}
