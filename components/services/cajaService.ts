@@ -180,3 +180,13 @@ export const getReporteDiario = async (anio: number, mes: number): Promise<Repor
         return [];
     }
 };
+
+export const getAvailableYears = async (): Promise<number[]> => {
+    try {
+        const res = await axios.get(`${ENDPOINT_BASE}/reporte/years`);
+        return res.data;
+    } catch (err: any) {
+        console.error("[getAvailableYears] Error:", err.message);
+        return [new Date().getFullYear()];
+    }
+};

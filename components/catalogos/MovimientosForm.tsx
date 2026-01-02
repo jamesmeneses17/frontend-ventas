@@ -63,7 +63,12 @@ export default function MovimientosForm({
     const fetchTipos = async () => {
       const tipos = await getTiposMovimiento();
       const options = tipos
-        .filter((t: TipoMovimiento) => t.id !== 4 && t.nombre.toLowerCase() !== 'venta') // Excluir Venta (ID 4) para creación manual
+        .filter((t: TipoMovimiento) => {
+          const nombre = t.nombre.toLowerCase();
+          // Solo permitir: Ingreso, Egreso, Gasto
+          // Excluir: Ingreso por Venta (auto), Egreso por Compra (auto)
+          return !nombre.includes('venta') && !nombre.includes('compra');
+        })
         .map((t: TipoMovimiento) => ({
           value: String(t.id),
           label: t.nombre

@@ -20,10 +20,11 @@ import MovimientosForm from "../../../components/catalogos/MovimientosForm";
 
 const TIPO_MOVIMIENTO_FILTRO = [
   { label: "Filtrar por: Todos los Tipos", value: "" },
-  { label: "Ingreso", value: "INGRESO" },
-  { label: "Ingreso por Venta", value: "VENTA" },
-  { label: "Egreso por Compra", value: "EGRESO" },
-  { label: "Gasto", value: "GASTO" },
+  { label: "Ingresos", value: "INGRESO" },
+  { label: "Egresos", value: "EGRESO" },
+  { label: "Gastos", value: "GASTO" },
+  { label: "Ingresos por Ventas", value: "Ingreso por Venta" },
+  { label: "Egresos por Compras", value: "Egreso por Compra" },
 ];
 
 // -------------------- COMPONENTE PRINCIPAL --------------------

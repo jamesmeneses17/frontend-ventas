@@ -58,6 +58,10 @@ export default function FinancialSummary() {
   const currentYear = new Date().getFullYear();
   const currentMonthIndex = new Date().getMonth(); // 0-11
 
+  // Year state
+  const [availableYears, setAvailableYears] = useState<number[]>([currentYear]);
+  const [selectedYear, setSelectedYear] = useState<number>(currentYear);
+
   const [monthlyData, setMonthlyData] = useState<MonthlyData[]>([]);
   const [dailyData, setDailyData] = useState<DailyData[]>([]);
 
@@ -65,24 +69,41 @@ export default function FinancialSummary() {
   // Guardaremos el index+1 (1-12) para facilitar la query
   const [selectedMonthNum, setSelectedMonthNum] = useState<number>(currentMonthIndex + 1);
 
-  // Cargar reporte anual al montar
+  // Cargar años disponibles
+  useEffect(() => {
+    const loadYears = async () => {
+      try {
+        // Dynamically import to avoid circular dependency issues if any, though here it's fine
+        const { getAvailableYears } = await import('../services/cajaService');
+        const years = await getAvailableYears();
+        if (years && years.length > 0) {
+          setAvailableYears(years);
+          // If current year is not in list (unlikely if data exists), select first one? 
+          // Better to keep current year if possible, or fallback to first available.
+          if (!years.includes(selectedYear)) {
+            setSelectedYear(years[0]);
+          }
+        }
+      } catch (error) {
+        console.error("Failed to load years", error);
+      }
+    };
+    loadYears();
+  }, []);
+
+  // Cargar reporte anual cuando cambia el año seleccionado
   useEffect(() => {
     const loadAnnual = async () => {
-      const data = await getReporteAnual(currentYear);
+      const data = await getReporteAnual(selectedYear);
       setMonthlyData(data);
-
-      // Si el mes seleccionado no está en la data anual cargada, cambiar al primero disponible?
-      // O mantener el actual si estamos en el mes corriente.
-      // Dejaremos la lógica simple: si hay datos y currentMonth no tiene nada, quizás cambiar.
-      // Pero el usuario quiere filtrar.
     };
     loadAnnual();
-  }, [currentYear]);
+  }, [selectedYear]);
 
   // Cargar reporte diario cuando cambia el mes seleccionado o el año
   useEffect(() => {
     const loadDaily = async () => {
-      const data = await getReporteDiario(currentYear, selectedMonthNum);
+      const data = await getReporteDiario(selectedYear, selectedMonthNum);
       // Mapear el nombre del mes si no viene del backend (nuestro back lo manda vacío en diario)
       const mappedData = data.map(d => ({
         ...d,
@@ -91,7 +112,7 @@ export default function FinancialSummary() {
       setDailyData(mappedData);
     };
     loadDaily();
-  }, [currentYear, selectedMonthNum]);
+  }, [selectedYear, selectedMonthNum]);
 
 
   // Calculos totales anuales
@@ -106,13 +127,22 @@ export default function FinancialSummary() {
   return (
     <div className="bg-white shadow-xl rounded-2xl border border-gray-300 p-6">
 
-      <h3 className="text-2xl font-bold text-gray-900 mb-6 pb-3 text-center bg-gray-100 rounded-md py-2">
-        RESUMEN DIARIO MENSUAL Y ANUAL {currentYear}
+      <h3 className="text-2xl font-bold text-gray-900 mb-6 pb-3 text-center bg-gray-100 rounded-md py-2 flex items-center justify-center gap-3">
+        <span>RESUMEN DIARIO MENSUAL Y ANUAL</span>
+        <select
+          value={selectedYear}
+          onChange={(e) => setSelectedYear(Number(e.target.value))}
+          className="text-xl font-bold bg-white border border-gray-300 rounded-md py-1 px-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-indigo-700"
+        >
+          {availableYears.map(year => (
+            <option key={year} value={year}>{year}</option>
+          ))}
+        </select>
       </h3>
 
       {/* -------------------- 1. RESUMEN DIARIO (Con Filtro) -------------------- */}
       <div className="mb-8 p-4 border border-gray-200 rounded-lg">
-        <h4 className="text-xl font-bold text-gray-900 mb-4 border-b pb-2">RESUMEN DIARIO</h4>
+        <h4 className="text-xl font-bold text-gray-900 mb-4 border-b pb-2">RESUMEN DIARIO - {selectedYear}</h4>
 
         {/* --- Filtros --- */}
         <div className="flex items-center space-x-4 mb-4">
@@ -212,7 +242,7 @@ export default function FinancialSummary() {
         {/* Totales Anuales (Dynamics) */}
         <div className="mt-6 border-t pt-4">
           <h4 className="text-xl font-bold text-orange-600 mb-4 text-center">
-            TOTALES DEL AÑO {currentYear}
+            TOTALES DEL AÑO {selectedYear}
           </h4>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 bg-yellow-200 p-4 rounded-xl shadow-md">
 

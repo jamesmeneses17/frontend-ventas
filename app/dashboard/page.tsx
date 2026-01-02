@@ -3,7 +3,7 @@
 import AuthenticatedLayout from "../../components/layout/AuthenticatedLayout";
 import CardStat from "../../components/ui/CardStat";
 // Importamos solo el componente clave para el dueño
-import FinancialSummary from "../../components/layout/FinancialSummary"; 
+import FinancialSummary from "../../components/layout/FinancialSummary";
 import { useAuth } from "../../contexts/AuthContext";
 import { SVGProps } from "react";
 
@@ -59,7 +59,7 @@ export default function Dashboard() {
 
   return (
     <AuthenticatedLayout>
-      
+
       {/* --- 1. SECCIÓN DE BIENVENIDA Y NOTIFICACIÓN --- */}
       <div className="bg-white overflow-hidden shadow-sm rounded-2xl border border-gray-300 mb-6">
         <div className="px-4 pt-5 sm:px-6 sm:pt-6 pb-0">
@@ -90,20 +90,14 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* --- 2. TARJETAS DE ESTADÍSTICAS RÁPIDAS (KPIs) --- */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <CardStat title="Ventas del día" value="$0.00" color="text-blue-600" icon={<IconShoppingBag className="h-4 w-4" />} />
-        <CardStat title="Stock Bajo" value="0" color="text-red-600" icon={<IconAlert className="h-4 w-4" />} />
-        <CardStat title="Total de productos" value="0" color="text-yellow-600" icon={<IconBox className="h-4 w-4" />} />
-        <CardStat title="Clientes Registrados" value="0" color="text-indigo-600" icon={<IconUsers className="h-4 w-4" />} />
-      </div>
+
 
       {/* --- 3. SECCIÓN PRINCIPAL: RESUMEN FINANCIERO --- */}
       {/* Ocupamos todo el ancho disponible (lg:col-span-full) para darle máxima prioridad al reporte Excel */}
       <div className="grid grid-cols-1 gap-6">
         <FinancialSummary />
       </div>
-      
+
     </AuthenticatedLayout>
   );
 }
