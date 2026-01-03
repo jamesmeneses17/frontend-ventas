@@ -84,7 +84,7 @@ export default function ComprasPage() {
         const selectedYearParam = customParams[0];
         const selectedMonthParam = customParams[1];
         const actualSearchTerm = customParams[2] || "";
-        
+
         const searchLower = (actualSearchTerm || "").toLowerCase();
         console.log("[ComprasPage] loadItems llamado:", {
           page,
@@ -96,7 +96,7 @@ export default function ComprasPage() {
           selectedMonthParam,
           customParams,
         });
-        
+
         if (selectedMonthParam) {
           const resp = await getCompras(
             1,
@@ -211,7 +211,7 @@ export default function ComprasPage() {
         const total = items.length;
         const start = (page - 1) * size;
         const pageItems = items.slice(start, start + size);
-        
+
         return { data: pageItems, total };
       },
       createItem: createCompra,
@@ -279,7 +279,7 @@ export default function ComprasPage() {
 
         setMonthsGrouped(grouped);
         setYearOptions(yearOpts);
-      } catch {}
+      } catch { }
     };
 
     reload();
@@ -333,26 +333,82 @@ export default function ComprasPage() {
     setSelectedMonth("");
   }, [selectedYear, monthsGrouped]);
 
+  const handleExportExcel = async () => {
+    try {
+      // 1. Fetch filtered data (simulating specific backend filters via JS if backend doesn't support them fully yet)
+      const resp = await getCompras(1, 10000, "");
+      let items: any[] = Array.isArray(resp) ? resp : resp?.data ?? [];
+
+      // Filter by Month
+      if (selectedMonth) {
+        items = items.filter((it: any) => {
+          if (!it?.fecha) return false;
+          const d = new Date(it.fecha);
+          const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+          return ym === String(selectedMonth);
+        });
+      }
+      // Filter by Year
+      else if (selectedYear) {
+        items = items.filter((it: any) => {
+          if (!it?.fecha) return false;
+          const d = new Date(it.fecha);
+          return `${d.getFullYear()}` === String(selectedYear);
+        });
+      }
+
+      // Filter by Search
+      const searchLower = (localSearchTerm || "").toLowerCase();
+      if (searchLower) {
+        items = items.filter((it: any) => {
+          const codigo = (it?.producto?.codigo || "").toLowerCase();
+          const nombre = (it?.producto?.nombre || "").toLowerCase();
+          return codigo.includes(searchLower) || nombre.includes(searchLower);
+        });
+      }
+
+      // 2. Map data
+      const dataToExport = items.map(it => ({
+        ID: it.id,
+        FECHA: it.fecha,
+        CODIGO: it.producto?.codigo || 'SN',
+        PRODUCTO: it.producto?.nombre || 'Producto Desconocido',
+        CATEGORIA: it.categoria?.nombre || 'General',
+        CANTIDAD: it.cantidad,
+        COSTO_UNITARIO: it.costo_unitario,
+        TOTAL: Number(it.cantidad) * Number(it.costo_unitario)
+      }));
+
+      // 3. Export
+      const { exportToExcel } = await import('../../../utils/exportUtils');
+      exportToExcel(dataToExport, `Compras_${new Date().toISOString().split('T')[0]}`);
+
+    } catch (error) {
+      console.error("Error exporting purchases:", error);
+      setNotification({ type: 'error', message: "Error al exportar a Excel" });
+    }
+  };
+
   return (
     <AuthenticatedLayout>
       <div className="space-y-6">
         {/* =================== HEADER (Sin el botón "Nueva Compra") =================== */}
-          {/* Tarjeta resumen: Total acumulado de todas las compras filtradas */}
-          <div className="mb-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <CardStat
-                title="Total Compras"
-                value={formatCurrency(totalComprasAll)}
-                color="text-emerald-600"
-                icon={<FileSpreadsheet className="h-4 w-4 text-emerald-600" />}
-              />
-            </div>
+        {/* Tarjeta resumen: Total acumulado de todas las compras filtradas */}
+        <div className="mb-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <CardStat
+              title="Total Compras"
+              value={formatCurrency(totalComprasAll)}
+              color="text-emerald-600"
+              icon={<FileSpreadsheet className="h-4 w-4 text-emerald-600" />}
+            />
           </div>
-        
+        </div>
+
 
         {/* =================== TABLA Y CONTROLES =================== */}
         <div className="bg-white shadow rounded-lg p-6">
-          
+
           {/* Header de la tabla con título */}
           <div className="flex justify-between items-center">
             <div>
@@ -367,58 +423,66 @@ export default function ComprasPage() {
             {/* El botón ActionButton fue movido a la sección de la tabla */}
           </div>
 
-        
+
 
           {/* CONTROLES: Buscador, Selectores y Botón "Nueva Compra" */}
           <div className="flex flex-wrap justify-between items-end gap-4 mb-6">
-            
+
             {/* Grupo de Buscador y Selectores (para que se mantengan juntos a la izquierda) */}
             <div className="flex flex-wrap items-end gap-4">
-                
-                {/* 1. Buscador por Código o Producto */}
-                <div className="flex-1 min-w-[250px] max-w-sm">
-                  <SearchInput
-                    searchTerm={localSearchTerm}
-                    placeholder="Buscar por código o producto..."
-                    onSearchChange={setLocalSearchTerm}
-                  />
-                </div>
 
-                {/* 2. Año */}
-                <div className="min-w-[140px]">
-                  <FormSelect
-                    label="Año" 
-                    name="year"
-                    value={selectedYear}
-                    onChange={(e) => setSelectedYear(e.target.value)}
-                    options={yearOptions}
-                    placeholder="Todos"
-                  />
-                </div>
+              {/* 1. Buscador por Código o Producto */}
+              <div className="flex-1 min-w-[250px] max-w-sm">
+                <SearchInput
+                  searchTerm={localSearchTerm}
+                  placeholder="Buscar por código o producto..."
+                  onSearchChange={setLocalSearchTerm}
+                />
+              </div>
 
-                {/* 3. Mes */}
-                <div className="min-w-[180px]">
-                  <FormSelect
-                    label="Mes" 
-                    name="month"
-                    value={selectedMonth}
-                    disabled={!selectedYear}
-                    onChange={(e) => setSelectedMonth(e.target.value)}
-                    options={monthsOptions}
-                    placeholder="Todos los meses"
-                  />
-                </div>
+              {/* 2. Año */}
+              <div className="min-w-[140px]">
+                <FormSelect
+                  label="Año"
+                  name="year"
+                  value={selectedYear}
+                  onChange={(e) => setSelectedYear(e.target.value)}
+                  options={yearOptions}
+                  placeholder="Todos"
+                />
+              </div>
+
+              {/* 3. Mes */}
+              <div className="min-w-[180px]">
+                <FormSelect
+                  label="Mes"
+                  name="month"
+                  value={selectedMonth}
+                  disabled={!selectedYear}
+                  onChange={(e) => setSelectedMonth(e.target.value)}
+                  options={monthsOptions}
+                  placeholder="Todos los meses"
+                />
+              </div>
             </div>
 
             {/* Botón "Nueva Compra" alineado a la derecha */}
-            <ActionButton
-              icon={<FilePlus2 className="h-5 w-5" />}
-              label="Nueva Compra"
-              onClick={handleAdd}
-            />
+            <div className="flex gap-2">
+              <ActionButton
+                icon={<FileSpreadsheet className="h-5 w-5" />}
+                label="Exportar Excel"
+                onClick={handleExportExcel}
+                className="bg-green-600 hover:bg-green-700 text-white"
+              />
+              <ActionButton
+                icon={<FilePlus2 className="h-5 w-5" />}
+                label="Nueva Compra"
+                onClick={handleAdd}
+              />
+            </div>
           </div>
           {/* FIN DE CONTROLES */}
-          
+
           <ComprasTable
             data={currentItems || []}
             loading={loading}

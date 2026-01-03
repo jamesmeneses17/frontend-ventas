@@ -11,7 +11,7 @@ import Alert from "../../../components/ui/Alert";
 import SearchInput from "../../../components/common/form/SearchInput";
 import FormSelect from "../../../components/common/form/FormSelect";
 
-import { FilePlus2, ShoppingCart, DollarSign, TrendingUp } from "lucide-react";
+import { FilePlus2, ShoppingCart, DollarSign, TrendingUp, FileSpreadsheet } from "lucide-react";
 import CardStat from "../../../components/ui/CardStat";
 import { formatCurrency } from "../../../utils/formatters";
 
@@ -142,7 +142,7 @@ export default function VentasPage() {
         // Sin filtros: obtener y ordenar por fecha descendente
         const resp = await getVentas(page, size, searchTermParam);
         const items = Array.isArray(resp) ? resp : resp?.data ?? [];
-        
+
         // Ordenar por fecha descendente
         items.sort((a: any, b: any) => {
           const dateA = new Date(a.fecha || 0).getTime();
@@ -265,7 +265,7 @@ export default function VentasPage() {
 
         setMonthsGrouped(grouped);
         setYearOptions(yearOpts);
-      } catch {}
+      } catch { }
     };
 
     reload();
@@ -277,37 +277,94 @@ export default function VentasPage() {
   }, [recalculateTotalsAll, notification]);
 
   useEffect(() => {
-    if (!selectedYear) {
-      setMonthsOptions([]);
-      return;
-    }
     const months = monthsGrouped[selectedYear] ?? [];
     setMonthsOptions(months);
     setSelectedMonth("");
   }, [selectedYear, monthsGrouped]);
 
+  const handleExportExcel = async () => {
+    try {
+      // 1. Fetch filtered data (simulating specific backend filters via JS)
+      const resp = await getVentas(1, 10000, searchTerm || "");
+      let items: any[] = Array.isArray(resp) ? resp : resp?.data ?? [];
+
+      // Filter by Month
+      if (selectedMonth) {
+        items = items.filter((it: any) => {
+          if (!it?.fecha) return false;
+          const d = new Date(it.fecha);
+          const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+          return ym === String(selectedMonth);
+        });
+      }
+      // Filter by Year
+      else if (selectedYear) {
+        items = items.filter((it: any) => {
+          if (!it?.fecha) return false;
+          const d = new Date(it.fecha);
+          return `${d.getFullYear()}` === String(selectedYear);
+        });
+      }
+
+      // 2. Map data
+      const dataToExport = items.map(it => {
+        const cantidad = Number(it.cantidad);
+        const precioVenta = Number(it.precio_venta);
+        const costoUnit = Number(it.costo_unitario);
+
+        const totalVenta = Number(it.total_venta ?? (cantidad * precioVenta));
+
+        let utilidad = Number(it.utilidad);
+        if (isNaN(utilidad)) {
+          utilidad = (precioVenta - costoUnit) * cantidad;
+        }
+
+        return {
+          ID: it.id,
+          FECHA: it.fecha,
+          CODIGO: it.producto?.codigo || 'SN',
+          PRODUCTO: it.producto?.nombre || 'Producto Desconocido',
+          CATEGORIA: it.producto?.categoria?.nombre || 'General',
+          CANTIDAD: cantidad,
+          COSTO_UNITARIO: costoUnit,
+          PRECIO_VENTA: precioVenta,
+          TOTAL_VENTA: totalVenta,
+          UTILIDAD: utilidad
+        };
+      });
+
+      // 3. Export
+      const { exportToExcel } = await import('../../../utils/exportUtils');
+      exportToExcel(dataToExport, `Ventas_${new Date().toISOString().split('T')[0]}`);
+
+    } catch (error) {
+      console.error("Error exporting sales:", error);
+      setNotification({ type: 'error', message: "Error al exportar a Excel" });
+    }
+  };
+
   return (
     <AuthenticatedLayout>
       <div className="w-full md:w-auto">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <CardStat
-                  title="Total Ventas"
-                  value={formatCurrency(totalVentasAll, "$")}
-                  icon={<DollarSign className="w-4 h-4" />}
-                  color="text-green-600"
-                />
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <CardStat
+            title="Total Ventas"
+            value={formatCurrency(totalVentasAll, "$")}
+            icon={<DollarSign className="w-4 h-4" />}
+            color="text-green-600"
+          />
 
-                <CardStat
-                  title="Utilidad"
-                  value={formatCurrency(totalUtilidadAll, "$")}
-                  icon={<TrendingUp className="w-4 h-4" />}
-                  color="text-yellow-600"
-                />
-              </div>
-            </div>
+          <CardStat
+            title="Utilidad"
+            value={formatCurrency(totalUtilidadAll, "$")}
+            icon={<TrendingUp className="w-4 h-4" />}
+            color="text-yellow-600"
+          />
+        </div>
+      </div>
       <div className="space-y-6">
         {/* =================== HEADER =================== */}
-       
+
 
         {/* =================== TABLA & CONTROLES =================== */}
         <div className="bg-white shadow rounded-lg p-6">
@@ -320,11 +377,11 @@ export default function VentasPage() {
               <p className="text-gray-600 mt-2">
                 Administra y controla todas las ventas realizadas a clientes.
               </p>
-            
 
-            
+
+
+            </div>
           </div>
-        </div>
 
           <div className="flex flex-wrap justify-between items-end gap-4 mb-6">
             <div className="flex flex-wrap items-end gap-4">
@@ -363,12 +420,20 @@ export default function VentasPage() {
               </div>
             </div>
 
-            {/* BTN Nueva Venta */}
-            <ActionButton
-              icon={<FilePlus2 className="h-5 w-5" />}
-              label="Nueva Venta"
-              onClick={handleAdd}
-            />
+            {/* BTN Nueva Venta y Exportar (Alineados) */}
+            <div className="flex gap-2">
+              <ActionButton
+                icon={<FileSpreadsheet className="h-5 w-5" />}
+                label="Exportar Excel"
+                onClick={handleExportExcel}
+                className="bg-green-600 hover:bg-green-700 text-white"
+              />
+              <ActionButton
+                icon={<FilePlus2 className="h-5 w-5" />}
+                label="Nueva Venta"
+                onClick={handleAdd}
+              />
+            </div>
           </div>
 
           <VentasTable
