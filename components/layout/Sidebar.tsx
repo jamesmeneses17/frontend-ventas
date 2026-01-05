@@ -1,38 +1,37 @@
 "use client";
 
 import {
-  LayoutDashboard, Users, Settings, ListChecks, DollarSign, Box, Package,
+  LayoutDashboard, Settings, ListChecks, DollarSign, Box, Package,
   ShoppingCart, Scale, FileText, Wallet, Image, MapPin, Type,
-  ChevronDown, ChevronUp 
+  ChevronDown, ChevronUp, Contact,
+  ShoppingBag, HandCoins, Globe,
+  Layers, Grid, ListTree // Nuevos iconos para categorías
 } from "lucide-react";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState, MouseEvent } from "react"; // Importar MouseEvent para tipado
+import { useState, MouseEvent } from "react";
 
-// -------------------------------------------------------------------
-// ESTRUCTURA DE NAVEGACIÓN (Sin cambios en la data)
-// -------------------------------------------------------------------
 const navigation = [
   {
     title: "INICIO",
-    id: "inicio", 
-    isCollapsible: false, 
+    id: "inicio",
+    isCollapsible: false,
     items: [
       { name: "RESUMEN ANUAL Y DIARIO", href: "/dashboard", icon: LayoutDashboard },
     ],
   },
   {
     title: "CONFIGURACIÓN BASE",
-    id: "configuracion-base", 
-    isCollapsible: true, 
+    id: "configuracion-base",
+    isCollapsible: true,
     items: [
-            { name: "Categorías Principal", href: "/admin/categorias_principales", icon: Settings },
+      // ACTUALIZACIÓN DE ICONOS PARA CATEGORÍAS
+      { name: "Categorías Principal", href: "/admin/categorias_principales", icon: Layers },
+      { name: "Categoría", href: "/admin/productos", icon: Grid },
+      { name: "Subcategoria", href: "/admin/subcategorias", icon: ListTree },
 
-      { name: "Categoría", href: "/admin/productos", icon: Settings },
-      { name: "Subcategoria", href: "/admin/subcategorias", icon: Settings },
-
-      { name: "Clientes", href: "/admin/clientes", icon: Users },
+      { name: "Contactos", href: "/admin/clientes", icon: Contact },
       { name: "Tipos de Documento", href: "/admin/tipos-documento", icon: ListChecks },
       { name: "Métodos de Pago", href: "/admin/metodos-pago", icon: DollarSign },
     ],
@@ -40,19 +39,15 @@ const navigation = [
   {
     title: "CONFIGURACIÓN WEB",
     id: "configuracion-web",
-    isCollapsible: true, 
+    isCollapsible: true,
     items: [
-      // Marcamos individualmente qué rutas están en desarrollo (dev: true)
       { name: "Información de Empresa", href: "/admin/info_empresa", icon: FileText },
-      /*{ name: "Banners y Carrusel", href: "/admin/banners_carrusel", icon: Image },*/
-      /*{ name: "Sedes y Direcciones", href: "/admin/sedes", icon: MapPin, dev: true },
-      { name: "Secciones de Contenido", href: "/admin/secciones-contenido", icon: Type, dev: true },*/
     ],
   },
   {
     title: "INVENTARIO Y PRODUCTOS",
     id: "inventario-productos",
-    isCollapsible: true, 
+    isCollapsible: true,
     items: [
       { name: "BD LISTA PRODUCTOS", href: "/admin/bd-lista", icon: Package },
       { name: "Control de Inventario", href: "/admin/lista-productos", icon: Box },
@@ -61,24 +56,23 @@ const navigation = [
   {
     title: "OPERACIONES",
     id: "operaciones",
-    isCollapsible: true, 
+    isCollapsible: true,
     items: [
-      { name: "Compras", href: "/admin/compras", icon: ShoppingCart },
-      { name: "Ventas", href: "/admin/ventas", icon: ShoppingCart },
-      { name: "Pedidos-Online", href: "/admin/pedidos", icon: ShoppingCart },
+      { name: "Compras", href: "/admin/compras", icon: ShoppingBag },
+      { name: "Ventas", href: "/admin/ventas", icon: HandCoins },
+      { name: "Pedidos-Online", href: "/admin/pedidos", icon: Globe },
     ],
   },
   {
     title: "FINANZAS Y CAJA",
     id: "finanzas-caja",
-    isCollapsible: true, 
+    isCollapsible: true,
     items: [
       { name: "Cuentas por Cobrar", href: "/admin/cuentas-cobrar", icon: Scale },
       { name: "Ingresos y Egresos", href: "/admin/caja", icon: Wallet },
     ],
   },
 ];
-
 
 export default function Sidebar() {
   const pathname = usePathname();
@@ -100,15 +94,11 @@ export default function Sidebar() {
       return pathname.startsWith(item.href);
     });
   };
-  
-  // Función manejadora para la ALERTA DE DESARROLLO
-  const handleDevelopmentClick = (e: MouseEvent, name: string) => {
-      // 1. Evita que el Link de Next.js navegue
-      e.preventDefault(); 
-      // 2. Muestra la alerta nativa
-      alert(`Función de "${name}" en desarrollo`);
-  };
 
+  const handleDevelopmentClick = (e: MouseEvent, name: string) => {
+    e.preventDefault();
+    alert(`Función de "${name}" en desarrollo`);
+  };
 
   return (
     <div className="w-56 bg-gray-800 text-white flex flex-col">
@@ -119,11 +109,10 @@ export default function Sidebar() {
       <nav className="flex-1 p-2 overflow-y-auto hide-scrollbar">
         {navigation.map((section) => {
           const isOpen = isSectionOpen(section.id, section.isCollapsible, section.items);
-          const isDevelopmentSection = section.id === "configuracion-web"; // Flag para la sección
+          const isDevelopmentSection = section.id === "configuracion-web";
 
           return (
             <div key={section.id} className="mb-1">
-              
               <div
                 className={`flex justify-between items-center p-2 rounded 
                   ${section.isCollapsible ? 'cursor-pointer transition hover:bg-gray-700' : ''}`}
@@ -135,7 +124,6 @@ export default function Sidebar() {
                 {section.isCollapsible && (isOpen ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />)}
               </div>
 
-              {/* Contenido (Visible si isOpen es verdadero) */}
               {isOpen && (
                 <div className="pl-2 pt-1 pb-1">
                   {section.items.map((item: any) => {
@@ -146,21 +134,18 @@ export default function Sidebar() {
                     } else {
                       isLinkActive = pathname.startsWith(item.href) && pathname !== "/dashboard";
                     }
-                    
-                    // Asignamos el manejador de click condicionalmente por item.dev
+
                     const clickHandler = item.dev
                       ? (e: MouseEvent) => handleDevelopmentClick(e, item.name)
                       : undefined;
 
-                    // Agregamos una clase visual para las rutas en desarrollo (por item.dev)
                     const devClass = item.dev ? 'opacity-75' : '';
-
 
                     return (
                       <Link
                         key={item.name}
                         href={item.href}
-                        onClick={clickHandler} // Usamos el manejador de click que puede prevenir la navegación
+                        onClick={clickHandler}
                         className={`flex items-center gap-2 p-2 rounded transition text-sm 
                           ${isLinkActive && !isDevelopmentSection ? "text-gray-900 font-semibold" : "text-white"}
                           hover:bg-[#8BC34A] hover:text-gray-900

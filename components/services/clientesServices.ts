@@ -24,6 +24,11 @@ export interface Cliente {
   direccion: string;
   correo: string;
   telefono: string;
+  tipo_contacto_id?: number;
+  tipoContacto?: {
+    id: number;
+    nombre: string;
+  };
   // Puedes añadir campos como:
   // tipoDocumento: TipoDocumento; 
 }
@@ -36,6 +41,7 @@ export type CreateClienteData = {
   direccion: string;
   correo: string;
   telefono: string;
+  tipo_contacto_id: number;
 };
 
 // 3. TIPO DE DATOS PARA ACTUALIZACIÓN (Permite actualizar solo algunos campos)
@@ -65,7 +71,7 @@ export const getClientes = async (searchTerm: string = "", page: number = 1, pag
     // IMPORTANTE: Si tu API de NestJS devuelve un objeto de paginación
     // (ej: { items: [], total: 10 }), deberás ajustar la función de carga en useCrudCatalog
     // para manejar la respuesta. Pero si devuelve directamente el array (res.data), esta línea es correcta:
-    return res.data; 
+    return res.data;
   } catch (err: any) {
     console.error(`[getClientes] Error fetching clients from ${url}:`, err?.response?.data ?? err?.toString());
     // En caso de error, devolvemos un array vacío para no romper la UI

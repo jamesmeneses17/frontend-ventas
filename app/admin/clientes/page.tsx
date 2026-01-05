@@ -89,7 +89,7 @@ export default function ClientesPage() {
               </div>
               <ActionButton
                 icon={<UserPlus className="-ml-1 mr-2 h-5 w-5" />}
-                label="Nuevo Cliente"
+                label="Nuevo Contacto"
                 onClick={handleAdd}
               />
             </div>
@@ -106,22 +106,22 @@ export default function ClientesPage() {
           </div>
 
           {/* SECCIÓN DE INFORMACIÓN Y PAGINADOR */}
-        <div className="flex justify-between items-center mt-4">
-            {/* Muestra el contador de ítems */}
-            <p className="text-sm text-gray-600">
-              Mostrando {currentItems.length} de {totalItems} tipos.
-            </p>
-            {/* Muestra el paginador si no está cargando y hay ítems */}
-            {!loading && totalItems > 0 && (
-              <Paginator
-                total={totalItems}
-                currentPage={currentPage}
-                pageSize={pageSize}
-                onPageChange={handlePageChange}
-                onPageSizeChange={handlePageSizeChange}
-              />
-            )}
-          </div>
+          <div className="flex justify-between items-center mt-4">
+            {/* Muestra el contador de ítems */}
+            <p className="text-sm text-gray-600">
+              Mostrando {currentItems.length} de {totalItems} tipos.
+            </p>
+            {/* Muestra el paginador si no está cargando y hay ítems */}
+            {!loading && totalItems > 0 && (
+              <Paginator
+                total={totalItems}
+                currentPage={currentPage}
+                pageSize={pageSize}
+                onPageChange={handlePageChange}
+                onPageSizeChange={handlePageSizeChange}
+              />
+            )}
+          </div>
         </div>
 
         {/* Modal reutilizable para el Formulario */}
@@ -135,24 +135,30 @@ export default function ClientesPage() {
               initialData={
                 editingCliente
                   ? {
-                      id: editingCliente.id,
-                      nombre: editingCliente.nombre,
-                      tipo_documento_id: editingCliente.tipo_documento_id,
-                      numero_documento: editingCliente.numero_documento,
-                      direccion: editingCliente.direccion,
-                      correo: editingCliente.correo,
-                      telefono: editingCliente.telefono,
-                    }
+                    id: editingCliente.id,
+                    nombre: editingCliente.nombre,
+                    tipo_documento_id: editingCliente.tipo_documento_id,
+                    numero_documento: editingCliente.numero_documento,
+                    direccion: editingCliente.direccion,
+                    correo: editingCliente.correo,
+                    telefono: editingCliente.telefono,
+                    tipo_contacto_id: editingCliente.tipo_contacto_id ?? 0,
+                  }
                   : {
-                      nombre: "",
-                      tipo_documento_id: 1, 
-                      numero_documento: "",
-                      direccion: "",
-                      correo: "",
-                      telefono: "",
-                    }
+                    nombre: "",
+                    tipo_documento_id: 1,
+                    numero_documento: "",
+                    direccion: "",
+                    correo: "",
+
+                    telefono: "",
+                    tipo_contacto_id: 0, // 0 will be handled by the form to select default
+                  }
               }
-              onSubmit={handleFormSubmit}
+              onSubmit={async (data) => {
+                const result = await handleFormSubmit(data);
+                if (result) handleCloseModal();
+              }}
               onCancel={handleCloseModal}
             />
           </ModalVentana>
