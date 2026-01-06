@@ -1,37 +1,45 @@
 // components/services/comprasService.ts
 import axios from "axios";
 import { API_URL } from "./apiConfig";
-import { getProductoById } from "./productosService";
 
 const ENDPOINT_BASE = `${API_URL}/compras`;
 
 // ------------------------------------------------------
 // Interfaces de soporte
 // ------------------------------------------------------
+
+export interface CompraDetalle {
+    id: number;
+    compra_id: number;
+    producto_id: number;
+    cantidad: number;
+    costo_unitario: number;
+    subtotal: number;
+    producto?: any; // Incluye datos del producto si el backend hace join
+}
+
 export interface Compra {
     id: number;
     fecha: string;
+    cliente_id: number; // Ahora se relaciona con el contacto/proveedor
+    total: number;      // Total calculado en la cabecera
+    cliente?: any;      // Datos del proveedor vinculados
+    detalles: CompraDetalle[]; // Lista de productos vinculados
+}
 
+export interface CreateCompraDetalleDTO {
     producto_id: number;
-    categoria_id: number;
-
     cantidad: number;
     costo_unitario: number;
-
-    // relaciones opcionales (si el backend envía con join)
-    producto?: any;
-    categoria?: any;
 }
 
 export interface CreateCompraDTO {
     fecha: string;
-    producto_id: number;
-    categoria_id: number;
-    cantidad: number;
-    costo_unitario: number;
+    cliente_id: number; // ID del proveedor
+    items: CreateCompraDetalleDTO[]; // Arreglo de productos para multiproducto
 }
 
-export interface UpdateCompraDTO extends Partial<CreateCompraDTO> {}
+export interface UpdateCompraDTO extends Partial<CreateCompraDTO> { }
 
 export interface PaginacionResponse<T> {
     data: T[];
@@ -39,7 +47,7 @@ export interface PaginacionResponse<T> {
 }
 
 // ------------------------------------------------------
-// CRUD COMPLETO SIGUIENDO EL ESTILO DE productosService
+// CRUD COMPLETO
 // ------------------------------------------------------
 
 /**
@@ -57,25 +65,14 @@ export const getCompras = async (
 
     const endpoint = `${ENDPOINT_BASE}?${params.toString()}`;
 
-    console.log("[getCompras] Endpoint:", endpoint);
-
     try {
         const res = await axios.get(endpoint);
 
-        // Manejo de errores tipo body
-        if (res.data && typeof res.data === "object" && (res.data.statusCode || res.data.status)) {
-            const code = res.data.statusCode ?? res.data.status;
-            if (code >= 400) {
-                console.error("[getCompras] API error body", code, res.data);
-                return { data: [], total: 0 };
-            }
-        }
-
+        // Manejo de respuesta con estructura de paginación
         let items: any = res.data;
         let compras: Compra[] = [];
         let total = 0;
 
-        // Si backend usa paginación estándar
         if (items && Array.isArray(items.data)) {
             compras = items.data;
             total = items.total || compras.length;
@@ -86,21 +83,19 @@ export const getCompras = async (
 
         return { data: compras, total };
     } catch (err: any) {
-        console.error("Error al obtener compras:", err?.message ?? err, err?.response?.data ?? err);
-        throw err;
+        console.error("Error al obtener compras:", err?.message ?? err);
+        return { data: [], total: 0 };
     }
 };
 
 /**
- * Obtener 1 compra por ID.
+ * Obtener 1 compra por ID con sus detalles.
  */
 export const getCompraById = async (id: number): Promise<Compra> => {
     const endpoint = `${ENDPOINT_BASE}/${id}`;
-    console.log("[getCompraById] GET", endpoint);
-
     try {
         const res = await axios.get(endpoint);
-        return res.data as Compra;
+        return res.data as Compra; // Retorna cabecera y detalles
     } catch (err: any) {
         console.error("[getCompraById] Error:", err);
         throw err;
@@ -108,63 +103,37 @@ export const getCompraById = async (id: number): Promise<Compra> => {
 };
 
 /**
- * Crear una compra.
- * 
- * El backend automáticamente:
- * 1. Registra la compra
- * 2. Recalcula y actualiza precio_costo con promedio ponderado
- * 3. Actualiza inventario (stock y compras)
- * 
- * El frontend después refrescaría los datos del producto si es necesario.
+ * Crear una compra multiproducto.
  */
 export const createCompra = async (data: CreateCompraDTO): Promise<Compra> => {
-    // Construir payload explícito con sólo los campos que el backend espera
-    const payload: any = {
+    // El payload ahora envía el cliente_id y el arreglo de productos (items)
+    const payload = {
         fecha: data.fecha,
-        producto_id: Number(data.producto_id),
-        cantidad: Number(data.cantidad),
-        // Aceptar decimales; eliminar cualquier carácter no numérico salvo '.' y '-'
-        costo_unitario: Number(String(data.costo_unitario).replace(/[^0-9.\-]/g, "")) || 0,
+        cliente_id: Number(data.cliente_id),
+        items: data.items.map(item => ({
+            producto_id: Number(item.producto_id),
+            cantidad: Number(item.cantidad),
+            costo_unitario: Number(item.costo_unitario)
+        }))
     };
 
     console.log("[createCompra] POST", ENDPOINT_BASE, payload);
 
     try {
-        // 1. Crear la compra
         const res = await axios.post(ENDPOINT_BASE, payload);
-        const nuevaCompra = res.data as Compra;
-        
-        console.log("[createCompra] ✅ Compra registrada exitosamente");
-        console.log("[createCompra] El backend actualizó: precio_costo (promedio ponderado) e inventario (stock + compras)");
-        
-        // 2. Refrescar el producto para ver los cambios en precio_costo e inventario
-        try {
-            const productoId = Number(data.producto_id);
-            const productoActualizado = await getProductoById(productoId);
-            console.log("[createCompra] 🔄 Producto refrescado:", {
-                id: productoActualizado.id,
-                precio_costo: (productoActualizado as any).precio_costo,
-                stock: productoActualizado.stock,
-            });
-        } catch (refreshError: any) {
-            console.warn("[createCompra] ⚠️ No se pudo refrescar el producto, pero la compra se registró correctamente:", refreshError?.message);
-        }
-        
-        return nuevaCompra;
+        console.log("[createCompra] ✅ Compra y detalles registrados exitosamente");
+        return res.data as Compra;
     } catch (err: any) {
-        console.error("[createCompra] Error:", err?.message ?? err, err?.response?.data ?? err?.response);
+        console.error("[createCompra] Error:", err?.response?.data || err.message);
         throw err;
     }
 };
 
 /**
- * Actualizar compra.
+ * Actualizar datos generales de la compra (Cabecera).
  */
 export const updateCompra = async (id: number, data: UpdateCompraDTO): Promise<Compra> => {
     const endpoint = `${ENDPOINT_BASE}/${id}`;
-
-    console.log("[updateCompra] PATCH", endpoint, data);
-
     try {
         const res = await axios.patch(endpoint, data);
         return res.data as Compra;
@@ -175,12 +144,10 @@ export const updateCompra = async (id: number, data: UpdateCompraDTO): Promise<C
 };
 
 /**
- * Eliminar compra.
+ * Eliminar compra (Borra cabecera y detalles por CASCADE).
  */
 export const deleteCompra = async (id: number): Promise<void> => {
     const endpoint = `${ENDPOINT_BASE}/${id}`;
-    console.log("[deleteCompra] DELETE", endpoint);
-
     try {
         await axios.delete(endpoint);
     } catch (err: any) {

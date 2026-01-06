@@ -20,18 +20,17 @@ export default function ComprasTable({
   onEdit,
   onDelete,
 }: Props) {
-  
+
   // ========================
   // COLUMNAS TABLA (Se mantienen)
   // ========================
   const columns = [
     {
-      key: "codigo",
-      label: "Código",
+      key: "id",
+      label: "N° Factura",
       headerClass: "px-4 py-3 text-left text-sm font-semibold text-gray-700",
-      cellClass: "px-4 py-2 font-medium",
-      render: (row: Compra) =>
-        row.producto?.codigo ?? `#${row.producto_id}`,
+      cellClass: "px-4 py-2 font-medium text-gray-900",
+      render: (row: Compra) => `FAC-${row.id}`,
     },
     {
       key: "fecha",
@@ -40,51 +39,37 @@ export default function ComprasTable({
       cellClass: "px-4 py-2",
       render: (row: Compra) => {
         if (!row.fecha) return "-";
-        // Si la fecha ya viene como 'YYYY-MM-DD', mostrarla formateada sin crear un Date (evita desfase)
         const fechaStr = String(row.fecha);
         const match = fechaStr.match(/^(\d{4})-(\d{2})-(\d{2})/);
         if (match) {
           const [_, year, month, day] = match;
-          // Opcional: mostrar como DD/mmm/YYYY
           const meses = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
           const mesNombre = meses[parseInt(month, 10) - 1] || month;
           return `${day}/${mesNombre}/${year}`;
         }
-        // Si no es formato esperado, mostrar como está
         return fechaStr;
       },
     },
     {
-      key: "producto",
-      label: "Producto",
-      headerClass: "px-4 py-3 text-left text-sm font-semibold text-gray-700",
-      cellClass: "px-4 py-2",
-      render: (row: Compra) =>
-        row.producto?.nombre ?? `#${row.producto_id}`,
-    },
-  
-    {
-      key: "cantidad",
-      label: "Cantidad",
+      key: "proveedor",
+      label: "Proveedor",
       headerClass: "px-4 py-3 text-left text-sm font-semibold text-gray-700",
       cellClass: "px-4 py-2 font-medium",
+      render: (row: Compra) => row.cliente?.nombre || "S/N",
     },
     {
-      key: "costo_unitario",
-      label: "Costo Unitario",
+      key: "items",
+      label: "Productos",
       headerClass: "px-4 py-3 text-left text-sm font-semibold text-gray-700",
-      cellClass: "px-4 py-2",
-      render: (row: Compra) => formatCurrency(row.costo_unitario ?? 0),
+      cellClass: "px-4 py-2 text-gray-600",
+      render: (row: Compra) => `${row.detalles?.length || 0} ítems`,
     },
     {
       key: "total",
-      label: "Total",
+      label: "Monto Total",
       headerClass: "px-4 py-3 text-left text-sm font-semibold text-gray-700",
       cellClass: "px-4 py-2 font-bold text-blue-600",
-      render: (row: Compra) =>
-        formatCurrency(
-          (row.cantidad ?? 0) * (row.costo_unitario ?? 0)
-        ),
+      render: (row: Compra) => formatCurrency(row.total),
     },
   ];
 
