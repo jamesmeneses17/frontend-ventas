@@ -51,6 +51,9 @@ export default function ComprasPage() {
   const [totalComprasAll, setTotalComprasAll] = useState<number>(0);
   const [localSearchTerm, setLocalSearchTerm] = useState("");
 
+  // Estado para visualización de detalles
+  const [viewingItem, setViewingItem] = useState<Compra | null>(null);
+
   // ===================== CRUD HOOK ======================
   const {
     currentItems,
@@ -223,6 +226,14 @@ export default function ComprasPage() {
   );
 
   const editingCompra = editingItem as Compra | null;
+
+  const handleView = (compra: Compra) => {
+    setViewingItem(compra);
+  };
+
+  const handleCloseView = () => {
+    setViewingItem(null);
+  };
 
   // ===================== ERROR HANDLER =====================
   const handleSubmitWithError = async (data: any) => {
@@ -488,6 +499,7 @@ export default function ComprasPage() {
             loading={loading}
             onEdit={handleEdit}
             onDelete={handleDelete}
+            onView={handleView}
           />
 
           {/* PAGINADOR */}
@@ -521,6 +533,70 @@ export default function ComprasPage() {
               onCancel={handleCloseModal}
               formError={formError}
             />
+          </ModalVentana>
+        )}
+
+        {/* =================== MODAL DETALLES =================== */}
+        {viewingItem && (
+          <ModalVentana
+            isOpen={!!viewingItem}
+            onClose={handleCloseView}
+            title={`Detalles de Compra #${viewingItem.id}`}
+          >
+            <div className="space-y-4 text-sm text-gray-800">
+              <div className="grid grid-cols-2 gap-4 bg-gray-50 p-3 rounded">
+                <div>
+                  <span className="font-bold block text-gray-500">Fecha:</span>
+                  {viewingItem.fecha ? new Date(viewingItem.fecha).toLocaleDateString() : "-"}
+                </div>
+                <div>
+                  <span className="font-bold block text-gray-500">Proveedor:</span>
+                  {viewingItem.cliente?.nombre || "N/A"}
+                </div>
+                <div>
+                  <span className="font-bold block text-gray-500">N° Factura:</span>
+                  FAC-{viewingItem.id}
+                </div>
+                <div>
+                  <span className="font-bold block text-gray-500">Total:</span>
+                  <span className="text-xl font-bold text-green-600">{formatCurrency(viewingItem.total)}</span>
+                </div>
+              </div>
+
+              <div className="border rounded-md overflow-hidden">
+                <table className="w-full text-left bg-white">
+                  <thead className="bg-gray-100 text-gray-600 font-semibold border-b">
+                    <tr>
+                      <th className="p-2">Código</th>
+                      <th className="p-2">Producto</th>
+                      <th className="p-2 text-center">Cant.</th>
+                      <th className="p-2 text-right">Costo U.</th>
+                      <th className="p-2 text-right">Subtotal</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y">
+                    {viewingItem.detalles?.map((det: any, idx: number) => (
+                      <tr key={idx} className="hover:bg-gray-50">
+                        <td className="p-2 text-gray-500 font-mono text-xs">{det.producto?.codigo || "-"}</td>
+                        <td className="p-2">{det.producto?.nombre || "Producto Desconocido"}</td>
+                        <td className="p-2 text-center">{det.cantidad}</td>
+                        <td className="p-2 text-right">{formatCurrency(det.costo_unitario)}</td>
+                        <td className="p-2 text-right">{formatCurrency(det.subtotal)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="flex justify-end pt-2">
+                <button
+                  onClick={handleCloseView}
+                  className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded shadow transition"
+                >
+                  Cerrar
+                </button>
+              </div>
+            </div>
           </ModalVentana>
         )}
 

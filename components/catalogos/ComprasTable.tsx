@@ -4,7 +4,7 @@ import React from "react";
 import CrudTable from "../common/CrudTable";
 import ActionButton from "../common/ActionButton";
 import { Compra } from "../services/comprasService";
-import { Trash, Pencil } from "lucide-react";
+import { Trash, Pencil, Eye } from "lucide-react";
 import { formatCurrency } from "../../utils/formatters";
 
 interface Props {
@@ -12,6 +12,7 @@ interface Props {
   loading?: boolean;
   onEdit: (c: Compra) => void;
   onDelete: (id: number) => void;
+  onView: (c: Compra) => void;
 }
 
 export default function ComprasTable({
@@ -19,19 +20,13 @@ export default function ComprasTable({
   loading = false,
   onEdit,
   onDelete,
+  onView,
 }: Props) {
 
   // ========================
-  // COLUMNAS TABLA (Se mantienen)
+  // COLUMNAS TABLA (Refactorizado para parecer vista de producto)
   // ========================
   const columns = [
-    {
-      key: "id",
-      label: "N° Factura",
-      headerClass: "px-4 py-3 text-left text-sm font-semibold text-gray-700",
-      cellClass: "px-4 py-2 font-medium text-gray-900",
-      render: (row: Compra) => `FAC-${row.id}`,
-    },
     {
       key: "fecha",
       label: "Fecha",
@@ -51,24 +46,39 @@ export default function ComprasTable({
       },
     },
     {
+      key: "producto",
+      label: "Producto",
+      headerClass: "px-4 py-3 text-left text-sm font-semibold text-gray-700",
+      cellClass: "px-4 py-2 font-medium text-gray-800",
+      render: (row: Compra) => {
+        if (row.detalles && row.detalles.length === 1) {
+          return row.detalles[0].producto?.nombre || "Producto Desconocido";
+        }
+        return `Varios Productos (${row.detalles?.length || 0})`;
+      },
+    },
+    {
       key: "proveedor",
       label: "Proveedor",
       headerClass: "px-4 py-3 text-left text-sm font-semibold text-gray-700",
-      cellClass: "px-4 py-2 font-medium",
+      cellClass: "px-4 py-2 text-gray-600",
       render: (row: Compra) => row.cliente?.nombre || "S/N",
     },
     {
-      key: "items",
-      label: "Productos",
-      headerClass: "px-4 py-3 text-left text-sm font-semibold text-gray-700",
-      cellClass: "px-4 py-2 text-gray-600",
-      render: (row: Compra) => `${row.detalles?.length || 0} ítems`,
+      key: "cantidad",
+      label: "Cantidad",
+      headerClass: "px-4 py-3 text-center text-sm font-semibold text-gray-700",
+      cellClass: "px-4 py-2 text-center",
+      render: (row: Compra) => {
+        const totalQty = row.detalles?.reduce((acc, det) => acc + Number(det.cantidad), 0) || 0;
+        return totalQty;
+      },
     },
     {
       key: "total",
-      label: "Monto Total",
-      headerClass: "px-4 py-3 text-left text-sm font-semibold text-gray-700",
-      cellClass: "px-4 py-2 font-bold text-blue-600",
+      label: "Total",
+      headerClass: "px-4 py-3 text-right text-sm font-semibold text-gray-700",
+      cellClass: "px-4 py-2 text-right font-bold text-blue-600",
       render: (row: Compra) => formatCurrency(row.total),
     },
   ];
@@ -88,6 +98,11 @@ export default function ComprasTable({
         rowClass="hover:bg-gray-50 transition"
         renderRowActions={(row: Compra) => (
           <div className="flex items-center justify-end gap-2 px-4">
+            <ActionButton
+              icon={<Eye className="w-4 h-4" />}
+              onClick={() => onView(row)}
+              color="primary"
+            />
             <ActionButton
               icon={<Pencil className="w-4 h-4" />}
               onClick={() => onEdit(row)}
