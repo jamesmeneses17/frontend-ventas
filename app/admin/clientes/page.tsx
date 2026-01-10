@@ -62,10 +62,10 @@ export default function ClientesPage() {
             <div>
               <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
                 <Users className="w-6 h-6 text-indigo-600" />
-                Clientes
+                Gestion de Contactos
               </h1>
               <p className="text-gray-600 mt-2">
-                Gestiona la información de tus clientes y proveedores.
+                Gestiona la información de tus contactos
               </p>
             </div>
           </div>
@@ -76,7 +76,7 @@ export default function ClientesPage() {
           {/* Header tabla */}
           <div className="w-full space-y-3">
             <h3 className="text-xl font-semibold text-gray-900 mb-0 text-left">
-              Lista de Clientes
+              Lista de Contactos
             </h3>
             {/* Buscador y botón "Nuevo Cliente" */}
             <div className="flex justify-between items-center w-full">
@@ -129,7 +129,7 @@ export default function ClientesPage() {
           <ModalVentana
             isOpen={showModal}
             onClose={handleCloseModal}
-            title={editingCliente ? "Editar Cliente" : "Nuevo Cliente"}
+            title={editingCliente ? "Editar Contacto" : "Registrar Nuevo Contacto"}
           >
             <ClientesForm
               initialData={
@@ -143,6 +143,7 @@ export default function ClientesPage() {
                     correo: editingCliente.correo,
                     telefono: editingCliente.telefono,
                     tipo_contacto_id: editingCliente.tipo_contacto_id ?? 0,
+                    tipo_persona_id: editingCliente.tipo_persona_id ?? 0,
                   }
                   : {
                     nombre: "",
@@ -152,7 +153,8 @@ export default function ClientesPage() {
                     correo: "",
 
                     telefono: "",
-                    tipo_contacto_id: 0, // 0 will be handled by the form to select default
+                    tipo_contacto_id: 0,
+                    tipo_persona_id: 0,
                   }
               }
               onSubmit={async (data) => {

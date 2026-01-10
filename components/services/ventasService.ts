@@ -6,28 +6,39 @@ const ENDPOINT_BASE = `${API_URL}/ventas`;
 // ------------------------------------------------------
 // Interfaces
 // ------------------------------------------------------
+export interface VentaDetalle {
+    id?: number;
+    productoId: number;
+    cantidad: number;
+    // costo_unitario removed
+    precio_venta: number;
+    subtotal?: number;
+    producto?: any; // Para mostrar nombre en tabla
+}
+
 export interface Venta {
     id: number;
     fecha: string;
+    clienteId: number;
+    total: number;
 
-    productoId: number;
-    cantidad: number;
-    costo_unitario: number;
-    precio_venta: number;
-
-    // relaciones opcionales (si backend envía JOIN)
-    producto?: any;
+    // Relaciones
+    cliente?: any;
+    detalles?: VentaDetalle[];
 }
 
 export interface CreateVentaDTO {
     fecha: string;
-    productoId: number;
-    cantidad: number;
-    costo_unitario: number;
-    precio_venta: number;
+    clienteId: number;
+    items: {
+        productoId: number;
+        cantidad: number;
+        // costo_unitario removed
+        precio_venta: number;
+    }[];
 }
 
-export interface UpdateVentaDTO extends Partial<CreateVentaDTO> {}
+export interface UpdateVentaDTO extends Partial<CreateVentaDTO> { }
 
 export interface PaginacionResponse<T> {
     data: T[];
@@ -35,7 +46,7 @@ export interface PaginacionResponse<T> {
 }
 
 // ------------------------------------------------------
-// CRUD COMPLETO (MISMO FORMATO QUE comprasService)
+// CRUD COMPLETO
 // ------------------------------------------------------
 
 /**
@@ -53,49 +64,29 @@ export const getVentas = async (
 
     const endpoint = `${ENDPOINT_BASE}?${params.toString()}`;
 
-    console.log("[getVentas] Endpoint:", endpoint);
-
     try {
         const res = await axios.get(endpoint);
-
-        // Manejo de errores tipo body
-        if (res.data && typeof res.data === "object" && (res.data.statusCode || res.data.status)) {
-            const code = res.data.statusCode ?? res.data.status;
-            if (code >= 400) {
-                console.error("[getVentas] API error body", code, res.data);
-                return { data: [], total: 0 };
-            }
-        }
-
         let items = res.data;
         let ventas: Venta[] = [];
         let total = 0;
 
-        // Si backend usa paginación estilo NestJS
         if (items && Array.isArray(items.data)) {
             ventas = items.data;
             total = items.total || ventas.length;
-        } 
-        // Si backend devuelve array plano
-        else if (Array.isArray(items)) {
+        } else if (Array.isArray(items)) {
             ventas = items;
             total = ventas.length;
         }
 
         return { data: ventas, total };
     } catch (err: any) {
-        console.error("Error al obtener ventas:", err?.message ?? err, err?.response?.data ?? err);
+        console.error("Error al obtener ventas:", err);
         throw err;
     }
 };
 
-/**
- * Obtener una venta por ID.
- */
 export const getVentaById = async (id: number): Promise<Venta> => {
     const endpoint = `${ENDPOINT_BASE}/${id}`;
-    console.log("[getVentaById] GET", endpoint);
-
     try {
         const res = await axios.get(endpoint);
         return res.data as Venta;
@@ -106,36 +97,32 @@ export const getVentaById = async (id: number): Promise<Venta> => {
 };
 
 /**
- * Crear venta.
+ * Crear venta (Cabecera + Detalles).
  */
 export const createVenta = async (data: CreateVentaDTO): Promise<Venta> => {
     const payload = {
         fecha: data.fecha,
-        productoId: Number(data.productoId),
-        cantidad: Number(data.cantidad),
-        costo_unitario: Number(String(data.costo_unitario).replace(/[^0-9.\-]/g, "")) || 0,
-        precio_venta: Number(String(data.precio_venta).replace(/[^0-9.\-]/g, "")) || 0,
+        clienteId: Number(data.clienteId),
+        items: data.items.map(item => ({
+            productoId: Number(item.productoId),
+            cantidad: Number(item.cantidad),
+            precio_venta: Number(item.precio_venta)
+        }))
     };
 
-    console.log("[createVenta] POST", ENDPOINT_BASE, payload);
+    console.log("[createVenta] POST Payload:", payload);
 
     try {
         const res = await axios.post(ENDPOINT_BASE, payload);
         return res.data as Venta;
     } catch (err: any) {
-        console.error("[createVenta] Error:", err?.message ?? err, err?.response?.data ?? err);
+        console.error("[createVenta] Error:", err?.response?.data || err.message);
         throw err;
     }
 };
 
-/**
- * Actualizar venta.
- */
 export const updateVenta = async (id: number, data: UpdateVentaDTO): Promise<Venta> => {
     const endpoint = `${ENDPOINT_BASE}/${id}`;
-
-    console.log("[updateVenta] PATCH", endpoint, data);
-
     try {
         const res = await axios.patch(endpoint, data);
         return res.data as Venta;

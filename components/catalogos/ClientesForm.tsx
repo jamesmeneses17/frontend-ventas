@@ -4,6 +4,7 @@ import { createCliente, CreateClienteData, updateCliente, UpdateClienteData, get
 // <-- Importamos el nuevo servicio y tipo de datos
 import { getTiposDocumento, TipoDocumento } from '../services/tiposDocumentoService';
 import { getTiposContacto, TipoContacto } from '../services/tipoContactoService';
+import { getTiposPersona, TipoPersona } from '../services/tipoPersonaService';
 import Alert from '../ui/Alert';
 
 // --- Configuración de Opciones Fijas (Eliminada - La cargaremos dinámicamente) ---
@@ -59,13 +60,17 @@ const ClientesForm: React.FC<Props> = ({ initialData, onSuccess, onCancel, onSub
     correo: initialData?.correo ?? '',
     telefono: initialData?.telefono ?? '',
     tipo_contacto_id: initialData?.tipo_contacto_id ? Number(initialData.tipo_contacto_id) : 1,
+    tipo_persona_id: initialData?.tipo_persona_id ? Number(initialData.tipo_persona_id) : 1,
   });
 
-  // ESTADOS PARA CARGAR LOS TIPOS DE DOCUMENTO Y CONTACTO
+  // ESTADOS PARA CARGAR TIPS DE DOCUMENTO, CONTACTO Y PERSONA
   const [documentTypes, setDocumentTypes] = useState<TipoDocumento[]>([]);
   const [contactTypes, setContactTypes] = useState<TipoContacto[]>([]);
+  const [personaTypes, setPersonaTypes] = useState<TipoPersona[]>([]);
+
   const [docLoading, setDocLoading] = useState(true);
   const [contactLoading, setContactLoading] = useState(true);
+  const [personaLoading, setPersonaLoading] = useState(true);
   const [docError, setDocError] = useState<string | null>(null);
 
   const [apiError, setApiError] = useState<string | null>(null);
@@ -118,11 +123,33 @@ const ClientesForm: React.FC<Props> = ({ initialData, onSuccess, onCancel, onSub
       }
     };
     fetchContactTypes();
+    fetchContactTypes();
   }, [initialData?.tipo_contacto_id]);
+
+  // EFECTO para cargar los tipos de persona
+  useEffect(() => {
+    const fetchPersonaTypes = async () => {
+      try {
+        setPersonaLoading(true);
+        const data = await getTiposPersona();
+        setPersonaTypes(data);
+
+        if (data.length > 0) {
+          const initialPersonaId = initialData?.tipo_persona_id || data[0].id;
+          setValues(s => ({ ...s, tipo_persona_id: initialPersonaId }));
+        }
+      } catch (err) {
+        console.error("Error cargando tipos de persona", err);
+      } finally {
+        setPersonaLoading(false);
+      }
+    };
+    fetchPersonaTypes();
+  }, [initialData?.tipo_persona_id]);
 
 
   const handleChange = (field: keyof CreateClienteData, value: string | number) => {
-    const finalValue = (field === 'tipo_documento_id' || field === 'tipo_contacto_id') ? Number(value) : value;
+    const finalValue = (field === 'tipo_documento_id' || field === 'tipo_contacto_id' || field === 'tipo_persona_id') ? Number(value) : value;
     setValues((s) => ({ ...s, [field]: finalValue }));
   };
 
@@ -179,6 +206,10 @@ const ClientesForm: React.FC<Props> = ({ initialData, onSuccess, onCancel, onSub
     }
   };
 
+  const selectedPersonaType = personaTypes.find(p => p.id === values.tipo_persona_id);
+  const isJuridica = selectedPersonaType?.nombre.toLowerCase().includes('juridica') || selectedPersonaType?.nombre.toLowerCase().includes('jurídica');
+  const nombreLabel = isJuridica ? "Razón Social" : "Nombre Completo";
+
   return (
     <div>
       {/* Alerta de error principal */}
@@ -196,7 +227,7 @@ const ClientesForm: React.FC<Props> = ({ initialData, onSuccess, onCancel, onSub
           {/* Nombre Completo */}
           <div className="md:col-span-2">
             <FormInput
-              label="Nombre Completo"
+              label={nombreLabel}
               name="nombre"
               value={values.nombre}
               onChange={(e) => handleChange('nombre', e.target.value)}
@@ -247,6 +278,30 @@ const ClientesForm: React.FC<Props> = ({ initialData, onSuccess, onCancel, onSub
                 disabled={contactTypes.length === 0}
               >
                 {contactTypes.map(opt => (
+                  <option key={opt.id} value={opt.id}>{opt.nombre}</option>
+                ))}
+              </select>
+            )}
+          </div>
+
+          {/* Tipo de Persona */}
+          <div>
+            <label htmlFor="tipo_persona_id" className="block text-sm font-medium text-gray-700">
+              Tipo de Persona *
+            </label>
+            {personaLoading ? (
+              <p className="mt-1 text-sm text-gray-500">Cargando...</p>
+            ) : (
+              <select
+                id="tipo_persona_id"
+                name="tipo_persona_id"
+                value={values.tipo_persona_id}
+                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => handleChange('tipo_persona_id', Number(e.target.value))}
+                className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+                required
+                disabled={personaTypes.length === 0}
+              >
+                {personaTypes.map(opt => (
                   <option key={opt.id} value={opt.id}>{opt.nombre}</option>
                 ))}
               </select>
@@ -312,7 +367,7 @@ const ClientesForm: React.FC<Props> = ({ initialData, onSuccess, onCancel, onSub
             type="submit"
             className="px-4 py-2 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50"
             // Deshabilita si está cargando el formulario, los documentos o los contactos
-            disabled={loading || docLoading || contactLoading || documentTypes.length === 0 || contactTypes.length === 0}
+            disabled={loading || docLoading || contactLoading || personaLoading || documentTypes.length === 0 || contactTypes.length === 0}
           >
             {loading ? 'Guardando...' : (isEditing ? 'Guardar Cambios' : 'Crear Contacto')}
           </button>

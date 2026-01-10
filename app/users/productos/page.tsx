@@ -2,7 +2,7 @@
 
 "use client";
 
-import React, { useState, Suspense, useMemo } from "react";
+import React, { useState, Suspense, useMemo, useEffect } from "react";
 import PublicLayout from "../../../components/layout/PublicLayout";
 import ProductCard from "@/components/ui/ProductCard";
 import { ChevronDown, List, Grid } from "lucide-react";
@@ -11,9 +11,13 @@ import {
   SortOption,
 } from "@/components/hooks/useProductListLogic";
 import { ProductCardData } from "@/utils/ProductUtils";
+import { useSearchParams } from "next/navigation";
+import { getCategoriaById } from "@/components/services/categoriasService";
+import { getSubcategoriaById } from "@/components/services/subcategoriasService";
 
 // ----------------------------------------------------------------------
 import { isImageUrl } from "@/utils/ProductUtils";
+
 // 1. Imágenes aleatorias de respaldo
 // ----------------------------------------------------------------------
 
@@ -80,22 +84,20 @@ const ProductControls: React.FC<ControlsProps> = ({
         <div className="flex rounded-md shadow-sm">
           <button
             onClick={() => setViewMode("grid")}
-            className={`p-2 border border-gray-300 rounded-l-md transition-colors ${
-              viewMode === "grid"
+            className={`p-2 border border-gray-300 rounded-l-md transition-colors ${viewMode === "grid"
                 ? "bg-[#2e9fdb] text-white"
                 : "bg-white text-gray-700 hover:bg-gray-100"
-            }`}
+              }`}
             aria-label="Vista de cuadrícula"
           >
             <Grid className="h-5 w-5" />
           </button>
           <button
             onClick={() => setViewMode("list")}
-            className={`p-2 border border-gray-300 rounded-r-md transition-colors ${
-              viewMode === "list"
+            className={`p-2 border border-gray-300 rounded-r-md transition-colors ${viewMode === "list"
                 ? "bg-[#2e9fdb] text-white"
                 : "bg-white text-gray-700 hover:bg-gray-100"
-            }`}
+              }`}
             aria-label="Vista de lista"
           >
             <List className="h-5 w-5" />
@@ -114,6 +116,56 @@ function ProductosClientePageContent() {
   const { displayedProducts, loading, sortOption, setSortOption } =
     useProductListLogic();
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const searchParams = useSearchParams();
+  const categoriaId = searchParams.get("categoriaId");
+  const subcategoriaId = searchParams.get("subcategoriaId");
+
+  const [pageTitle, setPageTitle] = useState("Catálogo de Productos");
+  const [pageDescription, setPageDescription] = useState(
+    "Explora nuestra amplia selección de productos solares y accesorios energéticos."
+  );
+
+  useEffect(() => {
+    const fetchHeaderData = async () => {
+      try {
+        if (subcategoriaId) {
+          const subcat = await getSubcategoriaById(Number(subcategoriaId));
+          if (subcat) {
+            setPageTitle(subcat.nombre);
+            setPageDescription(
+              `Explora nuestra selección de ${subcat.nombre}. Calidad y eficiencia garantizada.`
+            );
+            return;
+          }
+        }
+
+        if (categoriaId) {
+          const cat = await getCategoriaById(Number(categoriaId));
+          if (cat) {
+            setPageTitle(cat.nombre);
+            setPageDescription(`Descubre los mejores productos en la categoría ${cat.nombre}.`);
+            return;
+          }
+        }
+
+        // Default
+        setPageTitle("Catálogo de Productos");
+        setPageDescription(
+          "Explora nuestra amplia selección de productos solares y accesorios energéticos."
+        );
+
+      } catch (error) {
+        console.error("Error fetching header data", error);
+        // Fallback to default on error
+        setPageTitle("Catálogo de Productos");
+        setPageDescription(
+          "Explora nuestra amplia selección de productos solares y accesorios energéticos."
+        );
+      }
+    };
+
+    fetchHeaderData();
+  }, [categoriaId, subcategoriaId]);
 
   // Asignar imagen aleatoria a cada producto
   const displayedProductsWithImages = useMemo(
@@ -137,11 +189,10 @@ function ProductosClientePageContent() {
           {/* Encabezado */}
           <div className="mb-10 text-center">
             <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight text-gray-900">
-              Catálogo de Productos
+              {pageTitle}
             </h1>
             <p className="mt-3 text-lg sm:text-xl text-gray-600 max-w-3xl mx-auto">
-              Explora nuestra amplia selección de productos solares y accesorios
-              energéticos.
+              {pageDescription}
             </p>
           </div>
 

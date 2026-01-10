@@ -29,6 +29,11 @@ export interface Cliente {
     id: number;
     nombre: string;
   };
+  tipo_persona_id?: number;
+  tipoPersona?: {
+    id: number;
+    nombre: string;
+  };
   // Puedes añadir campos como:
   // tipoDocumento: TipoDocumento; 
 }
@@ -42,6 +47,7 @@ export type CreateClienteData = {
   correo: string;
   telefono: string;
   tipo_contacto_id: number;
+  tipo_persona_id: number;
 };
 
 // 3. TIPO DE DATOS PARA ACTUALIZACIÓN (Permite actualizar solo algunos campos)

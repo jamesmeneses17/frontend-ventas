@@ -31,7 +31,7 @@ export interface Subcategoria {
  */
 export interface CreateSubcategoriaData {
     nombre: string;
-    categoria_id: number; 
+    categoria_id: number;
     activo?: number;
     imagen_url?: string | null;
 }
@@ -71,7 +71,7 @@ export interface SubcategoriaStats {
 function normalizeSubcategoria(raw: any): Subcategoria {
     if (!raw) return raw;
     const normalized: any = { ...raw };
-    
+
     // Si viene imagenUrl (camelCase), convertir a imagen_url (snake_case)
     if (raw.imagen_url !== undefined) {
         normalized.imagen_url = raw.imagen_url;
@@ -80,12 +80,12 @@ function normalizeSubcategoria(raw: any): Subcategoria {
     } else if (raw.url !== undefined && typeof raw.url === 'string') {
         normalized.imagen_url = raw.url;
     }
-    
+
     // Asegurar que activo sea número
     if (normalized.activo !== undefined) {
         normalized.activo = Number(normalized.activo);
     }
-    
+
     return normalized as Subcategoria;
 }
 
@@ -106,6 +106,15 @@ export const getSubcategoriasStats = async (): Promise<SubcategoriaStats> => {
 };
 
 /**
+ * Obtener una subcategoría por ID.
+ */
+export const getSubcategoriaById = async (id: number): Promise<Subcategoria> => {
+    const endpoint = `${ENDPOINT_BASE}/${id}`;
+    const res = await axios.get(endpoint);
+    return normalizeSubcategoria(res.data);
+};
+
+/**
  * Obtener subcategorías con paginación y filtro.
  */
 export const getSubcategorias = async (
@@ -123,7 +132,7 @@ export const getSubcategorias = async (
 
     try {
         const res = await axios.get(ENDPOINT_BASE, { params });
-        
+
         let items: any = res.data;
         let subcategorias: Subcategoria[] = [];
         let total = 0;
@@ -140,26 +149,26 @@ export const getSubcategorias = async (
         // Normalización básica (asegurar tipos si fuera necesario)
         const normalized: Subcategoria[] = subcategorias.map((it: any) => {
             // Obtener categoria_id de múltiples fuentes posibles
-            const categoriaIdValue = 
-              it.categoria_id ||
-              it.categoriaId ||
-              it.categoria?.id ||
-              (it.categoria && typeof it.categoria === 'object' && it.categoria.id);
-            
+            const categoriaIdValue =
+                it.categoria_id ||
+                it.categoriaId ||
+                it.categoria?.id ||
+                (it.categoria && typeof it.categoria === 'object' && it.categoria.id);
+
             return {
-              ...it,
-              id: Number(it.id),
-              categoria_id: categoriaIdValue ? Number(categoriaIdValue) : undefined,
-              categoriaId: categoriaIdValue ? Number(categoriaIdValue) : undefined,
-              // Extraer categoriaPrincipalId desde la relación anidada
-              categoriaPrincipalId: it.categoria?.categoria_principal?.id 
-                ? Number(it.categoria.categoria_principal.id)
-                : it.categoriaPrincipalId 
-                  ? Number(it.categoriaPrincipalId)
-                  : undefined,
-              // Asegurar que el nombre de la categoría esté disponible
-                            categoria_nombre: it.categoria_nombre ?? it.categoria?.nombre ?? 'N/A',
-                            activo: Number(it.activo ?? 1),
+                ...it,
+                id: Number(it.id),
+                categoria_id: categoriaIdValue ? Number(categoriaIdValue) : undefined,
+                categoriaId: categoriaIdValue ? Number(categoriaIdValue) : undefined,
+                // Extraer categoriaPrincipalId desde la relación anidada
+                categoriaPrincipalId: it.categoria?.categoria_principal?.id
+                    ? Number(it.categoria.categoria_principal.id)
+                    : it.categoriaPrincipalId
+                        ? Number(it.categoriaPrincipalId)
+                        : undefined,
+                // Asegurar que el nombre de la categoría esté disponible
+                categoria_nombre: it.categoria_nombre ?? it.categoria?.nombre ?? 'N/A',
+                activo: Number(it.activo ?? 1),
             };
         });
 

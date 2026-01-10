@@ -28,27 +28,27 @@ export default function ClientesTable({ data, loading, onEdit, onDelete }: Props
         let colorClass = "bg-gray-100 text-gray-800";
         switch (tipo.toLowerCase()) {
           case 'cliente':
-            // Verde esmeralda: Confianza y éxito
-            colorClass = "bg-emerald-100 text-emerald-700 border border-emerald-200";
+            // Azul Professional: Standard client color
+            colorClass = "bg-blue-100 text-blue-800 border border-blue-200";
             break;
 
           case 'proveedor':
-            // Azul Indigo: Profesionalismo y seriedad
-            colorClass = "bg-indigo-100 text-indigo-700 border border-indigo-200";
+            // Naranja/Amber: Distinctive for providers
+            colorClass = "bg-orange-100 text-orange-800 border border-orange-200";
             break;
 
           case 'persona natural':
-            // Violeta suave: Diferenciación clara
-            colorClass = "bg-purple-100 text-purple-700 border border-purple-200";
+            // Cyan/Sky: Clean and approachable
+            colorClass = "bg-cyan-100 text-cyan-800 border border-cyan-200";
             break;
 
           case 'empresa':
-            // Ámbar/Dorado: Valor comercial alto
-            colorClass = "bg-amber-100 text-amber-700 border border-amber-200";
+            // Indigo/Purple: Corporate and premium
+            colorClass = "bg-indigo-100 text-indigo-800 border border-indigo-200";
             break;
 
           default:
-            // Gris Slate: Neutral para tipos desconocidos
+            // Gris Slate: Neutral
             colorClass = "bg-slate-100 text-slate-600 border border-slate-200";
         }
 

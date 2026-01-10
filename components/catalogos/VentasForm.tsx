@@ -1,61 +1,56 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
-import { useForm, SubmitHandler } from "react-hook-form";
+import React, { useEffect, useState, useRef } from "react";
+import { useForm } from "react-hook-form";
+
 import FormInput from "../common/form/FormInput";
 import FormSelect from "../common/form/FormSelect";
 import Button from "../ui/button";
 
 import { getProductos, Producto } from "../services/productosService";
-import { Cliente, getClientes } from "../services/clientesServices";
+import { getClientes, Cliente } from "../services/clientesServices";
 import { CreateVentaDTO } from "../services/ventasService";
-
 import { formatCurrency } from "../../utils/formatters";
 
 type FormData = {
-    id?: number;
-    productoId: number;
-    clienteId: number;
+    fecha_venta: string;
+    clienteId: string;
+    productoId: string;
     cantidad: number;
     precio_unitario: number;
-    precio_total: number;
-    fecha_venta: string;
-    observacion?: string;
+    productoSearch: string;
+    clienteSearch: string;
 };
 
 interface Props {
-    initialData?: Partial<FormData> | null;
+    initialData?: any;
     onSubmit: (data: CreateVentaDTO) => Promise<any> | void;
-    onSuccess?: () => void;
     onCancel: () => void;
+    onSuccess?: () => void;
     formError?: string;
 }
 
 export default function VentasForm({
     initialData,
     onSubmit,
-    onSuccess,
     onCancel,
+    onSuccess,
     formError,
 }: Props) {
     const {
         handleSubmit,
-        formState: { isSubmitting },
-        setValue,
         watch,
-        reset,
+        setValue,
+        formState: { isSubmitting },
     } = useForm<FormData>({
         defaultValues: {
-            id: initialData?.id,
-            productoId: initialData?.productoId ?? 0,
-            clienteId: initialData?.clienteId ?? 0,
-            cantidad: initialData?.cantidad ?? 1,
-            precio_unitario: initialData?.precio_unitario ?? 0,
-            precio_total: initialData?.precio_total ?? 0,
-            fecha_venta:
-                initialData?.fecha_venta ??
-                new Date().toISOString().substring(0, 10),
-            observacion: initialData?.observacion ?? "",
+            fecha_venta: new Date().toISOString().substring(0, 10),
+            clienteId: "",
+            productoId: "",
+            cantidad: 1,
+            precio_unitario: 0,
+            productoSearch: "",
+            clienteSearch: "",
         },
     });
 
@@ -63,314 +58,396 @@ export default function VentasForm({
 
     const [productos, setProductos] = useState<Producto[]>([]);
     const [clientes, setClientes] = useState<Cliente[]>([]);
+    const [filteredClientes, setFilteredClientes] = useState<Cliente[]>([]);
+    const [cart, setCart] = useState<any[]>([]);
     const [loadingLookups, setLoadingLookups] = useState(false);
-    const [productoSearchTerm, setProductoSearchTerm] = useState("");
 
-    // 🔎 Cargar productos y clientes
+    // Estado para el buscador de productos
+    const [productoSearchTerm, setProductoSearchTerm] = useState("");
+    // Estado para el buscador de clientes
+    const [clienteSearchTerm, setClienteSearchTerm] = useState("");
+    const [showClienteSuggestions, setShowClienteSuggestions] = useState(false);
+
+    const clienteInputRef = useRef<HTMLDivElement>(null);
+
+    // 🔄 Cargar productos iniciales y clientes
     useEffect(() => {
-        const loadLookups = async () => {
+        const loadData = async () => {
             setLoadingLookups(true);
             try {
-                const listProd = await getProductos(1, 100, "", "");
-                const productosList = Array.isArray(listProd)
-                    ? listProd
-                    : listProd?.data ?? [];
+                const prodRes = await getProductos(1, 100);
+                const cliRes = await getClientes("", 1, 100);
 
-                const listCli = await getClientes("", 1, 100);
-                const clientesList = Array.isArray(listCli) ? listCli : listCli ?? [];
+                const loadedProducts = Array.isArray(prodRes) ? prodRes : prodRes?.data ?? [];
+                setProductos(loadedProducts);
 
-                setProductos(productosList);
-                setClientes(clientesList);
-
-                reset({
-                    id: initialData?.id,
-                    productoId: initialData?.productoId ?? 0,
-                    clienteId: initialData?.clienteId ?? 0,
-                    cantidad: initialData?.cantidad ?? 1,
-                    precio_unitario: initialData?.precio_unitario ?? 0,
-                    precio_total: initialData?.precio_total ?? 0,
-                    fecha_venta:
-                        initialData?.fecha_venta ??
-                        new Date().toISOString().substring(0, 10),
-                    observacion: initialData?.observacion ?? "",
-                });
+                const loadedClientes = Array.isArray(cliRes) ? cliRes : cliRes?.data ?? [];
+                setClientes(loadedClientes);
+                setFilteredClientes(loadedClientes);
+            } catch (err) {
+                console.error("Error cargando datos iniciales", err);
             } finally {
                 setLoadingLookups(false);
             }
         };
 
-        loadLookups();
-    }, [initialData, reset]);
+        loadData();
+    }, []);
 
-    // 🔄 Buscar productos y autoseleccionar con precio
+    // 📝 Cargar datos iniciales si es edición
     useEffect(() => {
-        const term = productoSearchTerm.trim();
-        if (!term) return;
+        if (initialData) {
+            if (initialData.fecha) {
+                setValue("fecha_venta", String(initialData.fecha).split('T')[0]);
+            }
+            if (initialData.cliente) {
+                setValue("clienteId", String(initialData.cliente.id));
+                setClienteSearchTerm(initialData.cliente.nombre);
+            } else if (initialData.clienteId) {
+                setValue("clienteId", String(initialData.clienteId));
+            }
 
-        const normalized = term.toLowerCase();
-        const exactLocal = productos.find((p) => p.codigo?.toLowerCase() === normalized);
-        const partialLocal = productos.find((p) => p.codigo?.toLowerCase().startsWith(normalized));
-        const localTarget = exactLocal || partialLocal;
-        
-        if (localTarget) {
-            setValue("productoId", localTarget.id, { shouldValidate: true });
-            // Auto-rellenar precio con promoción del producto
-            const precioBase = Number(
-                (localTarget as any).precio_venta ?? 
-                (localTarget as any).precioVenta ?? 
-                localTarget.precio ?? 
-                0
-            );
-            const promocionPorcentaje = Number((localTarget as any).promocion_porcentaje ?? (localTarget as any).promocion ?? 0);
-            const precioConPromocion = promocionPorcentaje > 0 
-                ? precioBase - (precioBase * promocionPorcentaje / 100)
-                : precioBase;
-            setValue("precio_unitario", precioConPromocion, { shouldValidate: true });
+            if (initialData.detalles && Array.isArray(initialData.detalles)) {
+                const mappedCart = initialData.detalles.map((det: any) => ({
+                    producto_id: det.producto?.id || det.productoId,
+                    nombre: det.producto?.nombre || "Producto",
+                    codigo: det.producto?.codigo || "",
+                    cantidad: Number(det.cantidad),
+                    precio_unitario: Number(det.precio_venta),
+                    subtotal: Number(det.cantidad) * Number(det.precio_venta),
+                }));
+                setCart(mappedCart);
+            }
+        }
+    }, [initialData, setValue]);
+
+    // Sincronizar nombre cliente si solo tenemos ID
+    useEffect(() => {
+        if (initialData?.clienteId && clientes.length > 0 && !clienteSearchTerm) {
+            const found = clientes.find(c => String(c.id) === String(initialData.clienteId));
+            if (found) setClienteSearchTerm(found.nombre);
+        }
+    }, [clientes, initialData, clienteSearchTerm]);
+
+    // Cerrar sugerencias al hacer clic fuera
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (clienteInputRef.current && !clienteInputRef.current.contains(event.target as Node)) {
+                setShowClienteSuggestions(false);
+            }
+        };
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
+
+    // 🔍 Filtro Clientes
+    useEffect(() => {
+        const term = clienteSearchTerm.toLowerCase();
+        if (!term) {
+            setFilteredClientes(clientes);
             return;
         }
+        const filtered = clientes.filter(c =>
+            c.nombre.toLowerCase().includes(term) ||
+            c.numero_documento?.includes(term)
+        );
+        setFilteredClientes(filtered);
+        setShowClienteSuggestions(true);
+    }, [clienteSearchTerm, clientes]);
 
+    // 🔍 Búsqueda Productos
+    useEffect(() => {
         const timer = setTimeout(async () => {
+            const term = productoSearchTerm.trim();
+            if (!term) return;
+
+            // 1. Local
+            const normalized = term.toLowerCase();
+            const exactLocal = productos.find(p => p.codigo?.toLowerCase() === normalized);
+            if (exactLocal) {
+                setValue("productoId", String(exactLocal.id));
+                updatePrice(exactLocal);
+            }
+
+            // 2. API
             try {
-                const res = await getProductos(1, 10, "", term);
+                const res = await getProductos(1, 20, "", term);
                 const list = Array.isArray(res) ? res : res?.data ?? [];
 
                 if (list.length > 0) {
-                    setProductos((prev) => {
-                        const merged = [...prev];
-                        list.forEach((item: any) => {
-                            if (!merged.some((p) => p.id === item.id)) {
-                                merged.push(item);
-                            }
-                        });
-                        return merged;
+                    setProductos(prev => {
+                        const map = new Map(prev.map(p => [p.id, p]));
+                        list.forEach((p: Producto) => map.set(p.id, p));
+                        return Array.from(map.values());
                     });
 
-                    const exact = list.find((p: any) => p.codigo?.toLowerCase() === normalized);
-                    const partial = list.find((p: any) => p.codigo?.toLowerCase().startsWith(normalized));
-                    const target = exact || partial || list[0];
-                    
-                    if (target) {
-                        setValue("productoId", target.id, { shouldValidate: true });
-                        const precioBase = Number(
-                            (target as any).precio_venta ?? 
-                            (target as any).precioVenta ?? 
-                            target.precio ?? 
-                            0
-                        );
-                        const promocionPorcentaje = Number((target as any).promocion_porcentaje ?? (target as any).promocion ?? 0);
-                        const precioConPromocion = promocionPorcentaje > 0 
-                            ? precioBase - (precioBase * promocionPorcentaje / 100)
-                            : precioBase;
-                        setValue("precio_unitario", precioConPromocion, { shouldValidate: true });
+                    // Autoselect
+                    if (!formValues.productoId) {
+                        const exact = list.find(p => p.codigo?.toLowerCase() === normalized);
+                        if (exact) {
+                            setValue("productoId", String(exact.id));
+                            updatePrice(exact);
+                        }
                     }
                 }
-            } catch (err) {
-                console.error("Error buscando producto por código", err);
-            }
-        }, 300);
+            } catch (e) { console.error(e); }
+        }, 500);
 
         return () => clearTimeout(timer);
-    }, [productoSearchTerm, productos, setValue]);
+    }, [productoSearchTerm, setValue]);
 
-    // 📌 Calcular precio_total en vivo
-    useEffect(() => {
-        const total =
-            Number(formValues.cantidad || 0) *
-            Number(formValues.precio_unitario || 0);
-            setValue("precio_total", total);
-        }, [formValues.cantidad, formValues.precio_unitario, setValue]);
+    const updatePrice = (prod: Producto) => {
+        const precioBase = Number((prod as any).precio_venta ?? prod.precio ?? 0);
+        const promo = Number((prod as any).promocion_porcentaje ?? 0);
+        const final = promo > 0 ? precioBase - (precioBase * promo / 100) : precioBase;
+        setValue("precio_unitario", final);
+    };
 
-    // 📌 Control universal de cambios
-    const handleChange = (
-        e: React.ChangeEvent<
-            HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
-        >
-    ) => {
-        const { name, value, type } = e.target;
-
-        // 💰 Formateo automático para precio_unitario
-        if (name === "precio_unitario") {
-            let cleaned = String(value).replace(/[^0-9.,-]/g, "");
-            cleaned = cleaned.replace(/,/g, ".");
-            const parsed = parseFloat(cleaned || "0");
-            setValue(name as keyof FormData, Number.isNaN(parsed) ? 0 : parsed, {
-                shouldValidate: true,
-            });
-            return;
-        }
-
-        const parsed =
-            type === "number" || name === "productoId" || name === "clienteId"
-                ? Number(value)
-                : value;
-
-        setValue(name as keyof FormData, parsed, { shouldValidate: true });
-
-        // Sincronizar búsqueda y autocompletar precio al seleccionar producto
-        if (name === "productoId") {
-            const selected = productos.find((p) => p.id === Number(value));
-            if (selected) {
-                if (selected.codigo) setProductoSearchTerm(selected.codigo);
-                const precioBase = Number(
-                    (selected as any).precio_venta ?? 
-                    (selected as any).precioVenta ?? 
-                    selected.precio ?? 
-                    0
-                );
-                const promocionPorcentaje = Number((selected as any).promocion_porcentaje ?? (selected as any).promocion ?? 0);
-                const precioConPromocion = promocionPorcentaje > 0 
-                    ? precioBase - (precioBase * promocionPorcentaje / 100)
-                    : precioBase;
-                setValue("precio_unitario", precioConPromocion, { shouldValidate: true });
-            }
+    const handleProductoSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        const val = e.target.value;
+        setValue("productoId", val);
+        const prod = productos.find(p => String(p.id) === val);
+        if (prod) {
+            setProductoSearchTerm(prod.codigo || prod.nombre);
+            updatePrice(prod);
         }
     };
 
-    const submitForm: SubmitHandler<FormData> = (data) => {
-        const productoSel = productos.find((p) => p.id === Number(data.productoId));
-        if (!productoSel || !data.productoId || data.productoId === 0) {
-            throw new Error("Selecciona un producto válido antes de registrar la venta.");
+    const selectCliente = (c: Cliente) => {
+        setValue("clienteId", String(c.id));
+        setClienteSearchTerm(c.nombre);
+        setShowClienteSuggestions(false);
+    };
+
+    const addToCart = () => {
+        if (!formValues.productoId) return;
+
+        const prod = productos.find(p => String(p.id) === formValues.productoId);
+        if (!prod) return;
+
+        if (formValues.cantidad <= 0) return alert("Cantidad inválida");
+        if (formValues.precio_unitario < 0) return alert("Precio inválido");
+
+        // Validar Stock
+        const stock = Number(prod.stock || 0);
+        const inCart = cart.find(x => x.producto_id === prod.id);
+        const currentQty = inCart ? inCart.cantidad : 0;
+
+        if (currentQty + formValues.cantidad > stock) {
+            return alert(`Stock insuficiente. Disponible: ${stock}`);
         }
 
-        // Validar stock disponible
-        const stockDisponible = Number(productoSel.stock ?? 0);
-        const cantidadVenta = Number(data.cantidad) || 0;
-
-        if (cantidadVenta > stockDisponible) {
-            throw new Error(
-                `Stock insuficiente. Disponible: ${stockDisponible}, Solicitado: ${cantidadVenta}`
-            );
-        }
-
-        if (stockDisponible <= 0) {
-            throw new Error("No hay stock disponible para este producto.");
-        }
-
-        const precioVenta = Number(data.precio_unitario) || 0;
-        const costoCosto = Number((productoSel as any).precio_costo ?? 0);
-
-        // Guardar la fecha como string 'YYYY-MM-DD' para evitar desfase de zona horaria
-        const fechaVenta = data.fecha_venta || new Date().toISOString().substring(0, 10);
-        const payload: CreateVentaDTO = {
-            fecha: fechaVenta,
-            productoId: Number(data.productoId),
-            cantidad: Math.max(1, cantidadVenta),
-            costo_unitario: costoCosto,
-            precio_venta: precioVenta,
+        const item = {
+            producto_id: prod.id,
+            nombre: prod.nombre,
+            codigo: prod.codigo,
+            cantidad: Number(formValues.cantidad),
+            precio_unitario: Number(formValues.precio_unitario),
+            subtotal: Number(formValues.cantidad) * Number(formValues.precio_unitario)
         };
 
-        const result = onSubmit(payload);
-        // Cerrar el formulario automáticamente después de guardar o actualizar
-        if (result instanceof Promise) {
-            result.then(() => {
-                if (typeof onSuccess === 'function') onSuccess();
-                onCancel();
-            });
-        } else {
-            if (typeof onSuccess === 'function') onSuccess();
-            onCancel();
-        }
+        setCart(prev => {
+            const exists = prev.find(p => p.producto_id === item.producto_id);
+            if (exists) {
+                return prev.map(p => p.producto_id === item.producto_id ? {
+                    ...p,
+                    cantidad: p.cantidad + item.cantidad,
+                    subtotal: (p.cantidad + item.cantidad) * p.precio_unitario
+                } : p);
+            }
+            return [...prev, item];
+        });
+
+        // Reset fields
+        setValue("productoId", "");
+        setValue("cantidad", 1);
+        setValue("precio_unitario", 0);
+        setProductoSearchTerm("");
     };
 
-    const productosFiltrados = productos.filter((p) => {
-        const searchLower = productoSearchTerm.toLowerCase();
-        return (
-            p.codigo?.toLowerCase().includes(searchLower) ||
-            p.nombre?.toLowerCase().includes(searchLower)
-        );
-    });
+    const removeItem = (index: number) => {
+        setCart(prev => prev.filter((_, i) => i !== index));
+    };
 
-    const productoOptionsFiltered = productosFiltrados.map((p) => ({
+    const submitForm = (data: FormData) => {
+        if (!data.clienteId) return alert("Selecciona un cliente");
+        if (cart.length === 0) return alert("Carrito vacío");
+
+        const payload: CreateVentaDTO = {
+            fecha: data.fecha_venta,
+            clienteId: Number(data.clienteId),
+            items: cart.map(item => ({
+                productoId: item.producto_id,
+                cantidad: item.cantidad,
+                precio_venta: item.precio_unitario
+            }))
+        };
+
+        const res = onSubmit(payload);
+        if (res instanceof Promise) res.then(onSuccess);
+        else if (onSuccess) onSuccess();
+    };
+
+    const totalVenta = cart.reduce((acc, item) => acc + item.subtotal, 0);
+
+    const productosOpciones = productos.filter(p => {
+        if (!productoSearchTerm) return true;
+        const term = productoSearchTerm.toLowerCase();
+        return p.codigo?.toLowerCase().includes(term) || p.nombre?.toLowerCase().includes(term);
+    }).map(p => ({
         value: String(p.id),
-        label: `${p.codigo} - ${p.nombre}`,
+        label: `${p.codigo} - ${p.nombre}`
     }));
 
-    // Obtener producto seleccionado y su stock
-    const productoSeleccionado = productos.find((p) => p.id === Number(formValues.productoId));
-    const stockDisponible = Number(productoSeleccionado?.stock ?? 0);
-    const cantidadSolicitada = Number(formValues.cantidad) || 0;
-    const stockInsuficiente = cantidadSolicitada > stockDisponible;
-
     return (
-        <form onSubmit={handleSubmit(submitForm)} className="space-y-4">
-            {/* ===================== BÚSQUEDA + SELECCIÓN ===================== */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormInput
-                    label="Buscar Producto por Código o Nombre"
-                    name="productoSearch"
-                    value={productoSearchTerm}
-                    onChange={(e) => setProductoSearchTerm(e.target.value)}
-                    placeholder="Ej: LC209 o Teclado..."
-                />
+        <form onSubmit={handleSubmit(submitForm)} className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* ===================== CLIENTE (AUTOCOMPLETE) ===================== */}
+                <div className="relative" ref={clienteInputRef}>
+                    <label className="block text-sm font-semibold text-gray-700 mb-1">Cliente (Cédula o Nombre) *</label>
+                    <input
+                        type="text"
+                        className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                        placeholder="Buscar cliente..."
+                        value={clienteSearchTerm}
+                        onChange={(e) => {
+                            setClienteSearchTerm(e.target.value);
+                            setValue("clienteId", "");
+                        }}
+                        onFocus={() => setShowClienteSuggestions(true)}
+                    />
 
-                <FormSelect
-                    label="Producto"
-                    name="productoId"
-                    value={String(formValues.productoId)}
-                    onChange={handleChange}
-                    options={productoOptionsFiltered}
-                    disabled={loadingLookups}
+                    {showClienteSuggestions && filteredClientes.length > 0 && (
+                        <div className="absolute z-10 w-full bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto mt-1">
+                            {filteredClientes.map(c => (
+                                <div
+                                    key={c.id}
+                                    className="px-4 py-2 hover:bg-gray-100 cursor-pointer border-b border-gray-50 last:border-0"
+                                    onClick={() => selectCliente(c)}
+                                >
+                                    <div className="font-bold text-gray-800">{c.nombre}</div>
+                                    <div className="text-xs text-gray-500">
+                                        CC: {c.numero_documento}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                    <input type="hidden" name="clienteId" value={formValues.clienteId} />
+                </div>
+
+                {/* ===================== FECHA ===================== */}
+                <FormInput
+                    label="Fecha de Venta"
+                    type="date"
+                    name="fecha_venta"
+                    value={formValues.fecha_venta}
+                    onChange={(e) => setValue("fecha_venta", e.target.value)}
                     required
                 />
             </div>
 
-            {/* ===================== ALERTA DE STOCK ===================== */}
-            {productoSeleccionado && (
-                <div className={`p-3 rounded-md text-sm ${
-                    stockDisponible <= 0 
-                        ? 'bg-red-50 border border-red-300 text-red-800'
-                        : stockInsuficiente
-                        ? 'bg-yellow-50 border border-yellow-300 text-yellow-800'
-                        : 'bg-blue-50 border border-blue-300 text-blue-800'
-                }`}>
-                    <strong>Stock disponible:</strong> {stockDisponible} unidades
-                    {stockInsuficiente && cantidadSolicitada > 0 && (
-                        <span className="ml-2 font-semibold">
-                             Cantidad solicitada ({cantidadSolicitada}) excede el stock
-                        </span>
-                    )}
+            {/* ===================== AGREGAR PRODUCTO ===================== */}
+            <div className="border p-4 rounded-md bg-gray-50 space-y-4">
+                <h3 className="font-semibold text-gray-700">Agregar producto</h3>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormInput
+                        label="Buscar Producto (Código o Nombre)"
+                        name="productoSearch"
+                        value={productoSearchTerm}
+                        onChange={(e) => setProductoSearchTerm(e.target.value)}
+                        placeholder="Escribe para buscar..."
+                    />
+
+                    <FormSelect
+                        label="Producto *"
+                        name="productoId"
+                        value={formValues.productoId}
+                        onChange={handleProductoSelectChange}
+                        options={productosOpciones}
+                        disabled={loadingLookups}
+                    />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormInput
+                        label="Cantidad *"
+                        type="number"
+                        name="cantidad"
+                        value={String(formValues.cantidad)}
+                        onChange={(e) => setValue("cantidad", Number(e.target.value))}
+                    />
+
+                    <FormInput
+                        label="Precio Unitario *"
+                        type="number"
+                        step="0.01"
+                        name="precio_unitario"
+                        value={String(formValues.precio_unitario)}
+                        onChange={(e) => setValue("precio_unitario", Number(e.target.value))}
+                    />
+                </div>
+
+                <Button type="button" onClick={addToCart}>
+                    Agregar a la lista
+                </Button>
+            </div>
+
+            {/* ===================== CARRITO ===================== */}
+            {cart.length > 0 && (
+                <div className="space-y-3">
+                    <table className="w-full text-sm border bg-white rounded-md shadow-sm">
+                        <thead className="bg-gray-100">
+                            <tr>
+                                <th className="p-2 text-left">Código</th>
+                                <th className="p-2 text-left">Producto</th>
+                                <th className="p-2 text-center">Cantidad</th>
+                                <th className="p-3 text-right">Subtotal</th>
+                                <th className="p-2"></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {cart.map((item, i) => (
+                                <tr key={i} className="border-t">
+                                    <td className="p-2">{item.codigo}</td>
+                                    <td className="p-2">{item.nombre}</td>
+                                    <td className="p-2 text-center">{item.cantidad}</td>
+                                    <td className="p-3 text-right font-medium">
+                                        {formatCurrency(item.subtotal)}
+                                    </td>
+                                    <td className="p-2 text-center">
+                                        <button
+                                            type="button"
+                                            className="text-red-500 hover:text-red-700 text-xs font-semibold"
+                                            onClick={() => removeItem(i)}
+                                        >
+                                            Quitar
+                                        </button>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+
+                    <div className="text-right font-bold text-xl text-gray-800 mt-2">
+                        Total Venta: <span className="text-green-600">{formatCurrency(totalVenta)}</span>
+                    </div>
                 </div>
             )}
 
-            {/* ===================== FILA 1: CANTIDAD Y PRECIO ===================== */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormInput
-                    label="Cantidad"
-                    name="cantidad"
-                    type="number"
-                    value={String(formValues.cantidad)}
-                    onChange={handleChange}
-                    required
-                />
-
-                 <FormInput
-                    label="Fecha de Venta"
-                    name="fecha_venta"
-                    type="date"
-                    value={formValues.fecha_venta}
-                    onChange={handleChange}
-                    required
-                />
-
-            </div>
-
-         
-
-            <div className="flex justify-end gap-3 pt-4">
-                <Button
-                    type="button"
-                    onClick={onCancel}
-                    disabled={isSubmitting || loadingLookups}
-                >
+            {/* ===================== BOTONES ===================== */}
+            <div className="flex justify-end gap-3 pt-4 border-t">
+                <Button type="button" onClick={onCancel} className="bg-gray-500 hover:bg-gray-600">
                     Cancelar
                 </Button>
-                <Button type="submit" disabled={isSubmitting || loadingLookups}>
-                    {initialData?.id ? "Actualizar Venta" : "Registrar Venta"}
+                <Button type="submit" disabled={isSubmitting}>
+                    {isSubmitting ? "Guardando..." : "Guardar Venta"}
                 </Button>
             </div>
 
             {formError && (
-                <div className="text-red-600 text-sm mt-2 text-center">
+                <div className="text-red-600 text-sm text-center font-medium bg-red-50 p-2 rounded-md border border-red-200">
                     {formError}
                 </div>
             )}
