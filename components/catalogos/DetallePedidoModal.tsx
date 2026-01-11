@@ -25,7 +25,7 @@ export default function DetallePedidoModal({ pedido, onClose }: Props) {
    */
   const handleConfirmarPedido = async () => {
     if (!window.confirm("¿Confirmas que el HASH coincide y el pago es real?")) return;
-    
+
     setLoading(true);
     try {
       await updateEstadoPedido(pedido.id, 'CONFIRMADO');
@@ -92,7 +92,10 @@ export default function DetallePedidoModal({ pedido, onClose }: Props) {
               {pedido.detalles?.map((det: any, idx: number) => (
                 <tr key={idx}>
                   <td className="px-4 py-3 font-medium text-gray-900">
-                    ID: {det.producto_id}
+                    <div className="flex flex-col">
+                      <span className="font-bold text-indigo-700">{det.producto?.codigo || 'S/C'}</span>
+                      <span className="text-xs text-gray-600">{det.producto?.nombre || `Producto ID: ${det.producto_id}`}</span>
+                    </div>
                   </td>
                   <td className="px-4 py-3 text-center">{det.cantidad}</td>
                   <td className="px-4 py-3 text-right">{formatCurrency(det.precio_unitario)}</td>
@@ -124,8 +127,8 @@ export default function DetallePedidoModal({ pedido, onClose }: Props) {
         <Button onClick={onClose} variant="secondary" disabled={loading}>
           Cerrar
         </Button>
-        
-        <Button 
+
+        <Button
           onClick={() => copyToClipboard(pedido.codigo_pedido)}
           className="bg-gray-800 text-white hover:bg-black"
           disabled={loading}
@@ -135,7 +138,7 @@ export default function DetallePedidoModal({ pedido, onClose }: Props) {
 
         {/* Botón de Validación: Solo aparece si el pedido está PENDIENTE */}
         {pedido.estado === 'PENDIENTE' && (
-          <Button 
+          <Button
             onClick={handleConfirmarPedido}
             className="bg-emerald-600 text-white hover:bg-emerald-700 flex items-center gap-2"
             disabled={loading}
