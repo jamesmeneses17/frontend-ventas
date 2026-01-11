@@ -319,9 +319,7 @@ export default function ComprasPage() {
       }
 
       const total = filtered.reduce((sum: number, it: any) => {
-        const cantidad = Number(it?.cantidad ?? 0);
-        const costo = Number(it?.costo_unitario ?? 0);
-        return sum + cantidad * costo;
+        return sum + Number(it?.total ?? 0);
       }, 0);
 
       setTotalComprasAll(total);
@@ -372,23 +370,37 @@ export default function ComprasPage() {
       const searchLower = (localSearchTerm || "").toLowerCase();
       if (searchLower) {
         items = items.filter((it: any) => {
-          const codigo = (it?.producto?.codigo || "").toLowerCase();
-          const nombre = (it?.producto?.nombre || "").toLowerCase();
-          return codigo.includes(searchLower) || nombre.includes(searchLower);
+          // Busqueda básica en códigos o nombres dentro de los detalles
+          const detalles = it.detalles || [];
+          const match = detalles.some((d: any) => {
+            const code = (d.producto?.codigo || "").toLowerCase();
+            const name = (d.producto?.nombre || "").toLowerCase();
+            return code.includes(searchLower) || name.includes(searchLower);
+          });
+          // También verificar nombre de proveedor/cliente si aplica
+          const clienteName = (it.cliente?.nombre || "").toLowerCase();
+
+          return match || clienteName.includes(searchLower);
         });
       }
 
       // 2. Map data
-      const dataToExport = items.map(it => ({
-        ID: it.id,
-        FECHA: it.fecha,
-        CODIGO: it.producto?.codigo || 'SN',
-        PRODUCTO: it.producto?.nombre || 'Producto Desconocido',
-        CATEGORIA: it.categoria?.nombre || 'General',
-        CANTIDAD: it.cantidad,
-        COSTO_UNITARIO: it.costo_unitario,
-        TOTAL: Number(it.cantidad) * Number(it.costo_unitario)
-      }));
+      const dataToExport = items.map(it => {
+        const detalles = it.detalles || [];
+        const productosStr = detalles.map((d: any) => d.producto?.nombre || 'Producto').join(", ");
+        const codigosStr = detalles.map((d: any) => d.producto?.codigo || 'SN').join(", ");
+        const totalItems = detalles.reduce((acc: number, d: any) => acc + Number(d.cantidad), 0);
+
+        return {
+          ID: it.id,
+          FECHA: it.fecha,
+          CODIGOS: codigosStr,
+          PRODUCTOS: productosStr,
+          PROVEEDOR: it.cliente?.nombre || 'N/A',
+          CANTIDAD_TOTAL: totalItems,
+          TOTAL_COMPRA: Number(it.total ?? 0)
+        };
+      });
 
       // 3. Export
       const { exportToExcel } = await import('../../../utils/exportUtils');

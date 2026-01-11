@@ -81,7 +81,8 @@ export default function VentasForm({
                 const loadedProducts = Array.isArray(prodRes) ? prodRes : prodRes?.data ?? [];
                 setProductos(loadedProducts);
 
-                const loadedClientes = Array.isArray(cliRes) ? cliRes : cliRes?.data ?? [];
+                // Fix: cliRes is Cliente[], so just check array
+                const loadedClientes = Array.isArray(cliRes) ? cliRes : [];
                 setClientes(loadedClientes);
                 setFilteredClientes(loadedClientes);
             } catch (err) {
@@ -370,22 +371,13 @@ export default function VentasForm({
                     />
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 gap-4">
                     <FormInput
                         label="Cantidad *"
                         type="number"
                         name="cantidad"
                         value={String(formValues.cantidad)}
                         onChange={(e) => setValue("cantidad", Number(e.target.value))}
-                    />
-
-                    <FormInput
-                        label="Precio Unitario *"
-                        type="number"
-                        step="0.01"
-                        name="precio_unitario"
-                        value={String(formValues.precio_unitario)}
-                        onChange={(e) => setValue("precio_unitario", Number(e.target.value))}
                     />
                 </div>
 

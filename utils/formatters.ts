@@ -1,10 +1,10 @@
 // utils/formatters.ts
 export const formatCurrency = (value: number, currencyLabel = '$'): string => {
-  // Usa separador de miles con coma (en-US) para mostrar 700,000
-  const formatted = new Intl.NumberFormat('en-US', {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(Math.round(value));
+  // Usa separador de miles con punto y decimales con coma (es-CO)
+  const formatted = new Intl.NumberFormat('es-CO', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(value);
   return `${currencyLabel} ${formatted}`;
 };
 

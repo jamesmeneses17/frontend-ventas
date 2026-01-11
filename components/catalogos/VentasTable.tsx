@@ -4,7 +4,7 @@ import React from "react";
 import CrudTable from "../common/CrudTable";
 import ActionButton from "../common/ActionButton";
 import { Venta } from "../services/ventasService";
-import { Trash, Pencil } from "lucide-react";
+import { Trash, Pencil, Eye } from "lucide-react";
 import { formatCurrency } from "../../utils/formatters";
 
 interface Props {
@@ -12,6 +12,7 @@ interface Props {
   loading?: boolean;
   onEdit: (v: Venta) => void;
   onDelete: (id: number) => void;
+  onView: (v: Venta) => void;
 }
 
 export default function VentasTable({
@@ -19,6 +20,7 @@ export default function VentasTable({
   loading = false,
   onEdit,
   onDelete,
+  onView,
 }: Props) {
 
   // Ordenar ventas por fecha descendente
@@ -105,6 +107,22 @@ export default function VentasTable({
       cellClass: "px-4 py-2 text-right font-bold text-green-600",
       render: (row: Venta) => formatCurrency(row.total || 0),
     },
+    {
+      key: "utilidad",
+      label: "Utilidad",
+      headerClass: "px-4 py-3 text-right text-sm font-semibold text-gray-700",
+      cellClass: "px-4 py-2 text-right font-bold text-green-600",
+      render: (row: Venta) => {
+        const detalles = row.detalles || [];
+        const utilidadVenta = detalles.reduce((u: number, d: any) => {
+          const precioVenta = Number(d.precio_venta ?? 0);
+          const costoUnit = Number(d.producto?.costo ?? d.producto?.costo_promedio ?? 0);
+          const cantidad = Number(d.cantidad ?? 0);
+          return u + (precioVenta - costoUnit) * cantidad;
+        }, 0);
+        return formatCurrency(utilidadVenta);
+      },
+    },
   ];
 
   return (
@@ -117,6 +135,11 @@ export default function VentasTable({
       rowClass="hover:bg-gray-50 transition"
       renderRowActions={(row: Venta) => (
         <div className="flex items-center justify-end gap-2 px-4">
+          <ActionButton
+            icon={<Eye className="w-4 h-4" />}
+            onClick={() => onView(row)}
+            color="primary"
+          />
           <ActionButton
             icon={<Pencil className="w-4 h-4" />}
             onClick={() => onEdit(row)}

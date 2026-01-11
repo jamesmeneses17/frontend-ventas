@@ -51,6 +51,16 @@ export default function VentasPage() {
   const [totalVentasAll, setTotalVentasAll] = useState<number>(0);
   const [totalUtilidadAll, setTotalUtilidadAll] = useState<number>(0);
 
+  const [viewingItem, setViewingItem] = useState<Venta | null>(null);
+
+  const handleView = (venta: Venta) => {
+    setViewingItem(venta);
+  };
+
+  const handleCloseView = () => {
+    setViewingItem(null);
+  };
+
   // ===================== CRUD HOOK ======================
   const {
     currentItems,
@@ -185,19 +195,18 @@ export default function VentasPage() {
       }
 
       const totalVentas = filtered.reduce((sum: number, it: any) => {
-        // asumir que 'total_venta' está en el objeto o calcular como cantidad * precio_venta
-        const totalField = Number(it?.total_venta ?? (Number(it?.cantidad ?? 0) * Number(it?.precio_venta ?? 0)));
-        return sum + (isNaN(totalField) ? 0 : totalField);
+        return sum + Number(it?.total ?? 0);
       }, 0);
 
       const totalUtilidad = filtered.reduce((sum: number, it: any) => {
-        // asumir que 'utilidad' campo existe; si no, intentar calcular: (precio_venta - costo_unitario) * cantidad
-        const utilidadField = Number(it?.utilidad ?? NaN);
-        if (!isNaN(utilidadField)) return sum + utilidadField;
-        const precioVenta = Number(it?.precio_venta ?? 0);
-        const costoUnit = Number(it?.costo_unitario ?? 0);
-        const cantidad = Number(it?.cantidad ?? 0);
-        return sum + (precioVenta - costoUnit) * cantidad;
+        const detalles = it.detalles || [];
+        const utilidadVenta = detalles.reduce((u: number, d: any) => {
+          const precioVenta = Number(d.precio_venta ?? 0);
+          const costoUnit = Number(d.producto?.costo ?? d.producto?.costo_promedio ?? 0);
+          const cantidad = Number(d.cantidad ?? 0);
+          return u + (precioVenta - costoUnit) * cantidad;
+        }, 0);
+        return sum + utilidadVenta;
       }, 0);
 
       setTotalVentasAll(totalVentas);
@@ -441,7 +450,74 @@ export default function VentasPage() {
             loading={loading}
             onEdit={handleEdit}
             onDelete={handleDelete}
+            onView={handleView}
           />
+
+          {/* ... existing code ... */}
+
+          {/* =================== MODAL DETALLES =================== */}
+          {viewingItem && (
+            <ModalVentana
+              isOpen={!!viewingItem}
+              onClose={handleCloseView}
+              title={`Detalles de Venta #${viewingItem.id}`}
+            >
+              <div className="space-y-4 text-sm text-gray-800">
+                <div className="grid grid-cols-2 gap-4 bg-gray-50 p-3 rounded">
+                  <div>
+                    <span className="font-bold block text-gray-500">Fecha:</span>
+                    {viewingItem.fecha ? new Date(viewingItem.fecha).toLocaleDateString() : "-"}
+                  </div>
+                  <div>
+                    <span className="font-bold block text-gray-500">Cliente:</span>
+                    {viewingItem.cliente?.nombre || "Cliente General"}
+                  </div>
+                  <div>
+                    <span className="font-bold block text-gray-500">N° Venta:</span>
+                    #{viewingItem.id}
+                  </div>
+                  <div>
+                    <span className="font-bold block text-gray-500">Total:</span>
+                    <span className="text-xl font-bold text-green-600">{formatCurrency(viewingItem.total)}</span>
+                  </div>
+                </div>
+
+                <div className="border rounded-md overflow-hidden">
+                  <table className="w-full text-left bg-white">
+                    <thead className="bg-gray-100 text-gray-600 font-semibold border-b">
+                      <tr>
+                        <th className="p-2">Código</th>
+                        <th className="p-2">Producto</th>
+                        <th className="p-2 text-center">Cant.</th>
+                        <th className="p-2 text-right">Precio U.</th>
+                        <th className="p-2 text-right">Subtotal</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y">
+                      {viewingItem.detalles?.map((det: any, idx: number) => (
+                        <tr key={idx} className="hover:bg-gray-50">
+                          <td className="p-2 text-gray-500 font-mono text-xs">{det.producto?.codigo || "-"}</td>
+                          <td className="p-2">{det.producto?.nombre || "Producto Desconocido"}</td>
+                          <td className="p-2 text-center">{det.cantidad}</td>
+                          <td className="p-2 text-right">{formatCurrency(det.precio_venta)}</td>
+                          <td className="p-2 text-right">{formatCurrency(det.subtotal)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                <div className="flex justify-end pt-2">
+                  <button
+                    onClick={handleCloseView}
+                    className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded shadow transition"
+                  >
+                    Cerrar
+                  </button>
+                </div>
+              </div>
+            </ModalVentana>
+          )}
 
           {/* PAGINADOR */}
           <div className="flex justify-between items-center mt-4">
