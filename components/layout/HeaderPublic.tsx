@@ -40,16 +40,15 @@ const HeaderPublic: React.FC = () => {
 
   const desktopLinkClasses = (href: string) => `
     inline-flex items-center h-full px-1 border-b-2 transition duration-150 text-sm font-medium
-    ${
-      pathname.startsWith(href)
-        ? "border-blue-500 text-blue-700"
-        : "border-transparent text-gray-600"
+    ${pathname.startsWith(href)
+      ? "border-blue-500 text-blue-700"
+      : "border-transparent text-gray-600"
     } 
     hover:border-blue-400 hover:text-blue-700
   `;
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 shadow-md h-24 bg-[#ebebeb]">
+    <nav className="fixed top-0 left-0 right-0 z-50 shadow-md h-28 bg-[#ebebeb]">
 
       {/* ========================================================== */}
       {/* FONDO DIAGONAL (INGESOLAR STYLE) */}
@@ -65,9 +64,9 @@ const HeaderPublic: React.FC = () => {
         />
         {/* BANDA DIAGONAL IZQUIERDA */}
         <div
-          className="absolute inset-y-0 left-0 w-[35%] bg-[#2e9fdb]"
+          className="absolute inset-y-0 left-0 w-[45%] bg-[#2e9fdb]"
           style={{
-            clipPath: "polygon(0 0, 80% 0, 65% 100%, 0% 100%)",
+            clipPath: "polygon(0 0, 85% 0, 70% 100%, 0% 100%)",
           }}
         />
       </div>
@@ -75,16 +74,16 @@ const HeaderPublic: React.FC = () => {
       {/* CONTENIDO DEL HEADER (encima del diseño) */}
       {/* ========================================================== */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-        <div className="flex justify-between h-24">
+        <div className="flex justify-between h-32">
           {/* LADO IZQUIERDO: LOGO */}
           <div className="flex items-center">
-              <div className="flex-shrink-0">
+            <div className="flex-shrink-0">
               <Link href="/" className="flex items-center space-x-3">
                 <Image
                   src="/images/logo-disem.jpeg"
                   alt="DISEM SAS"
-                  width={200}
-                  height={60}
+                  width={280}
+                  height={90}
                   className="object-contain"
                 />
               </Link>
@@ -111,7 +110,7 @@ const HeaderPublic: React.FC = () => {
             </div>
             {/* Botones: carrito + admin */}
             <div className="hidden sm:ml-6 sm:flex sm:items-center">
-              
+
               {/* CARRITO */}
               <Link
                 href="/users/cart"
@@ -144,11 +143,11 @@ const HeaderPublic: React.FC = () => {
               >
                 {isOpen ? (
                   <svg className="h-6 w-6" fill="none" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"/>
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 ) : (
                   <svg className="h-6 w-6" fill="none" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16"/>
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
                   </svg>
                 )}
               </button>
@@ -175,7 +174,7 @@ const HeaderPublic: React.FC = () => {
                       className={`h-5 w-5 transform transition ${isProductsOpenMobile ? "rotate-180" : ""}`}
                       fill="currentColor"
                     >
-                      <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.25 4.25a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.06z"/>
+                      <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.25 4.25a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.06z" />
                     </svg>
                   </button>
 
