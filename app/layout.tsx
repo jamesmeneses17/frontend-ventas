@@ -4,7 +4,7 @@ import Providers from '../components/Providers';
 import WhatsAppFloatingButton from '../components/ui/WhatsAppFloatingButton';
 
 export const metadata = {
-  title: 'Sistema de Ventas - Disem S.A.S.',
+  title: 'DISEM S.A.S. – Ventas',
   description: 'Sistema de gestión de ventas',
 }
 
@@ -24,5 +24,5 @@ export default function RootLayout({
         </AuthProvider>
       </body>
     </html>
-  ) 
+  )
 }
