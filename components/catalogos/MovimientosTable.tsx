@@ -3,7 +3,7 @@
 import React from "react";
 import CrudTable from "../common/CrudTable";
 import ActionButton from "../common/ActionButton";
-import { Trash, Pencil, ShoppingCart, ArrowDownCircle, ArrowUpCircle, Wallet } from "lucide-react";
+import { Trash, Pencil, ShoppingCart, ArrowDownCircle, ArrowUpCircle, Wallet, Eye } from "lucide-react";
 import { formatCurrency, formatDate } from "../../utils/formatters";
 import { MovimientoCaja } from "../services/cajaService";
 
@@ -12,6 +12,7 @@ interface Props {
   loading?: boolean;
   onEdit: (movimiento: MovimientoCaja) => void;
   onDelete: (id: number) => void;
+  onView: (movimiento: MovimientoCaja) => void;
 }
 
 export default function MovimientosTable({
@@ -19,8 +20,8 @@ export default function MovimientosTable({
   loading,
   onEdit,
   onDelete,
+  onView,
 }: Props) {
-
   // ✅ Estilo profesional con bordes y tipografía mejorada
   const getTipoMovimientoClasses = (tipo?: string) => {
     if (!tipo) return "bg-slate-100 text-slate-600 border border-slate-200 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider";
@@ -76,31 +77,52 @@ export default function MovimientosTable({
       key: "concepto",
       label: "Descripción / Concepto",
       render: (row: MovimientoCaja) => (
-        <div className="max-w-[240px] md:max-w-xs break-words whitespace-normal text-gray-700 italic text-sm" title={row.concepto}>
-          {row.concepto ? (
-            row.concepto.split('\n').map((line, i) => {
-              const trimmed = line.trim();
-              if (trimmed.startsWith('Cant:')) {
-                return <div key={i} className="font-bold text-gray-900 mt-1 not-italic">{line}</div>;
-              }
-              if (trimmed.startsWith('Cod:')) {
-                const firstDashIndex = line.indexOf(' - ');
-                if (firstDashIndex !== -1) {
-                  const codePart = line.substring(0, firstDashIndex);
-                  const restPart = line.substring(firstDashIndex + 3); // Skip " - "
+        <div className="max-w-[240px] md:max-w-xs text-sm text-gray-700">
+          <div className="line-clamp-2 break-words" title={row.concepto}>
+            {(() => {
+              const concepto = row.concepto || "Sin descripción";
+
+              // Detectar formato de Compra con lista de productos
+              // Patrón general para ID
+              const matchId = concepto.match(/Compra (?:ID|Ref): (\d+)/i);
+
+              // Si parece ser una compra con items listados
+              if (matchId && concepto.includes("Productos:")) {
+                const idCompra = matchId[1];
+
+                // Intentar sumar cantidades si existen en el formato "(Cant: N)"
+                let totalUnidades = 0;
+
+                // Polyfill simple si matchAll no es robusto o prefiero regex loop
+                const regexCant = /Cant:\s*(\d+)/g;
+                let m;
+                while ((m = regexCant.exec(concepto)) !== null) {
+                  totalUnidades += parseInt(m[1], 10);
+                }
+
+                // Si detectamos cantidades explícitas
+                if (totalUnidades > 0) {
                   return (
-                    <div key={i} className="mb-1">
-                      <div className="font-bold text-gray-900 not-italic">{codePart}</div>
-                      <div className="text-gray-600 pl-2 border-l-2 border-gray-200">{restPart}</div>
-                    </div>
+                    <span className="italic text-gray-600">
+                      Compra #{idCompra} - Total unidades: {totalUnidades}
+                    </span>
                   );
                 }
+
+                // Fallback: contar por comas si no hay formato de cantidad explícito
+                const parteProductos = concepto.split("Productos:")[1] || "";
+                const itemsCount = parteProductos.split(',').filter(s => s.trim() !== '').length; // Filter empty strings
+                return (
+                  <span className="italic text-gray-600">
+                    Compra #{idCompra} - Varios items ({itemsCount})
+                  </span>
+                );
               }
-              return <div key={i}>{line}</div>
-            })
-          ) : (
-            "Sin descripción"
-          )}
+
+              // Default
+              return concepto;
+            })()}
+          </div>
         </div>
       )
     },
@@ -130,6 +152,14 @@ export default function MovimientosTable({
         loading={loading}
         renderRowActions={(row: MovimientoCaja) => (
           <div className="flex items-center justify-end gap-1">
+            <ActionButton
+              icon={<Wallet className="w-3.5 h-3.5" />} // Using Wallet or Eye
+              // Let's use Eye as requested generally, but importing it
+              // Need to import Eye if not present
+              onClick={() => onView(row)}
+              color="primary"
+              className="hover:bg-blue-50 text-blue-600"
+            />
             <ActionButton
               icon={<Pencil className="w-3.5 h-3.5" />}
               onClick={() => onEdit(row)}

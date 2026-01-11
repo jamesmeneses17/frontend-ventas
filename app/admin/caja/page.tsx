@@ -14,6 +14,9 @@ import FilterBar from "../../../components/common/FilterBar";
 import CardStat from "../../../components/ui/CardStat";
 
 import { DollarSign, ArrowUpRight, ArrowDownLeft, AlertTriangle } from "lucide-react";
+// Imports at top
+import { getCompraById, Compra } from "../../../components/services/comprasService";
+import { getVentaById, Venta } from "../../../components/services/ventasService";
 import { createMovimiento, CreateMovimientoData, deleteMovimiento, getMovimientosCaja, MovimientoCaja, updateMovimiento, UpdateMovimientoData, getCajaStats, CajaStats } from "../../../components/services/cajaService";
 import MovimientosTable from "../../../components/catalogos/MovimientosTable";
 import MovimientosForm from "../../../components/catalogos/MovimientosForm";
@@ -29,11 +32,47 @@ const TIPO_MOVIMIENTO_FILTRO = [
 
 // -------------------- COMPONENTE PRINCIPAL --------------------
 export default function CajaPage() {
-  const [formError, setFormError] = React.useState<string>("");
+  // Estados visuales y filtros manuales
+  const [formError, setFormError] = React.useState<string | null>(null);
+  const [startDate, setStartDate] = React.useState("");
+  const [endDate, setEndDate] = React.useState("");
   const [tipoMovimientoFiltro, setTipoMovimientoFiltro] = React.useState<string>("");
 
   // Estado para el total filtrado
   const [totalFilteredAmount, setTotalFilteredAmount] = React.useState(0);
+  const [viewingItem, setViewingItem] = React.useState<MovimientoCaja | null>(null);
+  const [purchaseDetails, setPurchaseDetails] = React.useState<Compra | null>(null);
+  const [saleDetails, setSaleDetails] = React.useState<Venta | null>(null);
+  const [loadingDetails, setLoadingDetails] = React.useState(false);
+
+  React.useEffect(() => {
+    if (viewingItem) {
+      setPurchaseDetails(null);
+      setSaleDetails(null);
+
+      // 1. Try to extract Purchase ID
+      const matchCompra = viewingItem.concepto?.match(/Compra (?:ID|Ref): (\d+)/i);
+      if (matchCompra && matchCompra[1]) {
+        setLoadingDetails(true);
+        getCompraById(Number(matchCompra[1]))
+          .then(data => setPurchaseDetails(data))
+          .catch(err => console.error("Error fetching compra details:", err))
+          .finally(() => setLoadingDetails(false));
+        return;
+      }
+
+      // 2. Try to extract Sale ID
+      const matchVenta = viewingItem.concepto?.match(/Venta ID: (\d+)/i);
+      if (matchVenta && matchVenta[1]) {
+        setLoadingDetails(true);
+        getVentaById(Number(matchVenta[1]))
+          .then(data => setSaleDetails(data))
+          .catch(err => console.error("Error fetching venta details:", err))
+          .finally(() => setLoadingDetails(false));
+        return;
+      }
+    }
+  }, [viewingItem]);
 
   // Hook CRUD principal
   const {
@@ -279,6 +318,7 @@ export default function CajaPage() {
             loading={loading}
             onEdit={handleEdit}
             onDelete={handleDeleteWithStats}
+            onView={(item) => setViewingItem(item)}
           />
 
           {/* PAGINADOR */}
@@ -300,7 +340,7 @@ export default function CajaPage() {
           </div>
         </div>
 
-        {/* MODAL */}
+        {/* MODAL EDITAR/CREAR */}
         {showModal && (
           <ModalVentana
             isOpen={showModal}
@@ -312,11 +352,154 @@ export default function CajaPage() {
               initialData={editingMovimiento}
               onSubmit={handleMovimientosFormSubmit}
               onCancel={handleCloseModal}
-              formError={formError}
+              formError={formError || undefined}
             />
             {formError && (
               <div className="text-red-600 text-sm mt-2 text-center">{formError}</div>
             )}
+          </ModalVentana>
+        )}
+
+        {/* MODAL VER DETALLES */}
+        {viewingItem && (
+          <ModalVentana
+            isOpen={!!viewingItem}
+            onClose={() => setViewingItem(null)}
+            title={`Detalles Movimiento #${viewingItem.id}`}
+          >
+            <div className="space-y-4 text-sm text-gray-800">
+              <div className="grid grid-cols-2 gap-4 bg-gray-50 p-3 rounded">
+                <div>
+                  <span className="font-bold block text-gray-500">Fecha:</span>
+                  {viewingItem.fecha ? new Date(viewingItem.fecha).toLocaleDateString() : "-"}
+                </div>
+                <div>
+                  <span className="font-bold block text-gray-500">Tipo:</span>
+                  {viewingItem.tipoMovimiento?.nombre || "-"}
+                </div>
+                <div>
+                  <span className="font-bold block text-gray-500">Monto:</span>
+                  <span className="text-xl font-bold text-gray-800">{formatMoney(Number(viewingItem.monto))}</span>
+                </div>
+              </div>
+
+              <div className="border rounded-md p-4 bg-white max-h-[300px] overflow-y-auto">
+                <h4 className="font-bold text-gray-700 mb-2 border-b pb-1">Descripción / Concepto</h4>
+
+                {loadingDetails ? (
+                  <div className="flex flex-col items-center justify-center py-8 text-gray-500">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-600 mb-2"></div>
+                    <p>Cargando detalles...</p>
+                  </div>
+                ) : (
+                  <div className="text-gray-600">
+                    {(() => {
+                      // A. RENDER COMPRA DETAILS
+                      if (purchaseDetails && purchaseDetails.detalles?.length > 0) {
+                        return (
+                          <div>
+                            <p className="font-bold text-gray-700 mb-3 bg-gray-100 p-2 rounded">
+                              Lista de Productos ({purchaseDetails.detalles.length} referencias)
+                            </p>
+                            <div className="flex flex-col gap-3">
+                              {purchaseDetails.detalles.map((det: any, idx) => (
+                                <div key={idx} className="flex flex-col border-b border-gray-100 pb-2 last:border-0">
+                                  <div className="flex items-start justify-between">
+                                    <div className="flex-1 pr-2">
+                                      <span className="font-mono font-bold text-indigo-700 mr-2 text-xs border border-indigo-200 px-1 rounded bg-indigo-50">
+                                        {det.producto?.codigo || 'COD?'}
+                                      </span>
+                                      <span className="text-gray-800 font-medium">
+                                        {det.producto?.nombre}
+                                      </span>
+                                    </div>
+                                    <span className="shrink-0 bg-gray-600 text-white text-xs px-2 py-1 rounded-full font-bold">
+                                      x{det.cantidad}
+                                    </span>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      }
+
+                      // B. RENDER VENTA DETAILS
+                      if (saleDetails && saleDetails.detalles && saleDetails.detalles.length > 0) {
+                        return (
+                          <div>
+                            <p className="font-bold text-gray-700 mb-3 bg-gray-100 p-2 rounded">
+                              Lista de Productos Vendidos ({saleDetails.detalles.length} referencias)
+                            </p>
+                            <div className="flex flex-col gap-3">
+                              {saleDetails.detalles.map((det: any, idx) => (
+                                <div key={idx} className="flex flex-col border-b border-gray-100 pb-2 last:border-0">
+                                  <div className="flex items-start justify-between">
+                                    <div className="flex-1 pr-2">
+                                      <span className="font-mono font-bold text-emerald-700 mr-2 text-xs border border-emerald-200 px-1 rounded bg-emerald-50">
+                                        {det.producto?.codigo || 'COD?'}
+                                      </span>
+                                      <span className="text-gray-800 font-medium">
+                                        {det.producto?.nombre}
+                                      </span>
+                                    </div>
+                                    <span className="shrink-0 bg-gray-600 text-white text-xs px-2 py-1 rounded-full font-bold">
+                                      x{det.cantidad}
+                                    </span>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      }
+
+                      // C. FALLBACKS (Text Parsing)
+                      const concepto = viewingItem.concepto || "Sin descripción";
+
+                      // Legacy Compra
+                      const matchCompra = concepto.match(/^Compra (?:ID|Ref): \d+\s*-\s*Productos:\s*(.*)/i);
+                      if (matchCompra) {
+                        const productosStr = matchCompra[1];
+                        const productos = productosStr.split(',').map(p => p.trim()).filter(Boolean);
+                        return (
+                          <div>
+                            <p className="font-bold text-gray-700 mb-3 bg-gray-100 p-2 rounded">Lista de Productos (Texto)</p>
+                            <div className="flex flex-col gap-3">
+                              {productos.map((prod, idx) => {
+                                const qtyMatch = prod.match(/\(Cant:\s*(\d+)\)/);
+                                const qty = qtyMatch ? qtyMatch[1] : "?";
+                                const cleanName = prod.replace(/\(Cant:\s*\d+\)/, '').trim();
+                                return (
+                                  <div key={idx} className="flex flex-col border-b border-gray-100 pb-2 last:border-0">
+                                    <div className="flex items-start justify-between">
+                                      <div className="text-gray-800">{cleanName}</div>
+                                      <span className="shrink-0 bg-gray-200 text-gray-700 text-xs px-2 py-1 rounded-full font-bold ml-2">Cant: {qty}</span>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        );
+                      }
+
+                      // Legacy Venta (Text only fallback)
+                      return <div className="whitespace-pre-wrap">{concepto}</div>;
+                    })()}
+                  </div>
+                )}
+              </div>
+
+              <div className="flex justify-end pt-2">
+                <button
+                  onClick={() => setViewingItem(null)}
+                  className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded shadow transition"
+                >
+                  Cerrar
+                </button>
+              </div>
+            </div>
           </ModalVentana>
         )}
 
