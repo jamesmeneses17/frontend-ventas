@@ -11,7 +11,7 @@ import MobileCategoryList from "../ui/MobileCategoryList"
 import { useCart } from '../hooks/CartContext'
 
 // Color azul claro solicitado
-const DISEM_LIGHT_BLUE = "#83abfcff"
+const DISEM_LIGHT_BLUE = "#558bf8ff"
 
 const HeaderPublic: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false)
