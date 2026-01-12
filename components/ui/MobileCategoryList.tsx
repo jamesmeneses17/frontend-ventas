@@ -36,7 +36,7 @@ const MobileCategoryList: React.FC<MobileCategoryListProps> = ({
 
         // apiCategorias es PaginacionResponse, acceder a .data
         const categoriasArray = Array.isArray(apiCategorias) ? apiCategorias : (apiCategorias as any)?.data || [];
-        
+
         categoriasArray.forEach((cat: any) => {
           categoryMap.set(cat.id, { id: cat.id, nombre: cat.nombre, subcategorias: [] });
         });
@@ -102,11 +102,10 @@ const MobileCategoryList: React.FC<MobileCategoryListProps> = ({
             <div
               // ✅ Clase condicional para resaltar la categoría abierta en móvil
               className={`flex items-center justify-between rounded-md transition duration-150 
-                                ${
-                                  isCategoryOpen
-                                    ? "bg-amber-100"
-                                    : "bg-gray-50 hover:bg-gray-100"
-                                }
+                                ${isCategoryOpen
+                  ? "bg-[#ecfdf5]" // Verde menta muy suave
+                  : "bg-gray-50 hover:bg-gray-100"
+                }
                             `}
             >
               {/* 1. Enlace a la Categoría */}
@@ -114,9 +113,8 @@ const MobileCategoryList: React.FC<MobileCategoryListProps> = ({
                 href={`/users/productos?categoriaId=${category.id}`}
                 onClick={onNavigate}
                 // ✅ Color del texto de la categoría
-                className={`flex-1 px-3 py-2 text-base font-bold ${
-                  isCategoryOpen ? "text-amber-700" : "text-gray-800"
-                }`}
+                className={`flex-1 px-3 py-2 text-base font-bold ${isCategoryOpen ? "text-[#2b7920]" : "text-gray-800"
+                  }`}
               >
                 {category.nombre}
               </Link>
@@ -126,17 +124,15 @@ const MobileCategoryList: React.FC<MobileCategoryListProps> = ({
                 <button
                   onClick={() => toggleCategory(category.id, hasSubcategories)}
                   // ✅ Color del icono de flecha
-                  className={`p-2 transition-colors ${
-                    isCategoryOpen
-                      ? "text-amber-700"
-                      : "text-gray-600 hover:text-amber-700"
-                  }`}
+                  className={`p-2 transition-colors ${isCategoryOpen
+                      ? "text-[#2b7920]"
+                      : "text-gray-600 hover:text-[#2b7920]"
+                    }`}
                   aria-expanded={isCategoryOpen}
                 >
                   <svg
-                    className={`h-5 w-5 transform transition-transform ${
-                      isCategoryOpen ? "rotate-180" : "rotate-0"
-                    }`}
+                    className={`h-5 w-5 transform transition-transform ${isCategoryOpen ? "rotate-180" : "rotate-0"
+                      }`}
                     xmlns="http://www.w3.org/2000/svg"
                     viewBox="0 0 20 20"
                     fill="currentColor"
@@ -154,14 +150,14 @@ const MobileCategoryList: React.FC<MobileCategoryListProps> = ({
 
             {/* Lista de Subcategorías (Acordeón) */}
             {isCategoryOpen && hasSubcategories && (
-              <div className="pl-4 space-y-0.5 border-l border-gray-100 ml-4 pt-1">
+              <div className="pl-4 space-y-0.5 border-l-2 border-[#2b7920]/20 ml-4 pt-1">
                 {category.subcategorias?.map((subCat) => (
                   <Link
                     key={subCat.id}
                     href={`/users/productos?subcategoriaId=${subCat.id}`}
                     onClick={onNavigate}
-                    // ✅ Estilo ámbar para subcategorías al hacer hover/tap
-                    className="block px-3 py-1.5 text-sm font-medium text-gray-600 hover:text-amber-700 hover:bg-amber-50 rounded-md transition duration-150"
+                    // ✅ Estilo verde para subcategorías al hacer hover/tap
+                    className="block px-3 py-2 text-sm font-medium text-gray-600 hover:text-[#2563eb] hover:bg-gray-50 rounded-md transition duration-150"
                   >
                     {subCat.nombre}
                   </Link>

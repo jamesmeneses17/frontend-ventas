@@ -3,6 +3,21 @@
 import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import {
+  SunMedium,
+  Car,
+  Zap,
+  Bike,
+  Cpu,
+  Activity,
+  Battery,
+  Package,
+  ChevronRight,
+  Lightbulb,
+  ShieldCheck,
+  Server,
+  ArrowRight
+} from "lucide-react";
 
 import { getCategorias, Categoria } from "../services/categoriasService";
 import {
@@ -10,6 +25,10 @@ import {
   CategoriaPrincipal,
 } from "../services/categoriasPrincipalesService";
 import { getSubcategorias, Subcategoria } from "../services/subcategoriasService";
+
+// COLORES PERSONALIZADOS
+const LOGO_LIME = "#2b7920ff"; // Verde Hoja (Solicitado)
+const LOGO_BLUE = "#2563eb"; // Azul Corporativo (Blue 600)
 
 // Tipo extendido de categoría que puede incluir subcategorías
 type CategoriaConSubcategorias = Categoria & {
@@ -39,26 +58,12 @@ const HeaderProductsDropdown: React.FC = () => {
             getSubcategorias(1, 1000, ""),
           ]);
 
-        // Normalizar respuestas - manejar tanto arrays como objetos con .data
-        const catsRaw = Array.isArray(apiCategorias?.data)
-          ? apiCategorias.data
-          : Array.isArray(apiCategorias)
-            ? apiCategorias
-            : [];
+        // Normalizar respuestas
+        const catsRaw = Array.isArray(apiCategorias?.data) ? apiCategorias.data : (Array.isArray(apiCategorias) ? apiCategorias : []);
+        const mainsRaw = Array.isArray(apiMainResponse?.data) ? apiMainResponse.data : (Array.isArray(apiMainResponse) ? apiMainResponse : []);
+        const subsRaw = Array.isArray(apiSubcategorias?.data) ? apiSubcategorias.data : (Array.isArray(apiSubcategorias) ? apiSubcategorias : []);
 
-        const mainsRaw = Array.isArray(apiMainResponse?.data)
-          ? apiMainResponse.data
-          : Array.isArray(apiMainResponse)
-            ? apiMainResponse
-            : [];
-
-        const subsRaw = Array.isArray(apiSubcategorias?.data)
-          ? apiSubcategorias.data
-          : Array.isArray(apiSubcategorias)
-            ? apiSubcategorias
-            : [];
-
-        // Solo mostrar activos (1 = activo)
+        // Solo mostrar activos
         const cats = catsRaw.filter((c: any) => Number(c.activo ?? 1) === 1);
         const mains = mainsRaw.filter((m: any) => Number(m.activo ?? 1) === 1);
         const subs = subsRaw.filter((s: any) => Number(s.activo ?? 1) === 1);
@@ -66,52 +71,9 @@ const HeaderProductsDropdown: React.FC = () => {
         setCategories(cats);
         setMainCategories(mains);
         setSubcategories(subs);
-
-        // Logs de debugging detallados
-        console.log("📦 Categorías cargadas:", cats.length, cats);
-        console.log("📂 Categorías principales cargadas:", mains.length, mains);
-        console.log("🏷️ Subcategorías cargadas:", subs.length, subs);
-
-        // Validación de relaciones
-        console.log("🔗 VALIDACIÓN DE RELACIONES:");
-        
-        // Mostrar estructura de una subcategoría de ejemplo
-        if (subs.length > 0) {
-          console.log("📝 Ejemplo de subcategoría:", subs[0]);
-          console.log(
-            `   - Campos disponibles: categoria_id=${subs[0].categoria_id}, categoriaId=${(subs[0] as any).categoriaId}`
-          );
-          console.log(
-            `   - El campo correcto es: ${(subs[0] as any).categoriaId ? "categoriaId ✅" : "categoria_id ❌ (NaN)"}`
-          );
-        }
-
-        // Mostrar estructura de una categoría de ejemplo
-        if (cats.length > 0) {
-          console.log("📝 Ejemplo de categoría:", cats[0]);
-          console.log(`   - ID de la categoría: ${cats[0].id}`);
-        }
-
-        // Test de coincidencias
-        if (subs.length > 0 && cats.length > 0) {
-          const testCat = cats[0];
-          const matchesByCategoria_id = subs.filter(
-            (sub) => sub.categoria_id === testCat.id
-          );
-          const matchesByCategoria_Id = subs.filter(
-            (sub) => (sub as any).categoriaId === testCat.id
-          );
-          console.log(
-            `   ✓ Usando categoria_id: ${matchesByCategoria_id.length} matches`
-          );
-          console.log(
-            `   ✓ Usando categoriaId: ${matchesByCategoria_Id.length} matches`
-          );
-        }
-
         if (Array.isArray(mains) && mains.length > 0) setActiveGroup(0);
       } catch (e) {
-        console.error("❌ Error cargando categorías/subcategorías:", e);
+        console.error("❌ Error cargando categorías:", e);
       } finally {
         setIsLoading(false);
       }
@@ -120,57 +82,31 @@ const HeaderProductsDropdown: React.FC = () => {
     fetchAll();
   }, []);
 
-  // Agrupar categorías por categoría principal y asignar subcategorías a cada una
+  // Agrupar categorías
   const grouped = mainCategories.map((m) => ({
     id: m.id,
     nombre: m.nombre,
     categorias: categories
       .filter((c) => c.categoriaPrincipalId === m.id)
       .map((cat) => {
-        // Las subcategorías pueden estar en 3 lugares posibles:
-        // 1. En el campo 'subcategorias' de la categoría
-        // 2. En el campo 'sub' de la categoría
-        // 3. Filtradas desde el estado de subcategorías globales
-        
         let catSubs = [];
-        
-        // Opción 1: Subcategorías incluidas en la categoría misma
         if ((cat as any).subcategorias && Array.isArray((cat as any).subcategorias)) {
           catSubs = (cat as any).subcategorias;
-        } 
-        // Opción 2: Subcategorías en campo 'sub'
-        else if ((cat as any).sub && Array.isArray((cat as any).sub)) {
+        } else if ((cat as any).sub && Array.isArray((cat as any).sub)) {
           catSubs = (cat as any).sub;
-        } 
-        // Opción 3: Filtrar desde subcategorías globales usando AMBOS campos (categoria_id y categoriaId)
-        else {
+        } else {
           catSubs = subcategories.filter(
             (sub) => sub.categoria_id === cat.id || (sub as any).categoriaId === cat.id
           );
         }
-        
-        if (catSubs.length > 0) {
-          console.log(
-            `  📌 Categoría "${cat.nombre}" (ID: ${cat.id}) contiene ${catSubs.length} subcategoría(s): [${catSubs
-              .map((s: any) => `"${s.nombre}"`)
-              .join(", ")}]`
-          );
-        }
-        
-        return {
-          ...cat,
-          subcategorias: catSubs,
-        };
+        return { ...cat, subcategorias: catSubs };
       }),
   }));
 
-  // Categorías sin categoría principal asignada
   const uncategorized = categories
     .filter((c) => !c.categoriaPrincipalId)
     .map((cat) => {
-      // Misma lógica de búsqueda de subcategorías
       let catSubs = [];
-      
       if ((cat as any).subcategorias && Array.isArray((cat as any).subcategorias)) {
         catSubs = (cat as any).subcategorias;
       } else if ((cat as any).sub && Array.isArray((cat as any).sub)) {
@@ -180,11 +116,7 @@ const HeaderProductsDropdown: React.FC = () => {
           (sub) => sub.categoria_id === cat.id || (sub as any).categoriaId === cat.id
         );
       }
-      
-      return {
-        ...cat,
-        subcategorias: catSubs,
-      };
+      return { ...cat, subcategorias: catSubs };
     });
 
   const handleMouseEnter = () => {
@@ -205,6 +137,24 @@ const HeaderProductsDropdown: React.FC = () => {
 
   const isProductsActive = pathname.startsWith("/users/productos");
 
+  // Helper para iconos
+  const getCategoryIcon = (name: string) => {
+    const lower = name.toLowerCase();
+    const props = { className: "w-5 h-5", strokeWidth: 1.5 };
+
+    if (lower.includes("solar")) return <SunMedium {...props} />;
+    if (lower.includes("auto")) return <Car {...props} />;
+    if (lower.includes("corriente") || lower.includes("alterna")) return <Zap {...props} />;
+    if (lower.includes("moto")) return <Bike {...props} />;
+    if (lower.includes("control")) return <Cpu {...props} />;
+    if (lower.includes("inversor")) return <Activity {...props} />;
+    if (lower.includes("bater")) return <Battery {...props} />;
+    if (lower.includes("ilumin")) return <Lightbulb {...props} />;
+    if (lower.includes("protec")) return <ShieldCheck {...props} />;
+    if (lower.includes("gabine")) return <Server {...props} />;
+    return <Package {...props} />;
+  };
+
   return (
     <div
       className="relative h-full flex items-center"
@@ -213,19 +163,17 @@ const HeaderProductsDropdown: React.FC = () => {
     >
       <Link
         href="/users/productos"
-        className={`inline-flex items-center h-full px-1 border-b-2 transition text-sm font-medium
-        ${
-          isProductsActive
-            ? "border-blue-500 text-blue-700"
-            : "border-transparent text-gray-600"
-        }
-        hover:border-blue-400 hover:text-blue-700`}
+        className={`inline-flex items-center h-full px-1 border-b-2 transition text-[13px] font-medium
+        ${isProductsActive
+            ? "border-[#a5cd37] text-gray-900"
+            : "border-transparent text-gray-700"
+          }
+        hover:text-blue-600 hover:border-[#a5cd37]`}
       >
         Productos
         <svg
-          className={`ml-1 h-4 w-4 transform ${
-            isMenuOpen ? "rotate-180" : "rotate-0"
-          }`}
+          className={`ml-1 h-3 w-3 transform transition-transform duration-200 ${isMenuOpen ? "rotate-180" : "rotate-0"
+            }`}
           viewBox="0 0 20 20"
           fill="currentColor"
         >
@@ -238,71 +186,70 @@ const HeaderProductsDropdown: React.FC = () => {
 
       {isMenuOpen && (categories.length > 0 || mainCategories.length > 0) && (
         <div
-          className="absolute z-50 top-full left-1/2 -translate-x-1/2 mt-2 w-[900px] max-w-[calc(100vw-2rem)] rounded-lg bg-white shadow-lg ring-1 ring-black ring-opacity-5"
+          className="fixed z-[60] top-28 left-0 right-0 mx-auto w-[780px] max-w-[95vw] rounded-2xl bg-white shadow-[0_20px_60px_-15px_rgba(0,0,0,0.1)] ring-1 ring-black/5 overflow-hidden transition-all duration-300 ease-out"
+          style={{ maxHeight: 'calc(100vh - 8rem)' }}
         >
-          <div className="p-4 max-h-96 overflow-y-auto">
+          {/* BARRA SUPERIOR DECORATIVA VERDE/AZUL */}
+          <div className="h-1 w-full bg-gradient-to-r from-[#2563eb] to-[#a5cd37]" />
+
+          <div className="flex min-h-[420px]">
             {isLoading ? (
-              <div className="text-center py-8 text-gray-500">
-                Cargando categorías...
+              <div className="w-full py-20 flex items-center justify-center text-gray-500">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#a5cd37] mr-2"></div>
+                Cargando productos...
               </div>
             ) : (
-              <div className="flex gap-6">
-                {/* IZQUIERDA - Categoría Principal */}
-                <div className="w-1/3 border-r pr-4">
-                  <div className="space-y-1">
+              <>
+                {/* COLUMNA 1: MENÚ LATERAL (30%) */}
+                <div className="w-[30%] bg-[#f9fafb] flex-shrink-0 border-r border-gray-100 overflow-y-auto py-5">
+                  <div className="space-y-1.5 px-3">
                     {grouped.length > 0 ? (
                       grouped.map((g, idx) => (
                         <button
                           key={g.id}
                           onMouseEnter={() => setActiveGroup(idx)}
-                          onFocus={() => setActiveGroup(idx)}
-                          className={`w-full text-left px-3 py-2 rounded-md text-sm font-semibold transition
-                          ${
-                            activeGroup === idx
-                              ? "bg-blue-50 text-blue-700 border-l-2 border-blue-600"
-                              : "text-gray-700 hover:bg-gray-50 border-l-2 border-transparent"
-                          }`}
+                          className={`w-full group flex items-center justify-between px-4 py-3.5 rounded-xl text-[13.5px] transition-all duration-200
+                          ${activeGroup === idx
+                              ? "bg-white text-[#2563eb] font-bold shadow-md ring-1 ring-[#a5cd37]/30 border-l-4 border-l-[#a5cd37]" // Borde izquierdo LIME, Texto BLUE
+                              : "text-gray-600 hover:bg-white hover:text-gray-900"
+                            }`}
                         >
-                          {g.nombre}
-                          <div className="text-xs text-gray-500 font-normal">
-                            {g.categorias.length}{" "}
-                            {g.categorias.length === 1
-                              ? "categoría"
-                              : "categorías"}
+                          <div className="flex items-center gap-3">
+                            <span className={`${activeGroup === idx ? "text-[#a5cd37]" : "text-gray-400 group-hover:text-[#2563eb]"}`}>
+                              {getCategoryIcon(g.nombre)}
+                            </span>
+                            <span className="truncate">{g.nombre}</span>
                           </div>
+                          {activeGroup === idx && <ChevronRight className="w-4 h-4 text-[#a5cd37]" strokeWidth={2.5} />}
                         </button>
                       ))
                     ) : (
-                      <div className="text-sm text-gray-500 py-2">
-                        Sin grupos
-                      </div>
+                      <div className="text-sm text-gray-500 px-4 py-2">Sin categorías</div>
                     )}
 
                     {uncategorized.length > 0 && (
                       <button
                         onMouseEnter={() => setActiveGroup(grouped.length)}
-                        onFocus={() => setActiveGroup(grouped.length)}
-                        className={`w-full text-left px-3 py-2 rounded-md text-sm font-semibold transition
-                        ${
-                          activeGroup === grouped.length
-                            ? "bg-blue-50 text-blue-700 border-l-2 border-blue-600"
-                            : "text-gray-700 hover:bg-gray-50 border-l-2 border-transparent"
-                        }`}
+                        className={`w-full group flex items-center justify-between px-4 py-3.5 rounded-xl text-[13.5px] transition-all duration-200
+                        ${activeGroup === grouped.length
+                            ? "bg-white text-[#2563eb] font-bold shadow-md ring-1 ring-[#a5cd37]/30 border-l-4 border-l-[#a5cd37]"
+                            : "text-gray-600 hover:bg-white hover:text-gray-900"
+                          }`}
                       >
-                        Otros
-                        <div className="text-xs text-gray-500 font-normal">
-                          {uncategorized.length}{" "}
-                          {uncategorized.length === 1
-                            ? "categoría"
-                            : "categorías"}
+                        <div className="flex items-center gap-3">
+                          <span className={`${activeGroup === grouped.length ? "text-[#a5cd37]" : "text-gray-400"}`}>
+                            <Package className="w-5 h-5" strokeWidth={1.5} />
+                          </span>
+                          <span>Otros Productos</span>
                         </div>
+                        {activeGroup === grouped.length && <ChevronRight className="w-4 h-4 text-[#a5cd37]" strokeWidth={2.5} />}
                       </button>
                     )}
                   </div>
                 </div>
 
-                {/* DERECHA - Categorías con subcategorías */}
-                <div className="w-2/3 pl-4">
+                {/* COLUMNA 2: CONTENIDO GRID (70%) */}
+                <div className="w-[70%] bg-white p-8 overflow-y-auto max-h-[calc(100vh-8rem)]">
                   {(() => {
                     const active =
                       activeGroup < grouped.length
@@ -311,43 +258,58 @@ const HeaderProductsDropdown: React.FC = () => {
 
                     if (!active || active.length === 0) {
                       return (
-                        <div className="text-sm text-gray-500 py-4">
-                          No hay categorías en este grupo
+                        <div className="h-full flex flex-col items-center justify-center text-gray-400">
+                          <Package className="w-16 h-16 mb-4 opacity-10" strokeWidth={1} />
+                          <p>Selecciona una categoría para ver sus productos</p>
                         </div>
                       );
                     }
 
                     return (
-                      <div className="grid grid-cols-2 gap-6">
+                      <div className="grid grid-cols-2 gap-x-12 gap-y-10 align-start">
                         {active.map((cat) => (
-                          <div key={cat.id} className="pb-3">
-                            {/* Nombre de la categoría como enlace */}
+                          <div key={cat.id} className="break-inside-avoid">
+                            {/* TÍTULO DE CATEGORÍA - Azul Corporativo */}
                             <Link
                               href={`/users/productos?categoriaId=${cat.id}`}
                               onClick={() => setIsMenuOpen(false)}
-                              className="block font-semibold text-gray-800 hover:text-blue-600 transition mb-1"
+                              className="group flex items-center mb-3.5 border-b border-gray-100 pb-1.5"
                             >
-                              {cat.nombre}
+                              <h3 className="text-base font-bold text-[#2563eb] group-hover:text-[#1e40af] transition-colors">
+                                {cat.nombre}
+                              </h3>
+                              <ArrowRight className="w-4 h-4 ml-auto opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-200 text-[#a5cd37]" strokeWidth={2} />
                             </Link>
 
-                            {/* Subcategorías */}
+                            {/* LISTA DE SUBCATEGORÍAS */}
                             {(() => {
                               const subs = cat.subcategorias || [];
-                              return subs.length > 0 ? (
-                                <ul className="text-sm text-gray-600 space-y-0.5 ml-2">
+                              if (subs.length === 0) return (
+                                <Link
+                                  href={`/users/productos?categoriaId=${cat.id}`}
+                                  onClick={() => setIsMenuOpen(false)}
+                                  className="inline-flex items-center text-xs font-semibold text-[#a5cd37] hover:text-[#8cb81d] bg-gray-50 hover:bg-[#f3fadd] px-2 py-1 rounded-md transition-colors"
+                                >
+                                  Explorar productos
+                                  <ArrowRight className="w-3 h-3 ml-1" />
+                                </Link>
+                              );
+
+                              return (
+                                <ul className="space-y-2.5">
                                   {subs.map((sub: any) => (
                                     <li key={sub.id}>
                                       <Link
                                         href={`/users/productos?subcategoriaId=${sub.id}&categoriaId=${cat.id}`}
                                         onClick={() => setIsMenuOpen(false)}
-                                        className="hover:text-blue-600 transition text-xs"
+                                        className="text-[13px] text-gray-600 hover:text-[#2563eb] hover:font-medium hover:translate-x-1 transition-all duration-200 flex items-center"
                                       >
-                                        • {sub.nombre}
+                                        {sub.nombre}
                                       </Link>
                                     </li>
                                   ))}
                                 </ul>
-                              ) : null;
+                              );
                             })()}
                           </div>
                         ))}
@@ -355,7 +317,7 @@ const HeaderProductsDropdown: React.FC = () => {
                     );
                   })()}
                 </div>
-              </div>
+              </>
             )}
           </div>
         </div>

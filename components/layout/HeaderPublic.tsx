@@ -123,8 +123,21 @@ const HeaderPublic: React.FC = () => {
               </Link>
             </div>
 
-            {/* MENÚ MÓVIL */}
-            <div className="flex items-center sm:hidden">
+            {/* MENÚ MÓVIL Y CARRITO */}
+            <div className="flex items-center sm:hidden gap-3">
+              {/* Carrito Móvil */}
+              <Link
+                href="/users/cart"
+                className="relative p-2 text-gray-700 hover:text-blue-600"
+              >
+                <ShoppingCart className="w-5 h-5" />
+                {mounted && items && items.length > 0 && (
+                  <span className="absolute top-1 right-1 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-red-600 text-[9px] font-bold text-white">
+                    {items.length}
+                  </span>
+                )}
+              </Link>
+
               <button onClick={toggleMenu} className="p-2 rounded-md text-gray-800 hover:bg-gray-100">
                 {isOpen ? (
                   <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
