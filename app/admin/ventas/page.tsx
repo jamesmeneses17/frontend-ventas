@@ -202,7 +202,7 @@ export default function VentasPage() {
         const detalles = it.detalles || [];
         const utilidadVenta = detalles.reduce((u: number, d: any) => {
           const precioVenta = Number(d.precio_venta ?? 0);
-          const costoUnit = Number(d.producto?.costo ?? d.producto?.costo_promedio ?? 0);
+          const costoUnit = Number(d.producto?.precio_costo ?? 0);
           const cantidad = Number(d.cantidad ?? 0);
           return u + (precioVenta - costoUnit) * cantidad;
         }, 0);
@@ -489,20 +489,35 @@ export default function VentasPage() {
                         <th className="p-2">Código</th>
                         <th className="p-2">Producto</th>
                         <th className="p-2 text-center">Cant.</th>
-                        <th className="p-2 text-right">Precio U.</th>
+                        <th className="p-2 text-right">Precio Costo</th>
+                        <th className="p-2 text-right">Precio Venta</th>
                         <th className="p-2 text-right">Subtotal</th>
+                        <th className="p-2 text-right">Utilidad</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y">
-                      {viewingItem.detalles?.map((det: any, idx: number) => (
-                        <tr key={idx} className="hover:bg-gray-50">
-                          <td className="p-2 text-gray-500 font-mono text-xs">{det.producto?.codigo || "-"}</td>
-                          <td className="p-2">{det.producto?.nombre || "Producto Desconocido"}</td>
-                          <td className="p-2 text-center">{det.cantidad}</td>
-                          <td className="p-2 text-right">{formatCurrency(det.precio_venta)}</td>
-                          <td className="p-2 text-right">{formatCurrency(det.subtotal)}</td>
-                        </tr>
-                      ))}
+                      {viewingItem.detalles?.map((det: any, idx: number) => {
+                        const costoUnit = Number(det.producto?.precio_costo || 0);
+                        const cantidad = Number(det.cantidad || 0);
+                        const subtotal = Number(det.subtotal || 0);
+                        const utilidad = subtotal - (costoUnit * cantidad);
+
+                        return (
+                          <tr key={idx} className="hover:bg-gray-50">
+                            <td className="p-2 text-gray-500 font-mono text-xs">{det.producto?.codigo || "-"}</td>
+                            <td className="p-2">{det.producto?.nombre || "Producto Desconocido"}</td>
+                            <td className="p-2 text-center">{cantidad}</td>
+                            <td className="p-2 text-right text-gray-500">
+                              {formatCurrency(costoUnit)}
+                            </td>
+                            <td className="p-2 text-right">{formatCurrency(det.precio_venta)}</td>
+                            <td className="p-2 text-right">{formatCurrency(subtotal)}</td>
+                            <td className="p-2 text-right font-bold text-green-600">
+                              {formatCurrency(utilidad)}
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>

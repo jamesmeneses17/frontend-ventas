@@ -36,13 +36,7 @@ export default function VentasTable({
   // COLUMNAS TABLA
   // ========================
   const columns = [
-    {
-      key: "id",
-      label: "ID",
-      headerClass: "px-4 py-3 text-left text-sm font-semibold text-gray-700",
-      cellClass: "px-4 py-2 font-bold text-gray-500",
-      render: (row: Venta) => `#${row.id}`,
-    },
+
     {
       key: "fecha",
       label: "Fecha",
@@ -109,14 +103,14 @@ export default function VentasTable({
     },
     {
       key: "utilidad",
-      label: "Utilidad",
+      label: "Total de Utilidad",
       headerClass: "px-4 py-3 text-right text-sm font-semibold text-gray-700",
       cellClass: "px-4 py-2 text-right font-bold text-green-600",
       render: (row: Venta) => {
         const detalles = row.detalles || [];
         const utilidadVenta = detalles.reduce((u: number, d: any) => {
           const precioVenta = Number(d.precio_venta ?? 0);
-          const costoUnit = Number(d.producto?.costo ?? d.producto?.costo_promedio ?? 0);
+          const costoUnit = Number(d.producto?.precio_costo ?? 0);
           const cantidad = Number(d.cantidad ?? 0);
           return u + (precioVenta - costoUnit) * cantidad;
         }, 0);
