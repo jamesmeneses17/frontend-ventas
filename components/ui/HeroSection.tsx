@@ -6,25 +6,15 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 
 import { getBanners, Banner } from "../services/bannersService";
 
+interface Slide {
+  id: number;
+  src: string;
+  alt: string;
+}
+
 const HeroSection: React.FC = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
-  const [slides, setSlides] = useState([
-    {
-      id: 1,
-      src: "/images/banner1.png",
-      alt: "Banner 1 de la empresa",
-    },
-    {
-      id: 2,
-      src: "/images/banner2.png",
-      alt: "Banner 2 de la empresa",
-    },
-    {
-      id: 3,
-      src: "/images/banner3.png",
-      alt: "Banner 3 de la empresa",
-    },
-  ]);
+  const [slides, setSlides] = useState<Slide[]>([]);
 
   useEffect(() => {
     const fetchBanners = async () => {

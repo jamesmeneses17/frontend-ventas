@@ -129,9 +129,7 @@ export default function BannersPage() {
                             <div className="flex justify-between items-center bg-gray-50 p-4 rounded-lg border border-gray-200">
                                 <div>
                                     <h2 className="text-lg font-semibold text-gray-800">Imágenes del Carrusel</h2>
-                                    <p className="text-sm text-gray-500">
-                                        Sube las imágenes que aparecerán en el inicio. (Recomendado: 1920x600px o similar)
-                                    </p>
+
                                 </div>
                                 <div>
                                     <label className="cursor-pointer bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded shadow inline-flex items-center gap-2 transition">
