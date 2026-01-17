@@ -42,6 +42,7 @@ const navigation = [
     isCollapsible: true,
     items: [
       { name: "Información de Empresa", href: "/admin/info_empresa", icon: FileText },
+      { name: "Banners", href: "/admin/configuracion-web/banners", icon: Image },
     ],
   },
   {

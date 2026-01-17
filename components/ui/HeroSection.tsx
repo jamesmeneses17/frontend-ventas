@@ -4,38 +4,51 @@ import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
-// 1. Define los datos de las diapositivas (slides)
-const slides = [
-  {
-    id: 1,
-    src: "/images/banner1.png",
-    alt: "Banner 1 de la empresa",
-  },
-  {
-    id: 2,
-    src: "/images/banner2.png",
-    alt: "Banner 2 de la empresa",
-  },
-  {
-    id: 3,
-    src: "/images/banner3.png",
-    alt: "Banner 3 de la empresa",
-  },
-  {
-    id: 4,
-    src: "/images/banner4.png",
-    alt: "Banner 3 de la empresa",
-  },
-  {
-    id: 5,
-    src: "/images/banner5.png",
-    alt: "Banner 3 de la empresa",
-  },
-
-];
+import { getBanners, Banner } from "../services/bannersService";
 
 const HeroSection: React.FC = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [slides, setSlides] = useState([
+    {
+      id: 1,
+      src: "/images/banner1.png",
+      alt: "Banner 1 de la empresa",
+    },
+    {
+      id: 2,
+      src: "/images/banner2.png",
+      alt: "Banner 2 de la empresa",
+    },
+    {
+      id: 3,
+      src: "/images/banner3.png",
+      alt: "Banner 3 de la empresa",
+    },
+  ]);
+
+  useEffect(() => {
+    const fetchBanners = async () => {
+      try {
+        const banners = await getBanners();
+        if (banners.length > 0 && banners[0].imagenes.length > 0) {
+          // Filter only active images and sort by order (if any)
+          const activeImages = banners[0].imagenes.filter(img => img.activo !== false); // Handle null/undefined as true? Backend default is true.
+
+          if (activeImages.length > 0) {
+            const dynamicSlides = activeImages.map((img) => ({
+              id: img.id,
+              src: img.urlImagen,
+              alt: "Banner publicitario",
+            }));
+            setSlides(dynamicSlides);
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching banners:", error);
+      }
+    };
+    fetchBanners();
+  }, []);
 
   const prevSlide = () => {
     setCurrentSlide((prev) => (prev === 0 ? slides.length - 1 : prev - 1));
@@ -46,9 +59,10 @@ const HeroSection: React.FC = () => {
   };
 
   useEffect(() => {
+    // Reset timer when slides change
     const slideInterval = setInterval(nextSlide, 6000);
     return () => clearInterval(slideInterval);
-  }, []);
+  }, [slides.length]);
 
 
 
@@ -70,7 +84,7 @@ const HeroSection: React.FC = () => {
                 alt={slide.alt || `Slide ${slide.id}`}
                 fill
                 priority={index === 0}
-                className="object-cover"
+                className="object-contain md:object-cover"
                 sizes="100vw"
                 quality={80}
               />
