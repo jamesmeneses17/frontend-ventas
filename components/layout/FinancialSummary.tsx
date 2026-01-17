@@ -67,7 +67,7 @@ export default function FinancialSummary() {
 
   // Estado para el filtro de mes (guardamos el nombre del mes para visualización, o el índice + 1)
   // Guardaremos el index+1 (1-12) para facilitar la query
-  const [selectedMonthNum, setSelectedMonthNum] = useState<number>(currentMonthIndex + 1);
+  const [selectedMonthNum, setSelectedMonthNum] = useState<number>(0);
 
   // Cargar años disponibles
   useEffect(() => {
@@ -104,11 +104,19 @@ export default function FinancialSummary() {
   useEffect(() => {
     const loadDaily = async () => {
       const data = await getReporteDiario(selectedYear, selectedMonthNum);
-      // Mapear el nombre del mes si no viene del backend (nuestro back lo manda vacío en diario)
-      const mappedData = data.map(d => ({
-        ...d,
-        mes: MESES[selectedMonthNum - 1]
-      }));
+      const mappedData = data.map(d => {
+        let mesNombre = "";
+        if (d.fecha) {
+          // Asumiendo formato YYYY-MM-DDT... o YYYY-MM-DD
+          const dateObj = new Date(d.fecha);
+          // getMonth() devuelve 0-11
+          mesNombre = MESES[dateObj.getMonth()];
+        }
+        return {
+          ...d,
+          mes: mesNombre
+        };
+      });
       setDailyData(mappedData);
     };
     loadDaily();
@@ -153,13 +161,7 @@ export default function FinancialSummary() {
             onChange={(e) => setSelectedMonthNum(Number(e.target.value))}
             className="p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
           >
-            {/* Mostrar todos los meses para permitir navegar, o solo los disponibles? 
-                Usuario dijo: "tomar los valores de movimientos aparecer esas fechas nomas que le al bde"
-                Interpretación: En el reporte anual solo aparecen meses con datos.
-                En el filtro diario, ¿debería poder elegir cualquier mes? 
-                Lo ideal es que pueda elegir cualquier mes para ver que está vacío, o solo los que tienen datos.
-                Voy a listar todos los meses del año para ser práctico (un dropdown incompleto se ve raro).
-            */}
+            <option value={0}>Todos los meses ({selectedYear})</option>
             {MESES.map((mes, idx) => (
               <option key={idx} value={idx + 1}>{mes}</option>
             ))}
@@ -184,7 +186,7 @@ export default function FinancialSummary() {
                 <tr key={index}>
                   {/* Formatear fecha para que se vea bonita (quitar hora si viene) */}
                   <td className="px-6 py-2 whitespace-nowrap text-sm text-gray-500">
-                    {item.fecha ? new Date(item.fecha).toLocaleDateString('es-CO') : ''}
+                    {item.fecha ? new Date(item.fecha).toLocaleDateString('es-CO', { timeZone: 'UTC' }) : ''}
                   </td>
                   <td className="px-6 py-2 whitespace-nowrap text-sm text-gray-500">{item.mes}</td>
                   <td className="px-6 py-2 whitespace-nowrap text-sm text-green-600">{formatCurrency(item.ingreso)}</td>
