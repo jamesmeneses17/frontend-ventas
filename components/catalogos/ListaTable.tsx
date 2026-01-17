@@ -1,17 +1,15 @@
-"use client";
-
-import React from "react";
+import React, { useState, useMemo } from "react";
 import Image from 'next/image';
 import CrudTable from "../common/CrudTable";
 import ActionButton from "../common/ActionButton";
 import { Producto, Categoria, Estado } from "../services/productosService";
 import { Subcategoria } from "../services/subcategoriasService";
-import { isImageUrl } from "../../utils/ProductUtils";
 import { Trash, Pencil } from "lucide-react";
-import { formatCurrency } from "../../utils/formatters";
+import TableColumnFilter from "../common/TableColumnFilter";
 
 interface Props {
   data: Producto[];
+  allData?: Producto[];
   categorias: Categoria[];
   subcategorias?: Subcategoria[];
   estados: Estado[];
@@ -22,6 +20,7 @@ interface Props {
 
 export default function ListaTable({
   data,
+  allData = [],
   categorias,
   subcategorias = [],
   estados,
@@ -29,115 +28,170 @@ export default function ListaTable({
   onEdit,
   onDelete,
 }: Props) {
-  // Debug
-  React.useEffect(() => {
-    if (data.length > 0) {
-      console.log("[ListaTable] Debug data:", {
-        dataLength: data.length,
-        subcategoriasLength: subcategorias.length,
-        subcategorias: subcategorias.map(s => ({ id: s.id, nombre: s.nombre, categoria_id: s.categoria_id })),
-        firstProducto: data[0] ? {
-          codigo: (data[0] as any).codigo,
-          nombre: (data[0] as any).nombre,
-          subcategoria_id: (data[0] as any).subcategoria_id || (data[0] as any).subcategoriaId,
-          categoria_id: (data[0] as any).categoria_id || (data[0] as any).categoriaId,
-          allKeys: Object.keys(data[0]),
-          fullObject: data[0],
-        } : null,
-      });
-    }
-  }, [data, subcategorias]);
-  // ✅ Helper para obtener el nombre de la categoría padre de una subcategoría
+
+  // ========================
+  // HELPERS (Reused for extraction)
+  // ========================
   const getCategoriaFromSubcategoria = (subcategoriaId: number | undefined): string => {
     if (!subcategoriaId || subcategoriaId === 0) return "";
-    
     const subcategoria = subcategorias.find((s) => s.id === subcategoriaId);
-    if (!subcategoria) {
-      console.warn("[ListaTable] Subcategoría no encontrada:", subcategoriaId, "Disponibles:", subcategorias.map(s => s.id));
-      return "";
-    }
-    
-    // Intentar obtener categoria_id de varias formas
+    if (!subcategoria) return "";
     const categoriaId = subcategoria.categoria_id || (subcategoria as any).categoriaId || (subcategoria as any).categoriaPrincipalId;
-    if (!categoriaId) {
-      console.warn("[ListaTable] categoria_id no encontrado en subcategoría:", subcategoria);
-      return "";
-    }
-    
+    if (!categoriaId) return "";
     const categoria = categorias.find((c) => c.id === categoriaId);
-    if (!categoria) {
-      console.warn("[ListaTable] Categoría no encontrada:", categoriaId, "Disponibles:", categorias.map(c => c.id));
-      return "";
-    }
-    
-    return categoria.nombre || "";
+    return categoria?.nombre || "";
   };
 
-  // ✅ Helper para obtener el nombre de la subcategoría
   const getNombreSubcategoria = (subcategoriaId: number | undefined): string => {
     if (!subcategoriaId || subcategoriaId === 0) return "";
-    
     const subcategoria = subcategorias.find((s) => s.id === subcategoriaId);
     return subcategoria?.nombre || "";
   };
-  // ✅ Estilo según el estado de venta (catálogo)
-  const getEstadoVentaClasses = (estadoStock: string) => {
-    switch (estadoStock) {
-      case "Agotado":
-        return "bg-[#fe293f] text-white px-3 py-1 rounded-full text-sm font-semibold";
-      case "Stock Bajo":
-        return "bg-[#f0b100] text-white px-3 py-1 rounded-full text-sm font-semibold";
-      case "Disponible":
-        return "bg-[#00c951] text-white px-3 py-1 rounded-full text-sm font-semibold";
-      default:
-        return "bg-gray-200 text-gray-800 px-3 py-1 rounded-full text-sm font-semibold";
+
+  const extractValue = (row: Producto, key: "codigo" | "nombre" | "categoria" | "subcategoria") => {
+    if (key === "codigo") return row.codigo || "-";
+    if (key === "nombre") return row.nombre || "-";
+    if (key === "categoria") {
+      const subId = (row as any).subcategoriaId ?? (row as any).subcategoria_id;
+      if (subId && subId !== 0) {
+        const catName = getCategoriaFromSubcategoria(subId);
+        if (catName) return catName;
+      }
+      const catId = (row as any).categoriaId ?? (row as any).categoria_id;
+      if (catId) {
+        const c = categorias.find(cat => cat.id === catId);
+        if (c?.nombre) return c.nombre;
+      }
+      return "Sin categoría";
     }
+    if (key === "subcategoria") {
+      const subId = (row as any).subcategoriaId ?? (row as any).subcategoria_id;
+      if (subId && subId > 0) {
+        const subName = getNombreSubcategoria(subId);
+        if (subName) return subName;
+      }
+      return "Sin subcategoría";
+    }
+    return "";
   };
 
-  // ✅ Columnas de la tabla
+  // ========================
+  // FILTROS
+  // ========================
+  const [columnFilters, setColumnFilters] = useState<{
+    codigo: string[];
+    nombre: string[];
+    categoria: string[];
+    subcategoria: string[];
+  }>({
+    codigo: [],
+    nombre: [],
+    categoria: [],
+    subcategoria: [],
+  });
+
+  const checkFilter = (row: Producto, key: keyof typeof columnFilters, selectedValues: string[]) => {
+    if (selectedValues.length === 0) return true;
+    const val = extractValue(row, key);
+    return selectedValues.includes(val);
+  };
+
+  const dataForOptions = (allData && allData.length > 0) ? allData : data;
+
+  const options = useMemo(() => {
+    const getOptionsFor = (targetKey: keyof typeof columnFilters) => {
+      const uniqueValues = new Set<string>();
+      dataForOptions.forEach(row => {
+        let pass = true;
+        Object.keys(columnFilters).forEach(k => {
+          if (k !== targetKey && !checkFilter(row, k as any, columnFilters[k as keyof typeof columnFilters])) {
+            pass = false;
+          }
+        });
+        if (pass) uniqueValues.add(extractValue(row, targetKey));
+      });
+      return Array.from(uniqueValues).sort();
+    };
+
+    return {
+      codigo: getOptionsFor("codigo"),
+      nombre: getOptionsFor("nombre"),
+      categoria: getOptionsFor("categoria"),
+      subcategoria: getOptionsFor("subcategoria"),
+    };
+  }, [dataForOptions, columnFilters]);
+
+  // Filtrar data
+  const filteredData = useMemo(() => {
+    const source = (allData && allData.length > 0) ? allData : data;
+    return source.filter(row => {
+      if (!checkFilter(row, "codigo", columnFilters.codigo)) return false;
+      if (!checkFilter(row, "nombre", columnFilters.nombre)) return false;
+      if (!checkFilter(row, "categoria", columnFilters.categoria)) return false;
+      if (!checkFilter(row, "subcategoria", columnFilters.subcategoria)) return false;
+      return true;
+    });
+  }, [data, allData, columnFilters]);
+
+  const hasActiveFilters = Object.values(columnFilters).some(f => f.length > 0);
+  const displayData = hasActiveFilters ? filteredData : data;
+
+  const handleFilterChange = (key: keyof typeof columnFilters, selected: string[]) => {
+    setColumnFilters(prev => ({ ...prev, [key]: selected }));
+  };
+
+  // ========================
+  // COLUMNAS
+  // ========================
   const columns = [
-    { key: "codigo", label: "Código" },
-    { 
-      key: "nombre", 
-      label: "Nombre",
-      cellClass: "px-6 py-4 text-sm text-gray-900 max-w-xs break-words whitespace-normal"
+    {
+      key: "codigo",
+      label: (
+        <TableColumnFilter
+          title="Código"
+          options={options.codigo}
+          selected={columnFilters.codigo}
+          onChange={(sel) => handleFilterChange("codigo", sel)}
+        />
+      ),
+      render: (row: Producto) => extractValue(row, "codigo")
+    },
+    {
+      key: "nombre",
+      label: (
+        <TableColumnFilter
+          title="Nombre"
+          options={options.nombre}
+          selected={columnFilters.nombre}
+          onChange={(sel) => handleFilterChange("nombre", sel)}
+        />
+      ),
+      cellClass: "px-6 py-4 text-sm text-gray-900 max-w-xs break-words whitespace-normal",
+      render: (row: Producto) => extractValue(row, "nombre")
     },
     {
       key: "categoria",
-      label: "Categoría",
-      render: (row: Producto) => {
-        const subcategoriaId = (row as any).subcategoriaId ?? (row as any).subcategoria_id;
-        
-        // Si tiene subcategoría, obtener la categoría padre
-        if (subcategoriaId && subcategoriaId !== 0) {
-          const categoriaNombre = getCategoriaFromSubcategoria(subcategoriaId);
-          if (categoriaNombre) return categoriaNombre;
-        }
-        
-        // Si no tiene subcategoría, buscar la categoría directamente
-        const categoriaId = (row as any).categoriaId ?? (row as any).categoria_id;
-        if (categoriaId) {
-          const categoria = categorias.find((c) => c.id === categoriaId);
-          if (categoria?.nombre) return categoria.nombre;
-        }
-        
-        return "Sin categoría";
-      },
+      label: (
+        <TableColumnFilter
+          title="Categoría"
+          options={options.categoria}
+          selected={columnFilters.categoria}
+          onChange={(sel) => handleFilterChange("categoria", sel)}
+        />
+      ),
+      render: (row: Producto) => extractValue(row, "categoria"),
     },
     {
       key: "subcategoria",
-      label: "Subcategoría",
-      render: (row: Producto) => {
-        const subcategoriaId = (row as any).subcategoriaId ?? (row as any).subcategoria_id;
-        
-        // Si tiene subcategoría válida (mayor a 0), mostrar el nombre
-        if (subcategoriaId && subcategoriaId > 0) {
-          const nombreSubcategoria = getNombreSubcategoria(subcategoriaId);
-          if (nombreSubcategoria) return nombreSubcategoria;
-        }
-        
-        return "Sin subcategoría";
-      },
+      label: (
+        <TableColumnFilter
+          title="Subcategoría"
+          options={options.subcategoria}
+          selected={columnFilters.subcategoria}
+          onChange={(sel) => handleFilterChange("subcategoria", sel)}
+        />
+      ),
+      render: (row: Producto) => extractValue(row, "subcategoria"),
     },
     {
       key: "imagen",
@@ -159,18 +213,12 @@ export default function ListaTable({
           <span className="text-red-500 font-semibold">No</span>
         ),
     },
-   
-    
-   
-    
-
-   
   ];
 
   return (
     <CrudTable
       columns={columns}
-      data={data}
+      data={displayData}
       loading={loading}
       renderRowActions={(row: Producto) => (
         <div className="flex items-center justify-end gap-2">
@@ -205,11 +253,11 @@ function RowFiles({ producto, uploadAsFicha }: { producto: Producto; uploadAsFic
       {!uploadAsFicha ? (
         preview ? (
           <a href={preview} target="_blank" rel="noreferrer">
-            <Image 
-              src={preview} 
-              alt={`Imagen producto ${producto.nombre || producto.id}`} 
-              width={48} 
-              height={48} 
+            <Image
+              src={preview}
+              alt={`Imagen producto ${producto.nombre || producto.id}`}
+              width={48}
+              height={48}
               className="w-12 h-12 object-cover rounded border cursor-pointer"
               unoptimized
             />

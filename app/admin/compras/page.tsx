@@ -51,6 +51,9 @@ export default function ComprasPage() {
   const [totalComprasAll, setTotalComprasAll] = useState<number>(0);
   const [localSearchTerm, setLocalSearchTerm] = useState("");
 
+  // DATASET COMPLETO PARA FILTROS EXCEL (Ignorando paginación)
+  const [allContextData, setAllContextData] = useState<Compra[]>([]);
+
   // Estado para visualización de detalles
   const [viewingItem, setViewingItem] = useState<Compra | null>(null);
 
@@ -323,8 +326,10 @@ export default function ComprasPage() {
       }, 0);
 
       setTotalComprasAll(total);
+      setAllContextData(filtered); // 👈 Guardamos todo el dataset para filtros
     } catch (err) {
       setTotalComprasAll(0);
+      setAllContextData([]);
     }
   }, [localSearchTerm, selectedMonth, selectedYear]);
 
@@ -508,6 +513,7 @@ export default function ComprasPage() {
 
           <ComprasTable
             data={currentItems || []}
+            allData={allContextData} // 👈 Pasamos el dataset completo
             loading={loading}
             onEdit={handleEdit}
             onDelete={handleDelete}

@@ -5,7 +5,7 @@ import ActionButton from "./ActionButton";
 
 interface Column {
   key: string;
-  label: string;
+  label: string | React.ReactNode;
   // optional custom renderer for the whole row
   render?: (row: any) => React.ReactNode;
   // optional class names for header and cell
@@ -64,89 +64,89 @@ const CrudTable: React.FC<CrudTableProps> = ({ columns = [], data = [], onEdit, 
           ) : (
             data.map((row, idx) => {
               return (
-              <tr key={row?.id ?? idx} className={rowClass ?? undefined}>
-              {columns.map((col) => {
-                if (col.render) {
-                  return (
-                    <td
-                      key={col.key}
-                      className={col.cellClass ?? "px-6 py-4 whitespace-nowrap text-sm text-gray-900"}
-                    >
-                      {col.render(row)}
-                    </td>
-                  );
-                }
+                <tr key={row?.id ?? idx} className={rowClass ?? undefined}>
+                  {columns.map((col) => {
+                    if (col.render) {
+                      return (
+                        <td
+                          key={col.key}
+                          className={col.cellClass ?? "px-6 py-4 whitespace-nowrap text-sm text-gray-900"}
+                        >
+                          {col.render(row)}
+                        </td>
+                      );
+                    }
 
-                const cell = row?.[col.key];
-                // If the cell is an object, try to display a sensible string
-                const display = typeof cell === "string" || typeof cell === "number"
-                  ? cell
-                  : cell && typeof cell === "object"
-                    ? // prefer common keys
-                      (cell.nombre ?? cell.name ?? JSON.stringify(cell))
-                    : "";
+                    const cell = row?.[col.key];
+                    // If the cell is an object, try to display a sensible string
+                    const display = typeof cell === "string" || typeof cell === "number"
+                      ? cell
+                      : cell && typeof cell === "object"
+                        ? // prefer common keys
+                        (cell.nombre ?? cell.name ?? JSON.stringify(cell))
+                        : "";
 
-                return (
-                  <td
-                    key={col.key}
-                    className={col.cellClass ?? "px-6 py-4 whitespace-nowrap text-sm text-gray-900"}
-                  >
-                    {display}
+                    return (
+                      <td
+                        key={col.key}
+                        className={col.cellClass ?? "px-6 py-4 whitespace-nowrap text-sm text-gray-900"}
+                      >
+                        {display}
+                      </td>
+                    );
+                  })}
+                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
+                    {renderRowActions ? (
+                      renderRowActions(row)
+                    ) : (
+                      <>
+                        {onEdit && (
+                          <ActionButton
+                            icon={
+                              <svg
+                                className="w-4 h-4"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth={2}
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                                />
+                              </svg>
+                            }
+                            onClick={() => onEdit(row)}
+                            label="Editar"
+                          />
+                        )}
+                        {onDelete && (
+                          <ActionButton
+                            icon={
+                              <svg
+                                className="w-4 h-4"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth={2}
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                                />
+                              </svg>
+                            }
+                            onClick={() => onDelete(row)}
+                            color="danger"
+                            label="Eliminar"
+                          />
+                        )}
+                      </>
+                    )}
                   </td>
-                );
-              })}
-              <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
-                {renderRowActions ? (
-                  renderRowActions(row)
-                ) : (
-                  <>
-                    {onEdit && (
-                      <ActionButton
-                        icon={
-                          <svg
-                            className="w-4 h-4"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth={2}
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
-                            />
-                          </svg>
-                        }
-                        onClick={() => onEdit(row)}
-                        label="Editar"
-                      />
-                    )}
-                    {onDelete && (
-                      <ActionButton
-                        icon={
-                          <svg
-                            className="w-4 h-4"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth={2}
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                            />
-                          </svg>
-                        }
-                        onClick={() => onDelete(row)}
-                        color="danger"
-                        label="Eliminar"
-                      />
-                    )}
-                  </>
-                )}
-              </td>
-            </tr>
+                </tr>
               );
             })
           )}

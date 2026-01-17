@@ -37,6 +37,7 @@ export default function CajaPage() {
   const [startDate, setStartDate] = React.useState("");
   const [endDate, setEndDate] = React.useState("");
   const [tipoMovimientoFiltro, setTipoMovimientoFiltro] = React.useState<string>("");
+  const [allMovements, setAllMovements] = React.useState<MovimientoCaja[]>([]);
 
   // Estado para el total filtrado
   const [totalFilteredAmount, setTotalFilteredAmount] = React.useState(0);
@@ -140,9 +141,25 @@ export default function CajaPage() {
   };
 
   // Cargar stats al inicio y cuando cambie la lista (totalItems es un buen trigger indirecto)
+  // Cargar stats y movimientos completos
   React.useEffect(() => {
     fetchStats();
+    loadAllMovements();
   }, [totalItems]);
+
+  // Cargar todos los movimientos para filtros
+  const loadAllMovements = React.useCallback(async () => {
+    try {
+      const resp = await getMovimientosCaja(1, 10000, tipoMovimientoFiltro, searchTerm);
+      setAllMovements(resp.data || []);
+    } catch {
+      setAllMovements([]);
+    }
+  }, [tipoMovimientoFiltro, searchTerm]);
+
+  React.useEffect(() => {
+    loadAllMovements();
+  }, [loadAllMovements, notification]);
 
   // Handlers para la lógica de stats (actualizar después de guardar/borrar)
   const handleFormSubmitWithStats = async (data: CreateMovimientoData | UpdateMovimientoData) => {
@@ -315,6 +332,7 @@ export default function CajaPage() {
           {/* TABLA DE MOVIMIENTOS */}
           <MovimientosTable
             data={currentItems as MovimientoCaja[]}
+            allData={allMovements}
             loading={loading}
             onEdit={handleEdit}
             onDelete={handleDeleteWithStats}

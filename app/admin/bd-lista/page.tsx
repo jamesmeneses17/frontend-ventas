@@ -61,6 +61,7 @@ export default function ListaProductosPage() {
   const [subcategorias, setSubcategorias] = React.useState<Subcategoria[]>([]);
   const [estados, setEstados] = React.useState<Estado[]>([]);
   const [estadoStockFiltro, setEstadoStockFiltro] = React.useState<string>("");
+  const [allProducts, setAllProducts] = React.useState<Producto[]>([]);
 
   // Hook CRUD principal
   const {
@@ -108,7 +109,7 @@ export default function ListaProductosPage() {
             const mod = await import(
               "../../../components/services/productosService"
             );
-          } catch (e) {}
+          } catch (e) { }
           // Devolver lista vacía para no romper la UI
           return { data: [], total: 0 };
         }
@@ -137,6 +138,23 @@ export default function ListaProductosPage() {
         console.error("Error cargando catálogos:", err);
       });
   }, []);
+
+  // Función para cargar todos los productos (para filtros)
+  const loadAllProducts = React.useCallback(async () => {
+    try {
+      // Nota: Si searchTerm está activo, allProducts se actualiza con la búsqueda backend. 
+      // Esto está bien, los filtros de columna refinarán esa búsqueda.
+      const resp = await getProductos(1, 10000, estadoStockFiltro, searchTerm || "");
+      const items: any[] = Array.isArray(resp) ? resp : resp?.data ?? [];
+      setAllProducts(items);
+    } catch (e) {
+      setAllProducts([]);
+    }
+  }, [estadoStockFiltro, searchTerm]);
+
+  React.useEffect(() => {
+    loadAllProducts();
+  }, [loadAllProducts, notification]);
 
   const editingProducto = editingItem as Producto | null;
 
@@ -290,7 +308,7 @@ export default function ListaProductosPage() {
 
           {/* BUSCADOR */}
           <div className="w-full max-w-md mb-6">
-                     {" "}
+            {" "}
             <FilterBar
               searchTerm={searchTerm}
               onSearchChange={setSearchTerm}
@@ -304,6 +322,7 @@ export default function ListaProductosPage() {
           {/* TABLA DE PRODUCTOS */}
           <ListaTable
             data={currentItems as Producto[]}
+            allData={allProducts}
             loading={loading}
             onEdit={handleEdit}
             onDelete={handleDeleteWithStats}
@@ -318,8 +337,8 @@ export default function ListaProductosPage() {
               {!loading && totalItems > 0
                 ? `Mostrando ${currentItems.length} de ${totalItems} productos`
                 : loading
-                ? "Cargando..."
-                : "No hay productos registrados"}
+                  ? "Cargando..."
+                  : "No hay productos registrados"}
             </p>
             {!loading && totalItems > 0 && (
               <Paginator

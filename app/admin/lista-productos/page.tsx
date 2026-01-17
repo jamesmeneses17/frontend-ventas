@@ -10,7 +10,7 @@ import Paginator from "../../../components/common/Paginator";
 import ModalVentana from "../../../components/ui/ModalVentana";
 import Alert from "../../../components/ui/Alert";
 import SearchInput from "../../../components/common/form/SearchInput";
-import CardStat from "../../../components/ui/CardStat"; 
+import CardStat from "../../../components/ui/CardStat";
 import { formatCurrency } from "../../../utils/formatters";
 
 // Componentes específicos del catálogo
@@ -33,7 +33,7 @@ import {
 } from "../../../components/services/productosService";
 
 // Iconos
-import { Package, AlertTriangle, Box, Upload } from "lucide-react"; 
+import { Package, AlertTriangle, Box, Upload } from "lucide-react";
 import ActionButton from "../../../components/common/ActionButton";
 import FilterBar from "../../../components/common/FilterBar";
 import ProductosTable from "../../../components/catalogos/ProductosTable";
@@ -47,10 +47,10 @@ interface ProductSummary {
 }
 
 const ESTADOS_STOCK_FILTRO = [
-  { label: "Filtrar por: Todos los Estados", value: "" },
-  { label: "Disponible", value: "Disponible" },
-  { label: "Stock Bajo", value: "Stock Bajo" },
-  { label: "Agotado", value: "Agotado" },
+  { label: "Filtrar por: Todos los Estados", value: "" },
+  { label: "Disponible", value: "Disponible" },
+  { label: "Stock Bajo", value: "Stock Bajo" },
+  { label: "Agotado", value: "Agotado" },
 ];
 
 // -------------------- COMPONENTE PRINCIPAL --------------------
@@ -61,12 +61,13 @@ export default function ListaProductosPage() {
   const [estados, setEstados] = React.useState<Estado[]>([]);
   const [estadoStockFiltro, setEstadoStockFiltro] = React.useState<string>("");
   const [categoriaFiltro, setCategoriaFiltro] = React.useState<string>("");
-    // Handler para filtro de categoría
-    const handleCategoriaFilterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-      setCategoriaFiltro(e.target.value);
-      handlePageChange(1);
-    };
-  
+  const [allProducts, setAllProducts] = React.useState<ProductoInventario[]>([]);
+  // Handler para filtro de categoría
+  const handleCategoriaFilterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setCategoriaFiltro(e.target.value);
+    handlePageChange(1);
+  };
+
 
   // Hook CRUD principal
   const {
@@ -81,7 +82,7 @@ export default function ListaProductosPage() {
     notification,
     setSearchTerm,
     handlePageChange,
-    handlePageSizeChange, 
+    handlePageSizeChange,
     handleAdd,
     handleEdit,
     handleDelete,
@@ -154,6 +155,27 @@ export default function ListaProductosPage() {
     });
   }, []);
 
+  // Cargar todos los productos para filtros
+  const loadAllProducts = React.useCallback(async () => {
+    try {
+      const res = await getProductos(1, 10000, estadoStockFiltro, searchTerm || "");
+      const items = (res.data || []).map((p: any) => ({
+        ...p,
+        promocion_porcentaje: p.promocion_porcentaje ?? 0,
+        precio_con_descuento: p.precio_con_descuento ?? 0,
+        utilidad: p.utilidad ?? 0,
+        valor_inventario: p.valor_inventario ?? 0,
+      }));
+      setAllProducts(items);
+    } catch {
+      setAllProducts([]);
+    }
+  }, [estadoStockFiltro, searchTerm]);
+
+  React.useEffect(() => {
+    loadAllProducts();
+  }, [loadAllProducts, notification]);
+
 
   // Consumir los totales al montar el componente
   React.useEffect(() => {
@@ -211,8 +233,8 @@ export default function ListaProductosPage() {
     sinStock: stats.agotado,
   };
 
-  // Esto resuelve el error "No se encuentra el nombre 'handleStockFilterChange'"
-  const handleStockFilterChange = (value: string) => {
+  // Esto resuelve el error "No se encuentra el nombre 'handleStockFilterChange'"
+  const handleStockFilterChange = (value: string) => {
     console.log('[Filtro Estado] Valor seleccionado:', value);
     setEstadoStockFiltro(value);
     handlePageChange(1); // Resetear a la primera página cuando el filtro cambia
@@ -228,24 +250,24 @@ export default function ListaProductosPage() {
       <div className="space-y-6" style={{ zoom: '0.81' }}>
 
         {/* --- WIDGETS DE RESUMEN --- */}
-  <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <CardStat 
-            title="Total Productos" 
-            value={String(productSummary.totalProductos ?? 0)} 
-            color="text-indigo-600" 
-            icon={<Box className="h-4 w-4" />} 
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <CardStat
+            title="Total Productos"
+            value={String(productSummary.totalProductos ?? 0)}
+            color="text-indigo-600"
+            icon={<Box className="h-4 w-4" />}
           />
-          <CardStat 
-            title="Stock Bajo" 
-            value={String(productSummary.stockBajo ?? 0)} 
-            color="text-yellow-600" 
-            icon={<AlertTriangle className="h-4 w-4" />} 
+          <CardStat
+            title="Stock Bajo"
+            value={String(productSummary.stockBajo ?? 0)}
+            color="text-yellow-600"
+            icon={<AlertTriangle className="h-4 w-4" />}
           />
-          <CardStat 
-            title="Sin Stock" 
-            value={String(productSummary.sinStock ?? 0)} 
-            color="text-red-600" 
-            icon={<Package className="h-4 w-4" />} 
+          <CardStat
+            title="Sin Stock"
+            value={String(productSummary.sinStock ?? 0)}
+            color="text-red-600"
+            icon={<Package className="h-4 w-4" />}
           />
           <CardStat
             title="Total Inventario"
@@ -257,7 +279,7 @@ export default function ListaProductosPage() {
 
         {/* --- CONTENIDO PRINCIPAL --- */}
         <div className="bg-white shadow rounded-2xl p-6 border border-gray-300">
-          
+
           {/* TÍTULO Y BOTONES */}
           <div className="flex justify-between items-start mb-6">
             <div>
@@ -269,10 +291,10 @@ export default function ListaProductosPage() {
                 Gestiona tu catálogo de productos
               </p>
             </div>
-            
+
             <div className="flex items-center gap-3">
 
-              <ActionButton 
+              <ActionButton
                 icon={<Upload className="w-5 h-5 mr-1" />}
                 label="Importar Datos"
                 onClick={handleImport}
@@ -301,7 +323,7 @@ export default function ListaProductosPage() {
 
               <ActionButton
                 icon={<svg className="-ml-1 mr-2 h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
+                  <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
                 </svg>}
                 label="Nuevo Producto"
                 onClick={handleAdd}
@@ -341,6 +363,7 @@ export default function ListaProductosPage() {
           {/* TABLA DE PRODUCTOS */}
           <ProductosTable
             data={currentItems}
+            allData={allProducts}
             loading={loading}
             onEdit={handleEdit}
             onDelete={handleDeleteWithStats}
@@ -351,8 +374,8 @@ export default function ListaProductosPage() {
           {/* PAGINADOR */}
           <div className="flex justify-between items-center mt-4">
             <p className="text-sm text-gray-600">
-              {!loading && totalItems > 0 
-                ? `Mostrando ${currentItems.length} de ${totalItems} productos` 
+              {!loading && totalItems > 0
+                ? `Mostrando ${currentItems.length} de ${totalItems} productos`
                 : (loading ? "Cargando..." : "No hay productos registrados")}
             </p>
             {!loading && totalItems > 0 && (
@@ -369,26 +392,26 @@ export default function ListaProductosPage() {
 
         {/* MODAL */}
         {showModal && (
-  <ModalVentana
-    isOpen={showModal}
-    onClose={handleCloseModal}
-    title={editingProducto ? "Editar Producto" : "Nuevo Producto"}
-  >
-    <ProductosForm
-      initialData={editingProducto}
-      onSubmit={handleFormSubmitWithStats}
-      onSuccess={async () => {
-        await updateStats();
-        handleCloseModal();
-      }}
-      onCancel={handleCloseModal}
-      formError={formError}
-    />
-    {formError && (
-      <div className="text-red-600 text-sm mt-2 text-center">{formError}</div>
-    )}
-  </ModalVentana>
-)}
+          <ModalVentana
+            isOpen={showModal}
+            onClose={handleCloseModal}
+            title={editingProducto ? "Editar Producto" : "Nuevo Producto"}
+          >
+            <ProductosForm
+              initialData={editingProducto}
+              onSubmit={handleFormSubmitWithStats}
+              onSuccess={async () => {
+                await updateStats();
+                handleCloseModal();
+              }}
+              onCancel={handleCloseModal}
+              formError={formError}
+            />
+            {formError && (
+              <div className="text-red-600 text-sm mt-2 text-center">{formError}</div>
+            )}
+          </ModalVentana>
+        )}
 
         {notification && (
           <div className="fixed top-10 right-4 z-[9999]">

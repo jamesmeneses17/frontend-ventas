@@ -50,6 +50,7 @@ export default function VentasPage() {
   const [selectedMonth, setSelectedMonth] = useState("");
   const [totalVentasAll, setTotalVentasAll] = useState<number>(0);
   const [totalUtilidadAll, setTotalUtilidadAll] = useState<number>(0);
+  const [allContextData, setAllContextData] = useState<Venta[]>([]);
 
   const [viewingItem, setViewingItem] = useState<Venta | null>(null);
 
@@ -211,9 +212,11 @@ export default function VentasPage() {
 
       setTotalVentasAll(totalVentas);
       setTotalUtilidadAll(totalUtilidad);
+      setAllContextData(filtered);
     } catch (err) {
       setTotalVentasAll(0);
       setTotalUtilidadAll(0);
+      setAllContextData([]);
     }
   }, [searchTerm, selectedMonth, selectedYear]);
 
@@ -447,6 +450,7 @@ export default function VentasPage() {
 
           <VentasTable
             data={currentItems || []}
+            allData={allContextData}
             loading={loading}
             onEdit={handleEdit}
             onDelete={handleDelete}

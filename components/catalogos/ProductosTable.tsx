@@ -1,6 +1,4 @@
-"use client";
-
-import React from "react";
+import React, { useState, useMemo } from "react";
 import Image from "next/image";
 import CrudTable from "../common/CrudTable";
 import ActionButton from "../common/ActionButton";
@@ -9,19 +7,22 @@ import { Subcategoria } from "../services/subcategoriasService";
 import { Trash, Pencil } from "lucide-react";
 import { isImageUrl } from "../../utils/ProductUtils";
 import { formatCurrency } from "../../utils/formatters";
+import TableColumnFilter from "../common/TableColumnFilter";
 
 interface Props {
   data: ProductoInventario[];
+  allData?: ProductoInventario[];
   categorias: Categoria[];
   subcategorias?: Subcategoria[];
   estados: Estado[];
   loading?: boolean;
-  totalItems?: number; // Lo mantenemos pero no lo usaremos en el footer de este componente
+  totalItems?: number;
   onEdit: (producto: ProductoInventario) => void;
   onDelete: (id: number) => void;
 }
 export default function ProductosTable({
   data,
+  allData = [],
   categorias,
   subcategorias = [],
   estados,
@@ -30,7 +31,7 @@ export default function ProductosTable({
   onEdit,
   onDelete,
 }: Props) {
-  // ... (Helpers de categorías y estados omitidos por ser idénticos y funcionales) ...
+  // ... (Helpers remain same, extracting for filters) ...
   const getCategoriaFromSubcategoria = (subcategoriaId: number | undefined) => {
     if (!subcategoriaId || subcategoriaId === 0) return "";
     const subcategoria = subcategorias.find((s) => s.id === subcategoriaId);
@@ -53,12 +54,90 @@ export default function ProductosTable({
     }
   };
 
+  // ========================
+  // FILTERS STATE
+  // ========================
+  const [columnFilters, setColumnFilters] = useState<{
+    codigo: string[];
+    nombre: string[];
+  }>({
+    codigo: [],
+    nombre: [],
+  });
+
+  const extractValue = (row: ProductoInventario, key: "codigo" | "nombre") => {
+    if (key === "codigo") return row.codigo || "";
+    if (key === "nombre") return row.nombre || "";
+    return "";
+  };
+
+  const checkFilter = (row: ProductoInventario, key: "codigo" | "nombre", selectedValues: string[]) => {
+    if (selectedValues.length === 0) return true;
+    return selectedValues.includes(extractValue(row, key));
+  };
+
+  const dataForOptions = (allData && allData.length > 0) ? allData : data;
+
+  const options = useMemo(() => {
+    const getOptionsFor = (targetKey: "codigo" | "nombre") => {
+      const uniqueValues = new Set<string>();
+      dataForOptions.forEach(row => {
+        let pass = true;
+        // Cascading logic between code and name (though usually 1-1)
+        if (targetKey !== "codigo" && !checkFilter(row, "codigo", columnFilters.codigo)) pass = false;
+        if (targetKey !== "nombre" && !checkFilter(row, "nombre", columnFilters.nombre)) pass = false;
+
+        if (pass) uniqueValues.add(extractValue(row, targetKey));
+      });
+      return Array.from(uniqueValues).sort();
+    };
+    return {
+      codigo: getOptionsFor("codigo"),
+      nombre: getOptionsFor("nombre"),
+    };
+  }, [dataForOptions, columnFilters]);
+
+  // Filtrar data
+  const filteredData = useMemo(() => {
+    const source = (allData && allData.length > 0) ? allData : data;
+    return source.filter(row => {
+      if (!checkFilter(row, "codigo", columnFilters.codigo)) return false;
+      if (!checkFilter(row, "nombre", columnFilters.nombre)) return false;
+      return true;
+    });
+  }, [data, allData, columnFilters]);
+
+  const hasActiveFilters = columnFilters.codigo.length > 0 || columnFilters.nombre.length > 0;
+  const displayData = hasActiveFilters ? filteredData : data;
+
+  const handleFilterChange = (key: "codigo" | "nombre", selected: string[]) => {
+    setColumnFilters(prev => ({ ...prev, [key]: selected }));
+  };
+
   // ✅ DEFINICIÓN DE COLUMNAS SIMPLIFICADA PARA 'CONTROL DE INVENTARIO'
   const columns = [
-    { key: "codigo", label: "Código" },
+    {
+      key: "codigo",
+      label: (
+        <TableColumnFilter
+          title="Código"
+          options={options.codigo}
+          selected={columnFilters.codigo}
+          onChange={(sel) => handleFilterChange("codigo", sel)}
+        />
+      ),
+      render: (row: ProductoInventario) => row.codigo
+    },
     {
       key: "nombre",
-      label: "Nombre",
+      label: (
+        <TableColumnFilter
+          title="Nombre"
+          options={options.nombre}
+          selected={columnFilters.nombre}
+          onChange={(sel) => handleFilterChange("nombre", sel)}
+        />
+      ),
       // Se muestra completo en hover con title y se permite salto de línea.
       render: (row: ProductoInventario) => (
         <div
@@ -70,9 +149,9 @@ export default function ProductosTable({
       ),
       cellClass: "px-0 py-0", // padding interno viene en el render
     },
-  
+
     // Eliminamos Subcategoría, Imagen y Ficha Técnica para simplificar la vista de Inventario.
-    
+
     {
       key: "compras",
       label: "Compras",
@@ -88,7 +167,6 @@ export default function ProductosTable({
       ),
     },
     { key: "stock", label: "Stock" },
-
     {
       key: "costo_unitario",
       label: "Costo Unitario",
@@ -96,13 +174,6 @@ export default function ProductosTable({
         <span className="font-semibold">{formatCurrency(row.precio_costo ?? 0)}</span>
       ),
     },
-    /*{
-      key: "precio_venta",
-      label: "Precio Venta",
-      render: (row: ProductoInventario) => (
-        <span className="font-semibold">{formatCurrency(row.precio_venta ?? 0)}</span>
-      ),
-    },*/
     {
       key: "promocion_porcentaje",
       label: "Promoción %",
@@ -121,28 +192,6 @@ export default function ProductosTable({
         </span>
       ),
     },
-    /*{
-      key: "utilidad",
-      label: "Utilidad / Producto",
-      render: (row: Producto) => {
-        const costo = Number((row as any).precio_costo ?? 0);
-        const pv = Number(
-          (row as any).precio_venta ?? (row as any).precioVenta ?? row.precio ?? 0
-        );
-        const utilidad = pv - costo;
-
-        return (
-          <span
-            className={`font-semibold ${
-              utilidad < 0 ? "text-red-600" : "text-green-600"
-            }`}
-          >
-            {formatCurrency(utilidad)}
-          </span>
-        );
-      },
-    },
-    */
     {
       key: "utilidad",
       label: "Utilidad / Producto",
@@ -152,7 +201,6 @@ export default function ProductosTable({
         </span>
       ),
     },
-
     {
       key: "valor_inventario",
       label: "Valor Inventario",
@@ -181,7 +229,7 @@ export default function ProductosTable({
     <div className="w-full">
       <CrudTable
         columns={columns}
-        data={data}
+        data={displayData}
         loading={loading}
         renderRowActions={(row: ProductoInventario) => (
           <div className="flex items-center justify-end gap-2">
