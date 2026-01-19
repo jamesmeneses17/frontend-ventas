@@ -58,7 +58,7 @@ export default function ProductAutocomplete({
         disabled={disabled}
       />
       {isFocused && search.length > 1 && (
-        <div className="absolute z-50 mt-1 w-full rounded-lg shadow-2xl bg-white ring-1 ring-gray-200 max-h-64 overflow-auto" style={{minWidth:260, maxWidth:400}}>
+        <div className="absolute z-50 mt-1 w-full rounded-lg shadow-2xl bg-white ring-1 ring-gray-200 max-h-64 overflow-auto" style={{ minWidth: 260, maxWidth: 400 }}>
           <div className="py-1">
             {loading && (
               <div className="px-4 py-2 text-sm text-gray-500 flex items-center">
@@ -76,15 +76,30 @@ export default function ProductAutocomplete({
                 style={{ minWidth: 260, maxWidth: 400 }}
                 onClick={() => {
                   setIsFocused(false);
-                  setSearch("");
+                  setSearch(item.nombre);
                   onSelect(item);
                 }}
               >
                 <CubeIcon className="h-5 w-5 mr-3 text-amber-500 flex-shrink-0" />
-                <span className="whitespace-normal break-words flex-1 pr-2" style={{maxWidth:220}}>{item.nombre}</span>
-                {item.precio !== undefined && (
-                  <span className="text-sm font-semibold text-gray-800">{formatCurrency(item.precio, "$")}</span>
-                )}
+                <span className="whitespace-normal break-words flex-1 pr-2" style={{ maxWidth: 220 }}>{item.nombre}</span>
+                <div className="flex flex-col items-end">
+                  {item.precio_con_descuento && item.precio_con_descuento < item.precio ? (
+                    <>
+                      <span className="text-xs text-gray-400 line-through">
+                        {formatCurrency(item.precio, "$")}
+                      </span>
+                      <span className="text-sm font-bold text-green-600">
+                        {formatCurrency(item.precio_con_descuento, "$")}
+                      </span>
+                    </>
+                  ) : (
+                    item.precio !== undefined && (
+                      <span className="text-sm font-semibold text-gray-800">
+                        {formatCurrency(item.precio, "$")}
+                      </span>
+                    )
+                  )}
+                </div>
               </div>
             ))}
             {!loading && results.length === 0 && (

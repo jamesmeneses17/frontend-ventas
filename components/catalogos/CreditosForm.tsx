@@ -31,9 +31,9 @@ type FormData = {
   detalles: ProductoDetalle[];
 };
 
-type CreditoWithId = Partial<CreateCreditoPayload> & { 
+type CreditoWithId = Partial<CreateCreditoPayload> & {
   id?: number;
-  cliente?: { nombre: string }; 
+  cliente?: { nombre: string };
 };
 
 // Función para formatear visualmente mientras el usuario escribe
@@ -93,7 +93,7 @@ export default function CreditosForm({
       subtotal: d.subtotal,
     }))
   );
-  
+
   const [pagos, setPagos] = useState<any[]>([]);
   const [nuevoPago, setNuevoPago] = useState(""); // Valor numérico puro
   const [notasPago, setNotasPago] = useState("");
@@ -180,7 +180,7 @@ export default function CreditosForm({
 
           <div className="p-4 border-2 border-green-100 rounded-xl bg-green-50/30">
             <h4 className="font-bold text-green-800 mb-4 flex items-center gap-2 text-base">
-               Registrar Nuevo Abono
+              Registrar Nuevo Abono
             </h4>
             <div className="flex flex-col md:flex-row gap-3 items-start">
               <div className="w-full md:w-1/3">
@@ -219,7 +219,7 @@ export default function CreditosForm({
 
           <div className="border rounded-xl overflow-hidden bg-white shadow-sm">
             <div className="bg-gray-50 px-4 py-2 border-b">
-               <span className="text-sm font-bold text-gray-700">Historial de Pagos</span>
+              <span className="text-sm font-bold text-gray-700">Historial de Pagos</span>
             </div>
             <table className="min-w-full text-sm">
               <thead className="bg-gray-100 text-gray-600">
@@ -298,7 +298,11 @@ export default function CreditosForm({
             <p className="text-sm font-bold text-gray-700 mb-3">Detalle de Productos</p>
             <div className="grid grid-cols-1 md:grid-cols-4 gap-2 items-end">
               <div className="md:col-span-2">
-                <ProductAutocomplete onSelect={(item: any) => setSelectedProduct(item)} placeholder="Buscar producto..." />
+                <ProductAutocomplete
+                  key={detalles.length}
+                  onSelect={(item: any) => setSelectedProduct(item)}
+                  placeholder="Buscar producto..."
+                />
               </div>
               <div>
                 <input type="number" className="form-input w-full" value={cantidadTmp} onChange={(e) => setCantidadTmp(Number(e.target.value))} />
@@ -309,12 +313,16 @@ export default function CreditosForm({
                 disabled={!selectedProduct}
                 onClick={() => {
                   if (!selectedProduct) return;
+
+                  // Usa el precio con descuento si existe (calculado en backend), si no, usa el precio normal
+                  const precioFinal = selectedProduct.precio_con_descuento || selectedProduct.precio || 0;
+
                   setDetalles([...detalles, {
                     producto_id: selectedProduct.id,
                     producto_nombre: selectedProduct.nombre,
                     cantidad: cantidadTmp,
-                    precio_unitario: selectedProduct.precio || 0,
-                    subtotal: (selectedProduct.precio || 0) * cantidadTmp,
+                    precio_unitario: precioFinal,
+                    subtotal: precioFinal * cantidadTmp,
                   }]);
                   setSelectedProduct(null);
                 }}
