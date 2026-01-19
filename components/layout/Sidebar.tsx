@@ -11,6 +11,7 @@ import {
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, MouseEvent } from "react";
+import { useAuth } from "@/contexts/AuthContext";
 
 const navigation = [
   {
@@ -43,6 +44,8 @@ const navigation = [
     items: [
       { name: "Información de Empresa", href: "/admin/info_empresa", icon: FileText },
       { name: "Banners", href: "/admin/configuracion-web/banners", icon: Image },
+      // NUEVO ITEM CON PROP 'restricted'
+      { name: "Historial de Sesiones", href: "/admin/historial-sesiones", icon: ListChecks, restricted: true },
     ],
   },
   {
@@ -77,6 +80,7 @@ const navigation = [
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const { user } = useAuth(); // Hook de autenticación
   const activeColor = "#8BC34A";
   const [openSection, setOpenSection] = useState<string | null>(null);
 
@@ -128,6 +132,11 @@ export default function Sidebar() {
               {isOpen && (
                 <div className="pl-2 pt-1 pb-1">
                   {section.items.map((item: any) => {
+                    // VERIFICACIÓN DE ACCESO
+                    if (item.restricted && user?.correo !== 'james@itp.edu.co') {
+                      return null;
+                    }
+
                     let isLinkActive = false;
 
                     if (item.href === "/dashboard") {
