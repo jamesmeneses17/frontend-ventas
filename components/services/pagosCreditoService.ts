@@ -32,6 +32,7 @@ export const registrarPago = async (
     credito_id: Number(data.credito_id ?? data.creditoId),
     monto_pago: Number(data.monto_pago ?? data.montoPago ?? data.monto),
     notas: data.notas || "",
+    fecha_pago: data.fecha_pago,
   };
 
   // URL CORREGIDA: ENDPOINT_BASE ya incluye "/pagos-credito"
@@ -64,17 +65,26 @@ export const getPagosByCredito = async (
 
   try {
     const res = await axios.get(endpoint);
-    
+
     // Manejo flexible de la respuesta del backend
     if (Array.isArray(res.data)) {
       return res.data;
     } else if (res.data && Array.isArray(res.data.data)) {
       return res.data.data;
     }
-    
+
     return [];
   } catch (err: any) {
     console.error("[getPagosByCredito] Error:", err.message);
     return [];
   }
+};
+
+// ------------------------------------------------------
+// Anular un pago
+// ------------------------------------------------------
+export const anularPago = async (id: number): Promise<void> => {
+  const endpoint = `${ENDPOINT_BASE}/${id}/anular`;
+  console.log("[anularPago] PATCH:", endpoint);
+  await axios.patch(endpoint);
 };

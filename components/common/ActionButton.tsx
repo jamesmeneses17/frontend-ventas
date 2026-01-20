@@ -9,6 +9,7 @@ interface ActionButtonProps {
   onClick: () => void;
   color?: "primary" | "danger";
   className?: string;
+  title?: string;
 }
 
 const ActionButton: React.FC<ActionButtonProps> = ({
@@ -16,7 +17,8 @@ const ActionButton: React.FC<ActionButtonProps> = ({
   label,
   onClick,
   color = "primary",
-  className= "",
+  className = "",
+  title,
 }) => {
   const renderIcon = (ic?: React.ReactNode | string) => {
     if (!ic) return null;
@@ -53,7 +55,7 @@ const ActionButton: React.FC<ActionButtonProps> = ({
       : "text-indigo-600 hover:text-indigo-900";
 
   return (
-    <button onClick={onClick} className={`${base} ${styles} ${className}`} title={label}>
+    <button onClick={onClick} className={`${base} ${styles} ${className}`} title={title || label}>
       {renderIcon(icon)}
       {label && <span className="ml-1">{label}</span>}
     </button>

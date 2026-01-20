@@ -18,6 +18,7 @@ import {
   getCreditos,
   deleteCredito,
   createCredito,
+  updateCredito,
 } from "../../../components/services/creditosService";
 import CreditosForm from "../../../components/catalogos/CreditosForm";
 import ModalVentana from "../../../components/ui/ModalVentana";
@@ -33,6 +34,7 @@ export default function CuentasCobrarPage() {
   const [showModal, setShowModal] = useState(false);
   const [showPagosModal, setShowPagosModal] = useState(false);
   const [editing, setEditing] = useState<any | null>(null);
+  const [paymentMode, setPaymentMode] = useState(false); // ✅ Nueva bandera
   const [selectedCreditoId, setSelectedCreditoId] = useState<number | null>(
     null
   );
@@ -81,6 +83,7 @@ export default function CuentasCobrarPage() {
 
   const handleEdit = (credito: any) => {
     setEditing(credito);
+    setPaymentMode(false); // Modo Edición
     setShowModal(true);
   };
 
@@ -96,8 +99,14 @@ export default function CuentasCobrarPage() {
   };
 
   const handleOpenPagos = (creditoId: number) => {
-    setSelectedCreditoId(creditoId);
-    setShowPagosModal(true);
+    // Buscar el crédito completo para pasarlo a editing
+    const credito = creditos.find((c) => c.id === creditoId);
+    if (!credito) return;
+    setEditing(credito);
+    setPaymentMode(true); // Modo Pagos
+    setShowModal(true);
+    // setSelectedCreditoId(creditoId);
+    // setShowPagosModal(true);
   };
 
   const totalSaldo = creditos.reduce(
@@ -178,8 +187,8 @@ export default function CuentasCobrarPage() {
               {!loading && total > 0
                 ? `Mostrando ${creditos.length} de ${total}`
                 : loading
-                ? "Cargando..."
-                : "Sin registros"}
+                  ? "Cargando..."
+                  : "Sin registros"}
             </p>
 
             {!loading && total > 0 && (
@@ -215,9 +224,14 @@ export default function CuentasCobrarPage() {
                   type: "success",
                 });
               }}
+              onRefetch={load} // Refrescar tabla sin cerrar modal
+              onlyPayment={paymentMode} // ✅ Controla qué ver
               onSubmit={async (payload) => {
-                // ✅ Llama a la función real del servicio
-                await createCredito(payload);
+                if (editing?.id) {
+                  await updateCredito(editing.id, payload);
+                } else {
+                  await createCredito(payload);
+                }
               }}
             />
           </ModalVentana>

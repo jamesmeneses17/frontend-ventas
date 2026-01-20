@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { getPagosByCredito, registrarPago } from "../services/pagosCreditoService";
+import { getPagosByCredito, registrarPago, anularPago } from "../services/pagosCreditoService";
 import { useForm, SubmitHandler } from "react-hook-form";
 import FormInput from "../common/form/FormInput";
 import FormSelect from "../common/form/FormSelect";
@@ -53,6 +53,8 @@ interface Props {
   onCancel: () => void;
   formError?: string;
   onSaved: () => void | Promise<void>;
+  onRefetch?: () => void | Promise<void>;
+  onlyPayment?: boolean;
 }
 
 export default function CreditosForm({
@@ -60,9 +62,13 @@ export default function CreditosForm({
   onSubmit,
   onCancel,
   onSaved,
+  onRefetch,
+  onlyPayment = false,
   formError,
 }: Props) {
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const isEditing = !!initialData?.id;
+  const showPaymentView = isEditing && onlyPayment;
 
   const {
     handleSubmit,
@@ -88,9 +94,9 @@ export default function CreditosForm({
     (initialData?.detalles || []).map((d: any) => ({
       producto_id: d.producto_id,
       producto_nombre: d.producto_nombre || d.producto?.nombre || "",
-      cantidad: d.cantidad,
-      precio_unitario: d.precio_unitario,
-      subtotal: d.subtotal,
+      cantidad: Number(d.cantidad),
+      precio_unitario: Number(d.precio_unitario),
+      subtotal: Number(d.subtotal),
     }))
   );
 
@@ -99,11 +105,17 @@ export default function CreditosForm({
   const [notasPago, setNotasPago] = useState("");
   const [pagosLoading, setPagosLoading] = useState(false);
   const [pagoError, setPagoError] = useState<string | null>(null);
+  const [pagoSuccess, setPagoSuccess] = useState<string | null>(null);
   const [selectedProduct, setSelectedProduct] = useState<any | null>(null);
   const [cantidadTmp, setCantidadTmp] = useState(1);
+  // Estado para la fecha del abono (default: hoy)
+  const [fechaPago, setFechaPago] = useState(new Date().toISOString().split("T")[0]);
 
   const totalProductos = detalles.reduce((sum, d) => sum + (Number(d.subtotal) || 0), 0);
-  const totalPagos = pagos.reduce((sum, p) => sum + (Number(p.monto_pago) || 0), 0);
+  const totalPagos = pagos.reduce((sum, p) => {
+    if (p.estado === 'ANULADO') return sum;
+    return sum + (Number(p.monto_pago) || 0);
+  }, 0);
   const saldoPendiente = Math.max(totalProductos - totalPagos, 0);
 
   useEffect(() => {
@@ -132,15 +144,41 @@ export default function CreditosForm({
         credito_id: Number(initialData.id),
         monto_pago: monto,
         notas: notasPago,
+        fecha_pago: fechaPago, // Enviar fecha seleccionada
       });
 
       setNuevoPago("");
       setNotasPago("");
-      const actualizados = await getPagosByCredito(Number(initialData.id));
-      setPagos(actualizados);
-      if (onSaved) await onSaved();
+      // No reset fechaPago to keep context or reset to today? Let's keep it or reset to today.
+      // const actualizados = await getPagosByCredito(Number(initialData.id));
+      getPagosByCredito(Number(initialData.id)).then(setPagos);
+
+      if (onRefetch) await onRefetch();
+      setPagoSuccess("Abono registrado correctamente");
+      setTimeout(() => setPagoSuccess(null), 3000);
     } catch (err: any) {
       setPagoError("Error al registrar el abono");
+      setTimeout(() => setPagoError(null), 3000);
+    } finally {
+      setPagosLoading(false);
+    }
+  };
+
+  const handleAnular = async (idPago: number) => {
+    if (!window.confirm("¿Estás seguro de que deseas ANULAR este abono? El saldo volverá a la deuda.")) return;
+
+    try {
+      setPagosLoading(true);
+      await anularPago(idPago);
+      // Recargar info
+      const actualizados = await getPagosByCredito(Number(initialData?.id));
+      setPagos(actualizados);
+      if (onRefetch) await onRefetch();
+      setPagoSuccess("Pago anulado.");
+      setTimeout(() => setPagoSuccess(null), 3000);
+    } catch (err) {
+      setPagoError("No se pudo anular el pago.");
+      setTimeout(() => setPagoError(null), 3000);
     } finally {
       setPagosLoading(false);
     }
@@ -150,16 +188,29 @@ export default function CreditosForm({
     const payload: CreateCreditoPayload = {
       ...data,
       cliente_id: Number(data.cliente_id),
-      saldo_pendiente: saldoPendiente,
-      detalles: detalles,
+      saldo_pendiente: Number(saldoPendiente),
+      detalles: detalles.map(d => ({
+        ...d,
+        cantidad: Number(d.cantidad),
+        precio_unitario: Number(d.precio_unitario),
+        subtotal: Number(d.subtotal),
+      })),
     };
-    await onSubmit(payload);
-    await onSaved();
+
+    try {
+      setSubmitError(null);
+      await onSubmit(payload);
+      await onSaved();
+    } catch (error: any) {
+      console.error(error);
+      const msg = error?.response?.data?.message || "Error al guardar el crédito.";
+      setSubmitError(msg);
+    }
   };
 
   return (
     <div className="space-y-6">
-      {isEditing ? (
+      {showPaymentView ? (
         /* ==========================================================
            MODO ACTUALIZAR: FOCO EN ABONOS
            ========================================================== */
@@ -167,7 +218,7 @@ export default function CreditosForm({
           <div className="bg-blue-50 p-4 rounded-lg flex justify-between items-center border border-blue-100">
             <div>
               <p className="text-xs text-blue-600 font-bold uppercase">Cliente</p>
-              <p className="text-lg font-bold text-blue-900">{initialData?.cliente?.nombre || 'Héctor Rojas'}</p>
+              <p className="text-lg font-bold text-blue-900">{initialData?.cliente?.nombre || 'Cliente sin nombre'}</p>
               <p className="text-sm text-blue-700">Factura: {initialData?.numero_factura || 'N/A'}</p>
             </div>
             <div className="text-right">
@@ -182,9 +233,9 @@ export default function CreditosForm({
             <h4 className="font-bold text-green-800 mb-4 flex items-center gap-2 text-base">
               Registrar Nuevo Abono
             </h4>
-            <div className="flex flex-col md:flex-row gap-3 items-start">
-              <div className="w-full md:w-1/3">
-                {/* Input con máscara de miles integrada */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              <div>
+                <label className="block text-xs font-bold text-green-700 mb-1 uppercase">Monto Abono</label>
                 <input
                   type="text"
                   className="form-input w-full border-green-300 focus:ring-green-500 rounded-lg font-bold text-lg text-green-700"
@@ -196,25 +247,36 @@ export default function CreditosForm({
                   }}
                 />
               </div>
-              <div className="w-full md:flex-1">
+              <div>
+                <label className="block text-xs font-bold text-green-700 mb-1 uppercase">Fecha Pago</label>
                 <input
-                  type="text"
-                  className="form-input w-full border-green-300 focus:ring-green-500 rounded-lg py-2.5"
-                  placeholder="Notas o concepto del pago"
-                  value={notasPago}
-                  onChange={(e) => setNotasPago(e.target.value)}
+                  type="date"
+                  className="form-input w-full border-green-300 focus:ring-green-500 rounded-lg py-2.5 font-medium text-gray-700"
+                  value={fechaPago}
+                  onChange={(e) => setFechaPago(e.target.value)}
                 />
               </div>
+            </div>
+
+            <div className="flex flex-col md:flex-row gap-3 items-center">
+              <input
+                type="text"
+                className="form-input w-full border-green-300 focus:ring-green-500 rounded-lg py-2.5 flex-1"
+                placeholder="Notas o concepto del pago (Opcional)"
+                value={notasPago}
+                onChange={(e) => setNotasPago(e.target.value)}
+              />
               <button
                 type="button"
                 onClick={handleRegistrarAbono}
-                className="w-full md:w-auto bg-green-600 hover:bg-green-700 text-white rounded-lg px-6 py-2.5 font-bold transition-all disabled:opacity-50 shadow-md"
+                className="w-full md:w-auto bg-green-600 hover:bg-green-700 text-white rounded-lg px-6 py-2.5 font-bold transition-all disabled:opacity-50 shadow-md whitespace-nowrap"
                 disabled={pagosLoading}
               >
                 {pagosLoading ? "Procesando..." : "Confirmar Abono"}
               </button>
             </div>
-            {pagoError && <p className="text-red-600 text-xs font-bold mt-2">{pagoError}</p>}
+            {pagoError && <p className="text-red-600 text-xs font-bold mt-2 text-center md:text-left">{pagoError}</p>}
+            {pagoSuccess && <p className="text-green-600 text-xs font-bold mt-2 text-center md:text-left">{pagoSuccess}</p>}
           </div>
 
           <div className="border rounded-xl overflow-hidden bg-white shadow-sm">
@@ -227,21 +289,42 @@ export default function CreditosForm({
                   <th className="px-4 py-2 text-left">Fecha</th>
                   <th className="px-4 py-2 text-left">Monto</th>
                   <th className="px-4 py-2 text-left">Notas</th>
+                  <th className="px-4 py-2 text-center">Estado</th>
+                  <th className="px-4 py-2 text-center">Acciones</th>
                 </tr>
               </thead>
               <tbody className="divide-y">
                 {pagos.length === 0 ? (
-                  <tr><td colSpan={3} className="text-center py-6 text-gray-400 italic">No hay abonos registrados aún</td></tr>
+                  <tr><td colSpan={5} className="text-center py-6 text-gray-400 italic">No hay abonos registrados aún</td></tr>
                 ) : (
-                  pagos.map((p) => (
-                    <tr key={p.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-2">{p.fecha_pago?.substring(0, 10)}</td>
-                      <td className="px-4 py-2 font-bold text-green-700">
-                        {Number(p.monto_pago).toLocaleString("es-CO", { style: "currency", currency: "COP" })}
-                      </td>
-                      <td className="px-4 py-2 text-gray-500 text-xs italic">{p.notas || "-"}</td>
-                    </tr>
-                  ))
+                  pagos.map((p) => {
+                    const isAnulado = p.estado === 'ANULADO';
+                    return (
+                      <tr key={p.id} className={`hover:bg-gray-50 ${isAnulado ? 'bg-red-50 text-gray-400' : ''}`}>
+                        <td className="px-4 py-2">{p.fecha_pago ? new Date(p.fecha_pago).toISOString().split('T')[0] : '-'}</td>
+                        <td className={`px-4 py-2 font-bold ${isAnulado ? 'line-through text-gray-400' : 'text-green-700'}`}>
+                          {Number(p.monto_pago).toLocaleString("es-CO", { style: "currency", currency: "COP" })}
+                        </td>
+                        <td className="px-4 py-2 text-xs italic">{p.notas || "-"}</td>
+                        <td className="px-4 py-2 text-center">
+                          <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${isAnulado ? 'bg-red-200 text-red-700' : 'bg-green-100 text-green-700'}`}>
+                            {p.estado || 'ACTIVO'}
+                          </span>
+                        </td>
+                        <td className="px-4 py-2 text-center">
+                          {!isAnulado && (
+                            <button
+                              onClick={() => handleAnular(p.id)}
+                              title="Anular Abono"
+                              className="text-red-500 hover:text-red-700 font-bold text-xs border border-red-200 hover:bg-red-50 px-2 py-1 rounded transition-colors"
+                            >
+                              🚫 Anular
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    )
+                  })
                 )}
               </tbody>
             </table>
@@ -270,7 +353,7 @@ export default function CreditosForm({
             </label>
             <ClienteAutocomplete
               onSelect={(cliente) => setValue("cliente_id", cliente.id)}
-              initialValue=""
+              initialValue={initialData?.cliente?.nombre || ""}
               placeholder="Escriba nombre o documento..."
             />
             <input type="hidden" value={watch("cliente_id") || ""} />
@@ -286,11 +369,12 @@ export default function CreditosForm({
               required
             />
             <FormInput
-              label="Fecha final (opcional)"
+              label="Fecha final"
               name="fecha_final"
               type="date"
               value={values.fecha_final}
               onChange={(e) => setValue("fecha_final", e.target.value)}
+              required
             />
           </div>
 
@@ -315,7 +399,7 @@ export default function CreditosForm({
                   if (!selectedProduct) return;
 
                   // Usa el precio con descuento si existe (calculado en backend), si no, usa el precio normal
-                  const precioFinal = selectedProduct.precio_con_descuento || selectedProduct.precio || 0;
+                  const precioFinal = Number(selectedProduct.precio_con_descuento || selectedProduct.precio || 0);
 
                   setDetalles([...detalles, {
                     producto_id: selectedProduct.id,
@@ -362,11 +446,18 @@ export default function CreditosForm({
             <span className="text-2xl font-black">{totalProductos.toLocaleString("es-CO", { style: "currency", currency: "COP" })}</span>
           </div>
 
-          <div className="flex justify-end gap-3 pt-6 border-t mt-4">
-            <Button type="button" onClick={onCancel} className="bg-gray-100 text-gray-600 hover:bg-gray-200">Cancelar</Button>
-            <Button type="submit" disabled={isSubmitting} className="px-10">
-              {isSubmitting ? "Procesando..." : "Crear Crédito Nuevo"}
-            </Button>
+          <div className="flex flex-col gap-3 pt-6 border-t mt-4">
+            {submitError && (
+              <div className="bg-red-50 text-red-700 p-3 rounded-lg border border-red-200 text-center font-bold text-sm">
+                {submitError}
+              </div>
+            )}
+            <div className="flex justify-end gap-3">
+              <Button type="button" onClick={onCancel} className="bg-gray-100 text-gray-600 hover:bg-gray-200">Cancelar</Button>
+              <Button type="submit" disabled={isSubmitting} className="px-10">
+                {isSubmitting ? "Procesando..." : (isEditing ? "Guardar Cambios" : "Crear Crédito Nuevo")}
+              </Button>
+            </div>
           </div>
         </form>
       )}
