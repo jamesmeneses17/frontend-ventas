@@ -12,7 +12,6 @@ export interface PagoCredito {
   credito_id: number;
   monto_pago: number;
   fecha_pago: string;
-  notas?: string;
 }
 
 export interface RegistrarPagoResponse {
@@ -31,7 +30,7 @@ export const registrarPago = async (
   const payload = {
     credito_id: Number(data.credito_id ?? data.creditoId),
     monto_pago: Number(data.monto_pago ?? data.montoPago ?? data.monto),
-    notas: data.notas || "",
+
     fecha_pago: data.fecha_pago,
   };
 

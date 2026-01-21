@@ -102,7 +102,7 @@ export default function CreditosForm({
 
   const [pagos, setPagos] = useState<any[]>([]);
   const [nuevoPago, setNuevoPago] = useState(""); // Valor numérico puro
-  const [notasPago, setNotasPago] = useState("");
+
   const [pagosLoading, setPagosLoading] = useState(false);
   const [pagoError, setPagoError] = useState<string | null>(null);
   const [pagoSuccess, setPagoSuccess] = useState<string | null>(null);
@@ -143,12 +143,12 @@ export default function CreditosForm({
       await registrarPago({
         credito_id: Number(initialData.id),
         monto_pago: monto,
-        notas: notasPago,
+
         fecha_pago: fechaPago, // Enviar fecha seleccionada
       });
 
       setNuevoPago("");
-      setNotasPago("");
+
       // No reset fechaPago to keep context or reset to today? Let's keep it or reset to today.
       // const actualizados = await getPagosByCredito(Number(initialData.id));
       getPagosByCredito(Number(initialData.id)).then(setPagos);
@@ -259,13 +259,7 @@ export default function CreditosForm({
             </div>
 
             <div className="flex flex-col md:flex-row gap-3 items-center">
-              <input
-                type="text"
-                className="form-input w-full border-green-300 focus:ring-green-500 rounded-lg py-2.5 flex-1"
-                placeholder="Notas o concepto del pago (Opcional)"
-                value={notasPago}
-                onChange={(e) => setNotasPago(e.target.value)}
-              />
+
               <button
                 type="button"
                 onClick={handleRegistrarAbono}
@@ -288,8 +282,8 @@ export default function CreditosForm({
                 <tr>
                   <th className="px-4 py-2 text-left">Fecha</th>
                   <th className="px-4 py-2 text-left">Monto</th>
-                  <th className="px-4 py-2 text-left">Notas</th>
-                  <th className="px-4 py-2 text-center">Estado</th>
+
+
                   <th className="px-4 py-2 text-center">Acciones</th>
                 </tr>
               </thead>
@@ -298,29 +292,23 @@ export default function CreditosForm({
                   <tr><td colSpan={5} className="text-center py-6 text-gray-400 italic">No hay abonos registrados aún</td></tr>
                 ) : (
                   pagos.map((p) => {
-                    const isAnulado = p.estado === 'ANULADO';
+
                     return (
-                      <tr key={p.id} className={`hover:bg-gray-50 ${isAnulado ? 'bg-red-50 text-gray-400' : ''}`}>
+                      <tr key={p.id} className="hover:bg-gray-50">
                         <td className="px-4 py-2">{p.fecha_pago ? new Date(p.fecha_pago).toISOString().split('T')[0] : '-'}</td>
-                        <td className={`px-4 py-2 font-bold ${isAnulado ? 'line-through text-gray-400' : 'text-green-700'}`}>
+                        <td className="px-4 py-2 font-bold text-green-700">
                           {Number(p.monto_pago).toLocaleString("es-CO", { style: "currency", currency: "COP" })}
                         </td>
-                        <td className="px-4 py-2 text-xs italic">{p.notas || "-"}</td>
+
+
                         <td className="px-4 py-2 text-center">
-                          <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${isAnulado ? 'bg-red-200 text-red-700' : 'bg-green-100 text-green-700'}`}>
-                            {p.estado || 'ACTIVO'}
-                          </span>
-                        </td>
-                        <td className="px-4 py-2 text-center">
-                          {!isAnulado && (
-                            <button
-                              onClick={() => handleAnular(p.id)}
-                              title="Anular Abono"
-                              className="text-red-500 hover:text-red-700 font-bold text-xs border border-red-200 hover:bg-red-50 px-2 py-1 rounded transition-colors"
-                            >
-                              🚫 Anular
-                            </button>
-                          )}
+                          <button
+                            onClick={() => handleAnular(p.id)}
+                            title="Anular Abono"
+                            className="text-red-500 hover:text-red-700 font-bold text-xs border border-red-200 hover:bg-red-50 px-2 py-1 rounded transition-colors"
+                          >
+                            🚫 Anular
+                          </button>
                         </td>
                       </tr>
                     )

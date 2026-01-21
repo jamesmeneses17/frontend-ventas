@@ -393,12 +393,13 @@ export default function ComprasForm({
 
           <FormInput
             label="Costo Unitario *"
-            type="number"
+            type="text"
             name="costo_unitario"
-            value={String(formValues.costo_unitario)}
-            onChange={(e) =>
-              setValue("costo_unitario", Number(e.target.value))
-            }
+            value={formValues.costo_unitario ? new Intl.NumberFormat("es-CO").format(formValues.costo_unitario) : ""}
+            onChange={(e) => {
+              const val = e.target.value.replace(/\D/g, "");
+              setValue("costo_unitario", val ? Number(val) : 0);
+            }}
           />
         </div>
 

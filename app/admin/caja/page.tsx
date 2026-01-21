@@ -51,22 +51,33 @@ export default function CajaPage() {
       setPurchaseDetails(null);
       setSaleDetails(null);
 
-      // 1. Try to extract Purchase ID
-      const matchCompra = viewingItem.concepto?.match(/Compra (?:ID|Ref): (\d+)/i);
-      if (matchCompra && matchCompra[1]) {
+      // 1. Try to extract Purchase ID (Explicit or Regex)
+      let compraId = viewingItem.compraId;
+      if (!compraId) {
+        const matchCompra = viewingItem.concepto?.match(/Compra (?:ID|Ref): (\d+)/i);
+        if (matchCompra && matchCompra[1]) compraId = Number(matchCompra[1]);
+      }
+
+      if (compraId) {
         setLoadingDetails(true);
-        getCompraById(Number(matchCompra[1]))
+        getCompraById(compraId)
           .then(data => setPurchaseDetails(data))
           .catch(err => console.error("Error fetching compra details:", err))
           .finally(() => setLoadingDetails(false));
         return;
       }
 
-      // 2. Try to extract Sale ID
-      const matchVenta = viewingItem.concepto?.match(/Venta ID: (\d+)/i);
-      if (matchVenta && matchVenta[1]) {
+      // 2. Try to extract Sale ID (Explicit or Regex)
+      let ventaId = viewingItem.ventaId;
+      if (!ventaId) {
+        // Regex for "Venta ID:", "Venta Factura #", "Venta registrada ID:"
+        const matchVenta = viewingItem.concepto?.match(/Venta (?:registrada )?(?:ID|Factura)(?: #|:)?\s*(\d+)/i);
+        if (matchVenta && matchVenta[1]) ventaId = Number(matchVenta[1]);
+      }
+
+      if (ventaId) {
         setLoadingDetails(true);
-        getVentaById(Number(matchVenta[1]))
+        getVentaById(ventaId)
           .then(data => setSaleDetails(data))
           .catch(err => console.error("Error fetching venta details:", err))
           .finally(() => setLoadingDetails(false));

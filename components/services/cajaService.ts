@@ -17,6 +17,8 @@ export interface MovimientoCaja {
         id: number;
         nombre: string;
     };
+    ventaId?: number;
+    compraId?: number;
 }
 
 export interface CreateMovimientoDTO {
