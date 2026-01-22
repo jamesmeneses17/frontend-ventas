@@ -26,6 +26,11 @@ export const getBanners = async (): Promise<Banner[]> => {
     return response.data;
 };
 
+export const getBannerById = async (id: number): Promise<Banner> => {
+    const response = await axios.get(`${ENDPOINT_BASE}/${id}`);
+    return response.data;
+};
+
 export const createBanner = async (data: CreateBannerDto): Promise<Banner> => {
     const response = await axios.post(ENDPOINT_BASE, data);
     return response.data;

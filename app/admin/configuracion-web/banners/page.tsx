@@ -19,9 +19,7 @@ export default function BannersPage() {
     const [banners, setBanners] = useState<Banner[]>([]);
     const [loading, setLoading] = useState(false);
     const [uploading, setUploading] = useState(false);
-
-    // We assume we are working with the first available banner or create a default one
-    const activeBanner = banners.length > 0 ? banners[0] : null;
+    const [activeTab, setActiveTab] = useState<number>(1); // 1 = Principal, 2 = Marcas
 
     useEffect(() => {
         loadBanners();
@@ -39,10 +37,15 @@ export default function BannersPage() {
         }
     };
 
-    const handleCreateBanner = async () => {
+    const handleCreateBanner = async (id: number, nombre: string) => {
         try {
             setLoading(true);
-            await createBanner({ nombre: "Principal" });
+            // El backend asigna IDs autoincrementales, pero idealmente buscaríamos por nombre o tipo.
+            // Para simplificar y dado que el usuario pidió específicamente ID 2, intentaremos crear uno.
+            // Nota: En SQL normal no forzamos ID en INSERT, pero aquí asumimos que si creamos
+            // será el siguiente. Si la lógica de negocio requiere IDs fijos, debería manejarse en backend con 'Seeds'.
+            // Por ahora, crearemos con un nombre descriptivo.
+            await createBanner({ nombre });
             await loadBanners();
         } catch (error) {
             console.error("Error creating banner:", error);
@@ -53,20 +56,33 @@ export default function BannersPage() {
 
     const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
         if (!event.target.files || event.target.files.length === 0) return;
-        if (!activeBanner) return; // Should not happen if UI is correct
+
+        // Buscar el banner activo por ID (o el que corresponda a la pestaña)
+        // Asumimos que la pestaña 1 es el primer banner encontrado o el ID 1 si coincidiera
+        // Mejor enfoque: Filtrar banners por su ID real si coincide con la pestaña, O
+        // si la pestaña es puramente UI, mapear Pestaña 1 -> Banner ID 1, Pestaña 2 -> Banner ID 2
+
+        // Estrategia Robustez:
+        // Tab 1 -> Intenta buscar banner con ID = 1.
+        // Tab 2 -> Intenta buscar banner con ID = 2.
+
+        const targetBanner = banners.find(b => b.id === activeTab);
+
+        if (!targetBanner) {
+            alert(`El banner con ID ${activeTab} no existe. Por favor créalo primero.`);
+            return;
+        }
 
         const file = event.target.files[0];
         setUploading(true);
         try {
-            await uploadBannerImagen(activeBanner.id, file);
-            // Refresh banners to show new image
+            await uploadBannerImagen(targetBanner.id, file);
             await loadBanners();
         } catch (error) {
             console.error("Error uploading image:", error);
             alert("Error al subir la imagen");
         } finally {
             setUploading(false);
-            // Reset input
             event.target.value = "";
         }
     };
@@ -84,22 +100,22 @@ export default function BannersPage() {
 
     const handleToggleActive = async (imagen: BannerImagen) => {
         try {
-            // Optimistic update
             const updatedBanners = banners.map(b => {
-                if (b.id !== activeBanner?.id) return b;
+                if (b.id !== activeTab) return b;
                 return {
                     ...b,
                     imagenes: b.imagenes.map(img => img.id === imagen.id ? { ...img, activo: !img.activo } : img)
                 }
             });
             setBanners(updatedBanners);
-
             await updateBannerImagen(imagen.id, !imagen.activo);
         } catch (error) {
             console.error("Error toggling image:", error);
-            loadBanners(); // Revert on error
+            loadBanners();
         }
     };
+
+    const currentBanner = banners.find(b => b.id === activeTab);
 
     return (
         <AuthenticatedLayout>
@@ -109,46 +125,78 @@ export default function BannersPage() {
                     Gestión de Banners
                 </h1>
 
+                {/* Tabs */}
+                <div className="flex border-b border-gray-200">
+                    <button
+                        className={`py-2 px-4 font-medium text-sm focus:outline-none ${activeTab === 1 ? 'border-b-2 border-indigo-500 text-indigo-600' : 'text-gray-500 hover:text-gray-700'}`}
+                        onClick={() => setActiveTab(1)}
+                    >
+                        Carrusel Principal
+                    </button>
+                    <button
+                        className={`py-2 px-4 font-medium text-sm focus:outline-none ${activeTab === 2 ? 'border-b-2 border-indigo-500 text-indigo-600' : 'text-gray-500 hover:text-gray-700'}`}
+                        onClick={() => setActiveTab(2)}
+                    >
+                        Barra de Marcas
+                    </button>
+                </div>
+
                 <div className="bg-white shadow rounded-lg p-6">
-                    {loading ? (
+                    {loading && banners.length === 0 ? (
                         <div className="flex justify-center py-10">
                             <Loader2 className="w-8 h-8 animate-spin text-gray-500" />
                         </div>
-                    ) : !activeBanner ? (
+                    ) : !currentBanner ? (
                         <div className="text-center py-10">
-                            <p className="text-gray-500 mb-4">No hay banners configurados.</p>
+                            <p className="text-gray-500 mb-4">
+                                {activeTab === 1 ? "El carrusel principal no está inicializado." : "La barra de marcas no está inicializada."}
+                            </p>
                             <ActionButton
-                                label="Inicializar Banner Principal"
-                                onClick={handleCreateBanner}
+                                label={`Inicializar ${activeTab === 1 ? "Carrusel" : "Barra de Marcas"}`}
+                                onClick={() => handleCreateBanner(activeTab, activeTab === 1 ? "Principal" : "Marcas")}
                                 color="primary"
                                 icon={<Upload className="w-4 h-4" />}
                             />
+                            <p className="text-xs text-gray-400 mt-2">
+                                Esto creará el Banner ID {activeTab} en la base de datos.
+                            </p>
                         </div>
                     ) : (
                         <div className="space-y-6">
                             <div className="flex justify-between items-center bg-gray-50 p-4 rounded-lg border border-gray-200">
                                 <div>
-                                    <h2 className="text-lg font-semibold text-gray-800">Imágenes del Carrusel</h2>
-
+                                    <h2 className="text-lg font-semibold text-gray-800">
+                                        {activeTab === 1 ? "Imágenes del Carrusel Principal" : "Imagen de Marcas Aliadas (Única)"}
+                                    </h2>
+                                    <p className="text-sm text-gray-500">
+                                        ID del Banner: {currentBanner.id}
+                                    </p>
                                 </div>
                                 <div>
-                                    <label className="cursor-pointer bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded shadow inline-flex items-center gap-2 transition">
-                                        {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-                                        <span>Subir Imagen</span>
-                                        <input
-                                            type="file"
-                                            className="hidden"
-                                            accept="image/*"
-                                            onChange={handleFileUpload}
-                                            disabled={uploading}
-                                        />
-                                    </label>
+                                    {/* Para el banner de marcas (ID 2), solo permitimos 1 imagen */}
+                                    {activeTab === 2 && (currentBanner.imagenes || []).length >= 1 ? (
+                                        <span className="text-sm text-amber-600 bg-amber-50 px-3 py-1 rounded-full border border-amber-200">
+                                            Solo se permite 1 imagen para marcas
+                                        </span>
+                                    ) : (
+                                        <label className="cursor-pointer bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded shadow inline-flex items-center gap-2 transition">
+                                            {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                                            <span>Subir Imagen</span>
+                                            <input
+                                                type="file"
+                                                className="hidden"
+                                                accept="image/*"
+                                                onChange={handleFileUpload}
+                                                disabled={uploading}
+                                            />
+                                        </label>
+                                    )}
                                 </div>
                             </div>
 
                             {/* Grid de Imágenes */}
                             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                                {(activeBanner.imagenes || []).map((img) => (
+                                {(currentBanner.imagenes || []).map((img) => (
                                     <div key={img.id} className={`group relative border rounded-lg overflow-hidden bg-gray-100 shadow-sm hover:shadow-md transition ${!img.activo ? 'opacity-60' : ''}`}>
                                         <div className="aspect-[3/1] relative">
                                             <Image
@@ -199,9 +247,9 @@ export default function BannersPage() {
                                 ))}
                             </div>
 
-                            {(activeBanner.imagenes || []).length === 0 && (
+                            {(currentBanner.imagenes || []).length === 0 && (
                                 <div className="text-center py-12 border-2 border-dashed border-gray-300 rounded-lg">
-                                    <p className="text-gray-500">No hay imágenes en el carrusel.</p>
+                                    <p className="text-gray-500">No hay imágenes cargadas para este banner.</p>
                                 </div>
                             )}
                         </div>
