@@ -40,7 +40,7 @@ export default function NotificationBell() {
     return (
         <div className="relative" ref={dropdownRef}>
             {/* Botón de la Campana */}
-            <button 
+            <button
                 onClick={() => setIsOpen(!isOpen)}
                 className="relative p-2 text-gray-600 hover:text-indigo-600 transition-colors rounded-full hover:bg-gray-100"
             >
@@ -70,16 +70,16 @@ export default function NotificationBell() {
                     <div className="max-h-[60vh] md:max-h-64 overflow-y-auto">
                         {orders.length > 0 ? (
                             orders.map((order) => (
-                                <Link 
-                                    key={order.id} 
-                                    href="/admin/pedidos" 
+                                <Link
+                                    key={order.id}
+                                    href="/admin/pedidos"
                                     onClick={() => setIsOpen(false)}
                                     className="block p-4 border-b border-gray-50 hover:bg-indigo-50/30 transition-colors"
                                 >
                                     <div className="flex justify-between items-start mb-1">
                                         <span className="text-xs font-mono font-bold text-indigo-600">{order.codigo_pedido}</span>
                                         <span className="text-[10px] text-gray-400">
-                                            {new Date(order.fecha).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                                            {new Date(order.fecha).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                         </span>
                                     </div>
                                     <div className="flex justify-between items-center">
@@ -95,14 +95,14 @@ export default function NotificationBell() {
                             ))
                         ) : (
                             <div className="p-8 text-center text-gray-400 text-sm">
-                                No hay pedidos pendientes ✨
+                                No hay pedidos pendientes
                             </div>
                         )}
                     </div>
 
                     {orders.length > 0 && (
-                        <Link 
-                            href="/admin/pedidos" 
+                        <Link
+                            href="/admin/pedidos"
                             onClick={() => setIsOpen(false)}
                             className="block p-3 text-center text-xs font-bold text-indigo-600 hover:bg-indigo-50 transition-colors border-t border-gray-50"
                         >
