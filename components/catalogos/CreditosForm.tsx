@@ -14,8 +14,9 @@ import ClienteAutocomplete from "../common/form/ClienteAutocomplete";
    TIPOS Y AYUDANTES
    ========================================================== */
 type ProductoDetalle = {
-  producto_id: number;
+  producto_id: number | null;
   producto_nombre: string;
+  descripcion_manual?: string | null;
   cantidad: number;
   precio_unitario: number;
   subtotal: number;
@@ -94,6 +95,7 @@ export default function CreditosForm({
     (initialData?.detalles || []).map((d: any) => ({
       producto_id: d.producto_id,
       producto_nombre: d.producto_nombre || d.producto?.nombre || "",
+      descripcion_manual: d.descripcion_manual || null,
       cantidad: Number(d.cantidad),
       precio_unitario: Number(d.precio_unitario),
       subtotal: Number(d.subtotal),
@@ -107,7 +109,10 @@ export default function CreditosForm({
   const [pagoError, setPagoError] = useState<string | null>(null);
   const [pagoSuccess, setPagoSuccess] = useState<string | null>(null);
   const [selectedProduct, setSelectedProduct] = useState<any | null>(null);
+  const [searchText, setSearchText] = useState("");
+  const [showManualInput, setShowManualInput] = useState(false);
   const [cantidadTmp, setCantidadTmp] = useState(1);
+  const [precioTmp, setPrecioTmp] = useState(0);
   // Estado para la fecha del abono (default: hoy)
   const [fechaPago, setFechaPago] = useState(new Date().toISOString().split("T")[0]);
 
@@ -191,6 +196,8 @@ export default function CreditosForm({
       saldo_pendiente: Number(saldoPendiente),
       detalles: detalles.map(d => ({
         ...d,
+        producto_id: d.producto_id ?? null,
+        descripcion_manual: d.producto_id ? null : d.descripcion_manual,
         cantidad: Number(d.cantidad),
         precio_unitario: Number(d.precio_unitario),
         subtotal: Number(d.subtotal),
@@ -367,46 +374,175 @@ export default function CreditosForm({
           </div>
 
           <div className="mb-4 p-4 border rounded-xl bg-gray-50">
-            <p className="text-sm font-bold text-gray-700 mb-3">Detalle de Productos</p>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-2 items-end">
-              <div className="md:col-span-2">
-                <ProductAutocomplete
-                  key={detalles.length}
-                  onSelect={(item: any) => setSelectedProduct(item)}
-                  placeholder="Buscar producto..."
-                />
-              </div>
-              <div>
-                <input type="number" className="form-input w-full" value={cantidadTmp} onChange={(e) => setCantidadTmp(Number(e.target.value))} />
-              </div>
-              <button
-                type="button"
-                className="bg-blue-600 text-white rounded-lg px-3 py-2 font-bold hover:bg-blue-700"
-                disabled={!selectedProduct}
-                onClick={() => {
-                  if (!selectedProduct) return;
-
-                  // Usa el precio con descuento si existe (calculado en backend), si no, usa el precio normal
-                  const precioFinal = Number(selectedProduct.precio_con_descuento || selectedProduct.precio || 0);
-
-                  setDetalles([...detalles, {
-                    producto_id: selectedProduct.id,
-                    producto_nombre: selectedProduct.nombre,
-                    cantidad: cantidadTmp,
-                    precio_unitario: precioFinal,
-                    subtotal: precioFinal * cantidadTmp,
-                  }]);
-                  setSelectedProduct(null);
-                }}
-              > + Agregar </button>
+            <div className="flex justify-between items-center mb-2">
+              <p className="text-sm font-bold text-gray-700">Detalle de Productos</p>
+              {!showManualInput ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowManualInput(true);
+                    setSelectedProduct(null);
+                    setSearchText("");
+                    setPrecioTmp(0);
+                    setCantidadTmp(1);
+                  }}
+                  className="text-xs text-blue-600 font-bold hover:underline"
+                >
+                  + Nuevo Concepto Manual
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowManualInput(false);
+                    setSelectedProduct(null);
+                    setSearchText("");
+                    setPrecioTmp(0);
+                    setCantidadTmp(1);
+                  }}
+                  className="text-xs text-gray-500 font-bold hover:underline"
+                >
+                  Volver a Buscador de Productos
+                </button>
+              )}
             </div>
+
+            {!showManualInput ? (
+              // MODO PRODUCTO (ESTÁNDAR)
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-2 items-end">
+                <div className="md:col-span-2">
+                  <ProductAutocomplete
+                    key={detalles.length} // Force re-render on add
+                    onSelect={(item: any) => {
+                      setSelectedProduct(item);
+                      // Precio sugerido (con descuento o normal)
+                      setPrecioTmp(Number(item.precio_con_descuento || item.precio || 0));
+                    }}
+                    placeholder="Buscar producto..."
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-gray-500 block mb-1">Cant.</label>
+                  <input
+                    type="number"
+                    className="form-input w-full"
+                    value={cantidadTmp}
+                    onChange={(e) => setCantidadTmp(Number(e.target.value))}
+                  />
+                </div>
+                {/* Mostrar precio solo informativo o editable si se desea, aquí lo dejaremos oculto/automático o visible readonly */}
+                <div className="flex flex-col">
+                  <label className="text-xs font-bold text-gray-500 block mb-1">Precio Unit.</label>
+                  <div className="form-input w-full bg-gray-100 text-gray-600">
+                    {selectedProduct ? Number(precioTmp).toLocaleString("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 }) : "$ 0"}
+                  </div>
+                </div>
+
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    className="bg-blue-600 text-white rounded-lg px-3 py-2 font-bold hover:bg-blue-700 h-10 w-full"
+                    disabled={!selectedProduct}
+                    onClick={() => {
+                      if (!selectedProduct) return;
+                      const precioFinal = Number(precioTmp) > 0 ? Number(precioTmp) : 0;
+
+                      setDetalles([...detalles, {
+                        producto_id: selectedProduct.id,
+                        producto_nombre: selectedProduct.nombre,
+                        descripcion_manual: null,
+                        cantidad: cantidadTmp,
+                        precio_unitario: precioFinal,
+                        subtotal: precioFinal * cantidadTmp,
+                      }]);
+                      setSelectedProduct(null);
+                      setPrecioTmp(0);
+                      setCantidadTmp(1);
+                    }}
+                  > + Agregar </button>
+                </div>
+              </div>
+            ) : (
+              // MODO MANUAL (CONCEPTO)
+              <div className="bg-blue-50/50 p-3 rounded-lg border border-blue-100">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+                  <div className="md:col-span-2">
+                    <label className="text-xs font-bold text-blue-700 block mb-1">Descripción del Concepto / Servicio</label>
+                    <input
+                      type="text"
+                      className="form-input w-full border-blue-300"
+                      placeholder="Ej. Mano de Obra, Instalación, etc."
+                      value={searchText}
+                      onChange={(e) => setSearchText(e.target.value)}
+                      autoFocus
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-bold text-blue-700 block mb-1">Precio Unitario</label>
+                    <input
+                      type="text"
+                      className="form-input w-full border-blue-300 font-bold text-gray-700"
+                      value={precioTmp ? formatInputAsCurrency(precioTmp.toString()) : ""}
+                      onChange={(e) => {
+                        const val = e.target.value.replace(/\D/g, "");
+                        setPrecioTmp(Number(val));
+                      }}
+                      placeholder="$ 0"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-bold text-blue-700 block mb-1">Cantidad</label>
+                    <input
+                      type="number"
+                      className="form-input w-full border-blue-300"
+                      value={cantidadTmp}
+                      onChange={(e) => setCantidadTmp(Number(e.target.value))}
+                    />
+                  </div>
+                </div>
+                <div className="flex justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowManualInput(false)}
+                    className="px-3 py-2 text-gray-600 text-sm font-medium hover:bg-gray-200 rounded-lg"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="button"
+                    disabled={!searchText.trim() || precioTmp <= 0}
+                    className="bg-blue-600 text-white rounded-lg px-4 py-2 font-bold hover:bg-blue-700 shadow-sm disabled:opacity-50"
+                    onClick={() => {
+                      if (!searchText.trim()) return;
+
+                      setDetalles([...detalles, {
+                        producto_id: null,
+                        producto_nombre: "",
+                        descripcion_manual: searchText,
+                        cantidad: cantidadTmp,
+                        precio_unitario: precioTmp,
+                        subtotal: precioTmp * cantidadTmp,
+                      }]);
+
+                      setShowManualInput(false);
+                      setSearchText("");
+                      setPrecioTmp(0);
+                      setCantidadTmp(1);
+                    }}
+                  >
+                    + Agregar Concepto
+                  </button>
+                </div>
+              </div>
+            )}
 
             {detalles.length > 0 && (
               <div className="mt-3 border rounded-lg bg-white overflow-hidden">
                 <table className="min-w-full text-xs">
                   <thead className="bg-gray-100">
                     <tr>
-                      <th className="p-2 text-left">Producto</th>
+                      <th className="p-2 text-left">Descripción / Producto</th>
+                      <th className="p-2 text-left">Tipo</th>
                       <th className="p-2 text-left">Cant.</th>
                       <th className="p-2 text-left">Subtotal</th>
                       <th className="p-2"></th>
@@ -415,7 +551,20 @@ export default function CreditosForm({
                   <tbody>
                     {detalles.map((d, idx) => (
                       <tr key={idx} className="border-t">
-                        <td className="p-2">{d.producto_nombre}</td>
+                        <td className="p-2">
+                          {d.producto_id ? (
+                            <span className="font-medium text-gray-700">{d.producto_nombre}</span>
+                          ) : (
+                            <span className="font-medium text-gray-800 italic">{d.descripcion_manual || "Concepto Manual"}</span>
+                          )}
+                        </td>
+                        <td className="p-2">
+                          {d.producto_id ? (
+                            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-700 border border-blue-200">PRODUCTO</span>
+                          ) : (
+                            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-700 border border-amber-200">CONCEPTO</span>
+                          )}
+                        </td>
                         <td className="p-2">{d.cantidad}</td>
                         <td className="p-2 font-bold text-gray-800">{d.subtotal.toLocaleString()}</td>
                         <td className="p-2 text-center">
@@ -428,7 +577,6 @@ export default function CreditosForm({
               </div>
             )}
           </div>
-
           <div className="bg-blue-900 p-5 rounded-xl text-white flex justify-between items-center shadow-inner">
             <span className="font-bold uppercase tracking-wider text-blue-200">Total Deuda Inicial:</span>
             <span className="text-2xl font-black">{totalProductos.toLocaleString("es-CO", { style: "currency", currency: "COP" })}</span>

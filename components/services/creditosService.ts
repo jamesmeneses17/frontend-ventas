@@ -11,7 +11,8 @@ const ENDPOINT_BASE = `${API_URL}/creditos`;
 // Detalle del crédito
 export interface DetalleCredito {
   id?: number;
-  producto_id: number;
+  producto_id: number | null;
+  descripcion_manual?: string | null;
   cantidad: number;
   precio_unitario?: number;
   subtotal?: number;

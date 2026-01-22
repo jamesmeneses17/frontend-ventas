@@ -10,6 +10,7 @@ interface ProductAutocompleteProps {
   onSelect: (product: any) => void;
   maxResults?: number;
   disabled?: boolean;
+  onSearchChange?: (value: string) => void;
 }
 
 export default function ProductAutocomplete({
@@ -17,6 +18,7 @@ export default function ProductAutocomplete({
   onSelect,
   maxResults = 8,
   disabled = false,
+  onSearchChange,
 }: ProductAutocompleteProps) {
   const [search, setSearch] = useState("");
   const [results, setResults] = useState<any[]>([]);
@@ -25,6 +27,8 @@ export default function ProductAutocomplete({
   const wrapperRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    if (onSearchChange) onSearchChange(search);
+
     if (search.length < 2) {
       setResults([]);
       return;
@@ -33,7 +37,7 @@ export default function ProductAutocomplete({
     getProductos(1, maxResults, "", search)
       .then((resp) => setResults(resp.data || []))
       .finally(() => setLoading(false));
-  }, [search, maxResults]);
+  }, [search, maxResults, onSearchChange]);
 
   // Cerrar dropdown al hacer click fuera
   useEffect(() => {
