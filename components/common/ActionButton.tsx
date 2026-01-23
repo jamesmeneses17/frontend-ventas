@@ -6,7 +6,7 @@ interface ActionButtonProps {
   // icon puede ser un ReactNode (SVG) o una clave como 'edit'|'delete'
   icon?: React.ReactNode | string;
   label?: string;
-  onClick: () => void;
+  onClick: (e?: any) => void;
   color?: "primary" | "danger";
   className?: string;
   title?: string;

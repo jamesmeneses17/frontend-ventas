@@ -11,6 +11,9 @@ export const formatCurrency = (value: number, currencyLabel = '$'): string => {
 export const formatNumber = (value: number): string =>
   new Intl.NumberFormat('en-US', { minimumFractionDigits: 0 }).format(value);
 
+export const formatCOP = (value: number): string =>
+  new Intl.NumberFormat('es-CO', { maximumFractionDigits: 0 }).format(value);
+
 export const formatDate = (value?: string | Date | null): string => {
   if (!value) return "-";
   try {

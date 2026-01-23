@@ -34,7 +34,8 @@ export default function CuentasCobrarPage() {
   const [showModal, setShowModal] = useState(false);
   const [showPagosModal, setShowPagosModal] = useState(false);
   const [editing, setEditing] = useState<any | null>(null);
-  const [paymentMode, setPaymentMode] = useState(false); // ✅ Nueva bandera
+  const [viewing, setViewing] = useState<any | null>(null);
+  const [paymentMode, setPaymentMode] = useState(false);
   const [selectedCreditoId, setSelectedCreditoId] = useState<number | null>(
     null
   );
@@ -78,11 +79,13 @@ export default function CuentasCobrarPage() {
   ============================ */
   const handleAdd = () => {
     setEditing(null);
+    setViewing(null);
     setShowModal(true);
   };
 
   const handleEdit = (credito: any) => {
     setEditing(credito);
+    setViewing(null);
     setPaymentMode(false); // Modo Edición
     setShowModal(true);
   };
@@ -98,11 +101,19 @@ export default function CuentasCobrarPage() {
     }
   };
 
+  const handleView = (credito: any) => {
+    setViewing(credito);
+    setEditing(null);
+    setPaymentMode(false);
+    setShowModal(true);
+  };
+
   const handleOpenPagos = (creditoId: number) => {
     // Buscar el crédito completo para pasarlo a editing
     const credito = creditos.find((c) => c.id === creditoId);
     if (!credito) return;
     setEditing(credito);
+    setViewing(null);
     setPaymentMode(true); // Modo Pagos
     setShowModal(true);
     // setSelectedCreditoId(creditoId);
@@ -118,10 +129,11 @@ export default function CuentasCobrarPage() {
      RENDER
   ============================ */
   return (
+
     <AuthenticatedLayout>
-      <div className="space-y-6">
+      <div className="space-y-4" style={{ zoom: '0.90' }}>
         {/* STATS */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <CardStat
             title="Total por Cobrar"
             value={new Intl.NumberFormat("es-CO", {
@@ -150,11 +162,11 @@ export default function CuentasCobrarPage() {
         </div>
 
         {/* MAIN */}
-        <div className="bg-white shadow rounded-2xl p-6 border">
-          <div className="flex justify-between items-start mb-6">
+        <div className="bg-white shadow rounded-2xl p-4 border">
+          <div className="flex justify-between items-start mb-4">
             <div>
-              <h1 className="text-2xl font-bold">Cuentas por Cobrar</h1>
-              <p className="text-gray-600">Gestión de créditos y pagos</p>
+              <h1 className="text-xl font-bold">Cuentas por Cobrar</h1>
+              <p className="text-sm text-gray-600">Gestión de créditos y pagos</p>
             </div>
 
             <ActionButton
@@ -180,6 +192,7 @@ export default function CuentasCobrarPage() {
             onEdit={handleEdit}
             onDelete={handleDelete}
             onOpenPagos={handleOpenPagos}
+            onView={handleView}
           />
 
           <div className="flex justify-between items-center mt-4">
@@ -211,10 +224,10 @@ export default function CuentasCobrarPage() {
           <ModalVentana
             isOpen={showModal}
             onClose={() => setShowModal(false)}
-            title={editing ? "Editar Crédito" : "Nuevo Crédito"}
+            title={viewing ? "Detalle del Crédito" : (editing ? "Editar Crédito" : "Nuevo Crédito")}
           >
             <CreditosForm
-              initialData={editing}
+              initialData={editing || viewing}
               onCancel={() => setShowModal(false)}
               onSaved={async () => {
                 setShowModal(false);
@@ -226,6 +239,7 @@ export default function CuentasCobrarPage() {
               }}
               onRefetch={load} // Refrescar tabla sin cerrar modal
               onlyPayment={paymentMode} // ✅ Controla qué ver
+              readOnly={!!viewing}
               onSubmit={async (payload) => {
                 if (editing?.id) {
                   await updateCredito(editing.id, payload);

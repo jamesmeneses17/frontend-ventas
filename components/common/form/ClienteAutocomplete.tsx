@@ -13,15 +13,17 @@ interface Cliente {
 interface Props {
     onSelect: (cliente: Cliente) => void;
     // 1. Cambiamos el nombre de la prop aquí para que coincida con el uso
-    initialValue?: string; 
+    initialValue?: string;
     placeholder?: string;
+    disabled?: boolean;
 }
 
 // 2. Desestructuramos 'initialValue' en lugar de 'defaultValue'
-export default function ClienteAutocomplete({ 
-    onSelect, 
-    initialValue = "", 
-    placeholder = "Buscar cliente..." 
+export default function ClienteAutocomplete({
+    onSelect,
+    initialValue = "",
+    placeholder = "Buscar cliente...",
+    disabled = false
 }: Props) {
     // 3. Ahora el estado puede usar 'initialValue' sin errores
     const [query, setQuery] = useState(initialValue);
@@ -58,6 +60,7 @@ export default function ClienteAutocomplete({
                     setIsOpen(true);
                 }}
                 onFocus={() => setIsOpen(true)}
+                disabled={disabled}
             />
 
             {isOpen && results.length > 0 && (

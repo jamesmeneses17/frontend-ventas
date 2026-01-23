@@ -20,13 +20,14 @@ interface CrudTableProps {
   onDelete?: (row: any) => void;
   renderRowActions?: (row: any) => React.ReactNode;
   loading?: boolean;
+  onRowClick?: (row: any) => void;
   // optional class overrides
   tableClass?: string;
   headerClass?: string;
   rowClass?: string;
 }
 
-const CrudTable: React.FC<CrudTableProps> = ({ columns = [], data = [], onEdit, onDelete, renderRowActions, loading = false, tableClass, headerClass, rowClass }) => {
+const CrudTable: React.FC<CrudTableProps> = ({ columns = [], data = [], onEdit, onDelete, renderRowActions, loading = false, tableClass, headerClass, rowClass, onRowClick }) => {
   if (loading) {
     return (
       <div className="flex justify-center items-center py-8">
@@ -64,7 +65,11 @@ const CrudTable: React.FC<CrudTableProps> = ({ columns = [], data = [], onEdit, 
           ) : (
             data.map((row, idx) => {
               return (
-                <tr key={row?.id ?? idx} className={rowClass ?? undefined}>
+                <tr
+                  key={row?.id ?? idx}
+                  className={`${rowClass ?? ""} ${onRowClick ? "cursor-pointer hover:bg-gray-50 transition-colors" : ""}`}
+                  onClick={() => onRowClick && onRowClick(row)}
+                >
                   {columns.map((col) => {
                     if (col.render) {
                       return (

@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { getPagosByCredito, registrarPago, anularPago } from "../services/pagosCreditoService";
+import { formatCurrency, formatCOP } from "../../utils/formatters";
 import { useForm, SubmitHandler } from "react-hook-form";
 import FormInput from "../common/form/FormInput";
 import FormSelect from "../common/form/FormSelect";
@@ -42,8 +43,6 @@ const formatInputAsCurrency = (value: string) => {
   const number = value.replace(/\D/g, "");
   if (!number) return "";
   return new Intl.NumberFormat("es-CO", {
-    style: "currency",
-    currency: "COP",
     maximumFractionDigits: 0,
   }).format(Number(number));
 };
@@ -56,6 +55,7 @@ interface Props {
   onSaved: () => void | Promise<void>;
   onRefetch?: () => void | Promise<void>;
   onlyPayment?: boolean;
+  readOnly?: boolean;
 }
 
 export default function CreditosForm({
@@ -65,6 +65,7 @@ export default function CreditosForm({
   onSaved,
   onRefetch,
   onlyPayment = false,
+  readOnly = false,
   formError,
 }: Props) {
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -231,7 +232,7 @@ export default function CreditosForm({
             <div className="text-right">
               <p className="text-xs text-blue-600 font-bold uppercase">Saldo Actual</p>
               <p className="text-2xl font-black text-blue-700">
-                {saldoPendiente.toLocaleString("es-CO", { style: "currency", currency: "COP" })}
+                {formatCOP(Number(saldoPendiente))}
               </p>
             </div>
           </div>
@@ -304,7 +305,7 @@ export default function CreditosForm({
                       <tr key={p.id} className="hover:bg-gray-50">
                         <td className="px-4 py-2">{p.fecha_pago ? new Date(p.fecha_pago).toISOString().split('T')[0] : '-'}</td>
                         <td className="px-4 py-2 font-bold text-green-700">
-                          {Number(p.monto_pago).toLocaleString("es-CO", { style: "currency", currency: "COP" })}
+                          {formatCOP(Number(p.monto_pago))}
                         </td>
 
 
@@ -340,6 +341,7 @@ export default function CreditosForm({
             value={values.numero_factura}
             onChange={(e) => setValue("numero_factura", e.target.value)}
             placeholder="FAC-001"
+            disabled={readOnly}
           />
 
           <div className="w-full">
@@ -348,8 +350,9 @@ export default function CreditosForm({
             </label>
             <ClienteAutocomplete
               onSelect={(cliente) => setValue("cliente_id", cliente.id)}
-              initialValue={initialData?.cliente?.nombre || ""}
               placeholder="Escriba nombre o documento..."
+              disabled={readOnly}
+              initialValue={initialData?.cliente?.nombre || ""}
             />
             <input type="hidden" value={watch("cliente_id") || ""} />
           </div>
@@ -362,6 +365,7 @@ export default function CreditosForm({
               value={values.fecha_inicial}
               onChange={(e) => setValue("fecha_inicial", e.target.value)}
               required
+              disabled={readOnly}
             />
             <FormInput
               label="Fecha final"
@@ -370,6 +374,7 @@ export default function CreditosForm({
               value={values.fecha_final}
               onChange={(e) => setValue("fecha_final", e.target.value)}
               required
+              disabled={readOnly}
             />
           </div>
 
@@ -386,11 +391,11 @@ export default function CreditosForm({
                     setPrecioTmp(0);
                     setCantidadTmp(1);
                   }}
-                  className="text-xs text-blue-600 font-bold hover:underline"
+                  className={`text-xs text-blue-600 font-bold hover:underline ${readOnly ? "hidden" : ""}`}
                 >
                   + Nuevo Concepto Manual
                 </button>
-              ) : (
+              ) : !readOnly ? (
                 <button
                   type="button"
                   onClick={() => {
@@ -404,10 +409,10 @@ export default function CreditosForm({
                 >
                   Volver a Buscador de Productos
                 </button>
-              )}
+              ) : null}
             </div>
 
-            {!showManualInput ? (
+            {!readOnly && !showManualInput && (
               // MODO PRODUCTO (ESTÁNDAR)
               <div className="grid grid-cols-1 md:grid-cols-4 gap-2 items-end">
                 <div className="md:col-span-2">
@@ -434,7 +439,7 @@ export default function CreditosForm({
                 <div className="flex flex-col">
                   <label className="text-xs font-bold text-gray-500 block mb-1">Precio Unit.</label>
                   <div className="form-input w-full bg-gray-100 text-gray-600">
-                    {selectedProduct ? Number(precioTmp).toLocaleString("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 }) : "$ 0"}
+                    {selectedProduct ? formatCOP(Number(precioTmp)) : "0"}
                   </div>
                 </div>
 
@@ -462,7 +467,9 @@ export default function CreditosForm({
                   > + Agregar </button>
                 </div>
               </div>
-            ) : (
+            )}
+
+            {!readOnly && showManualInput && (
               // MODO MANUAL (CONCEPTO)
               <div className="bg-blue-50/50 p-3 rounded-lg border border-blue-100">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
@@ -545,7 +552,7 @@ export default function CreditosForm({
                       <th className="p-2 text-left">Tipo</th>
                       <th className="p-2 text-left">Cant.</th>
                       <th className="p-2 text-left">Subtotal</th>
-                      <th className="p-2"></th>
+                      {!readOnly && <th className="p-2"></th>}
                     </tr>
                   </thead>
                   <tbody>
@@ -566,10 +573,12 @@ export default function CreditosForm({
                           )}
                         </td>
                         <td className="p-2">{d.cantidad}</td>
-                        <td className="p-2 font-bold text-gray-800">{d.subtotal.toLocaleString()}</td>
-                        <td className="p-2 text-center">
-                          <button type="button" className="text-red-500 hover:scale-110" onClick={() => setDetalles(detalles.filter((_, i) => i !== idx))}>✕</button>
-                        </td>
+                        <td className="p-2 font-bold text-gray-800">{formatCOP(d.subtotal)}</td>
+                        {!readOnly && (
+                          <td className="p-2 text-center">
+                            <button type="button" className="text-red-500 hover:scale-110" onClick={() => setDetalles(detalles.filter((_, i) => i !== idx))}>✕</button>
+                          </td>
+                        )}
                       </tr>
                     ))}
                   </tbody>
@@ -579,8 +588,41 @@ export default function CreditosForm({
           </div>
           <div className="bg-blue-900 p-5 rounded-xl text-white flex justify-between items-center shadow-inner">
             <span className="font-bold uppercase tracking-wider text-blue-200">Total Deuda Inicial:</span>
-            <span className="text-2xl font-black">{totalProductos.toLocaleString("es-CO", { style: "currency", currency: "COP" })}</span>
+            <span className="text-2xl font-black">$ {formatCOP(totalProductos)}</span>
           </div>
+
+          {/* HISTORIAL PAGOS EN MODO READONLY */}
+          {readOnly && (
+            <div className="border rounded-xl overflow-hidden bg-white shadow-sm mt-4">
+              <div className="bg-gray-50 px-4 py-2 border-b flex justify-between items-center">
+                <span className="text-sm font-bold text-gray-700">Historial de Pagos</span>
+                <div className="text-right">
+                  <p className="text-xs text-blue-500 font-medium">Saldo Pendiente</p>
+                  <p className="text-lg font-black text-blue-700">{formatCOP(Number(saldoPendiente))}</p>
+                </div>
+              </div>
+              <table className="min-w-full text-sm">
+                <thead className="bg-gray-100 text-gray-600">
+                  <tr>
+                    <th className="px-4 py-2 text-left">Fecha</th>
+                    <th className="px-4 py-2 text-left">Monto</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y">
+                  {pagos.length === 0 ? (
+                    <tr><td colSpan={2} className="text-center py-6 text-gray-400 italic">No hay pagos registrados.</td></tr>
+                  ) : (
+                    pagos.map((p) => (
+                      <tr key={p.id} className="hover:bg-gray-50">
+                        <td className="px-4 py-2">{p.fecha_pago ? new Date(p.fecha_pago).toISOString().split('T')[0] : '-'}</td>
+                        <td className="px-4 py-2 font-bold text-green-700">{formatCOP(Number(p.monto_pago))}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )}
 
           <div className="flex flex-col gap-3 pt-6 border-t mt-4">
             {submitError && (
@@ -589,10 +631,14 @@ export default function CreditosForm({
               </div>
             )}
             <div className="flex justify-end gap-3">
-              <Button type="button" onClick={onCancel} className="bg-gray-100 text-gray-600 hover:bg-gray-200">Cancelar</Button>
-              <Button type="submit" disabled={isSubmitting} className="px-10">
-                {isSubmitting ? "Procesando..." : (isEditing ? "Guardar Cambios" : "Crear Crédito Nuevo")}
+              <Button type="button" onClick={onCancel} className="bg-gray-100 text-gray-600 hover:bg-gray-200">
+                {readOnly ? "Cerrar" : "Cancelar"}
               </Button>
+              {!readOnly && (
+                <Button type="submit" disabled={isSubmitting} className="px-10">
+                  {isSubmitting ? "Procesando..." : (isEditing ? "Guardar Cambios" : "Crear Crédito Nuevo")}
+                </Button>
+              )}
             </div>
           </div>
         </form>
