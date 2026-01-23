@@ -5,7 +5,8 @@ import {
   ShoppingCart, Scale, FileText, Wallet, Image, MapPin, Type,
   ChevronDown, ChevronUp, Contact,
   ShoppingBag, HandCoins, Globe,
-  Layers, Grid, ListTree // Nuevos iconos para categorías
+  Layers, Grid, ListTree, // Nuevos iconos para categorías
+  ClipboardCheck
 } from "lucide-react";
 
 import Link from "next/link";
@@ -55,7 +56,7 @@ const navigation = [
     items: [
       { name: "BD LISTA PRODUCTOS", href: "/admin/bd-lista", icon: Package },
       { name: "Control de Inventario", href: "/admin/lista-productos", icon: Box },
-      { name: "Auditoría de Inventario", href: "/admin/auditoria-inventario", icon: Box },
+      { name: "Auditoría de Inventario", href: "/admin/auditoria-inventario", icon: ClipboardCheck },
     ],
   },
   {

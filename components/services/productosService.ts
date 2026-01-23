@@ -64,7 +64,7 @@ export const createProducto = async (data: CreateProductoData): Promise<Producto
  */
 export const updateProducto = async (id: number, data: UpdateProductoData): Promise<Producto> => {
     const payload: any = { ...data };
-    
+
     console.log('==========================================');
     console.log('[updateProducto] 🔵 Datos recibidos:', data);
     console.log('[updateProducto] 🔵 ID del producto:', id);
@@ -85,7 +85,7 @@ export const updateProducto = async (id: number, data: UpdateProductoData): Prom
     if ('subcategoriaId' in data) {
         const subcat = data.subcategoriaId;
         console.log('[updateProducto] subcategoriaId detectado en data:', subcat, 'tipo:', typeof subcat);
-        
+
         if (subcat === null) {
             // Explícitamente null → desvincular subcategoría
             payload.subcategoriaId = null;
@@ -109,7 +109,7 @@ export const updateProducto = async (id: number, data: UpdateProductoData): Prom
             console.log('[updateProducto] precio_venta →', pv);
         }
     }
-    
+
     // ✅ Manejo específico de precio_costo
     if ('precio_costo' in data) {
         const pcosto = Number((data as any).precio_costo);
@@ -118,7 +118,7 @@ export const updateProducto = async (id: number, data: UpdateProductoData): Prom
             console.log('[updateProducto] precio_costo →', pcosto);
         }
     }
-    
+
     if ('precio' in data) {
         const pc = Number((data as any).precio);
         if (!Number.isNaN(pc)) {
@@ -138,9 +138,9 @@ export const updateProducto = async (id: number, data: UpdateProductoData): Prom
     console.log('[updateProducto] 🚀 PATCH', endpoint);
     console.log('[updateProducto] 🚀 PAYLOAD ENVIADO AL BACKEND:', JSON.stringify(payload, null, 2));
     console.log('==========================================');
-    
+
     const res = await axios.patch(endpoint, payload);
-    
+
     console.log('[updateProducto] ✅ Respuesta del backend:', res?.data);
     return res.data as Producto;
 };
@@ -155,22 +155,22 @@ export const deleteProducto = async (id: number): Promise<void> => {
 
 // --- Interfaces de Soporte ---
 export interface Estado {
-    id: number;
-    nombre: string;
+    id: number;
+    nombre: string;
 }
 
 export interface Categoria {
-    id: number;
-    nombre: string;
+    id: number;
+    nombre: string;
 }
 
 // Interfaz simplificada para la relación de precios
 export interface Precio {
-    id: number;
-    valor_unitario: number;
-    fecha_inicio: string;
-    fecha_fin: string | null;
-    productoId: number;
+    id: number;
+    valor_unitario: number;
+    fecha_inicio: string;
+    fecha_fin: string | null;
+    productoId: number;
 }
 
 // Interfaz para imágenes del producto
@@ -186,7 +186,7 @@ export interface Producto {
     id: number;
     nombre: string;
     codigo: string;
-    descripcion?: string; 
+    descripcion?: string;
     ficha_tecnica_url?: string;
     imagenes?: ProductoImagen[];    // ✅ Campos aplanados/calculados que vienen del backend
     stock: number;             // DEBE SER OBLIGATORIO si siempre viene del backend
@@ -197,7 +197,7 @@ export interface Producto {
     activo?: boolean; // Nuevo campo para estado activo
     // Relaciones 
     caracteristicas?: any[];
-    precios?: Precio[]; 
+    precios?: Precio[];
     inventario?: any[]; // La entidad inventario completa
     // Campos copiados desde la relación inventario (opcional, el backend puede exponerlos en la raíz)
     compras?: number;
@@ -211,10 +211,12 @@ export interface Producto {
     subcategoriaId?: number;        // ✅ Subcategoría (nivel 3)
     estado?: Estado;
     subcategoria?: any; // Relación a subcategoría
+    precio_costo?: number;
+    precio_venta?: number;
 }
 export interface PaginacionResponse<T> {
-  data: T[];
-  total: number;
+    data: T[];
+    total: number;
 }
 
 // 2. TIPO DE DATOS PARA CREACIÓN/ACTUALIZACIÓN (ASUMIENDO STOCK MÍNIMO)
@@ -224,13 +226,13 @@ export type CreateProductoData = {
     descripcion: string;
     ficha_tecnica_url?: string;
     // ❌ Eliminar imagen_url - las imágenes se cargan después
-    
+
     // Se espera que el DTO reciba estos datos
     stock: number;
     precio: number;          // costo (opcional si backend lo usa)
     precio_venta?: number;   // precio de venta
     stockMinimo?: number;    // ✅ Asumiendo que agregaste esto al DTO
-    
+
     categoriaId?: number;           // ✅ Categoría (nivel 2)
     categoriaPrincipalId?: number;  // ✅ Categoría principal (nivel 1)
     subcategoriaId?: number;        // ✅ Subcategoría (nivel 3)
@@ -344,8 +346,8 @@ export const getProductos = async (
 };
 
 /**
- * Obtener un producto por ID.
- */
+ * Obtener un producto por ID.
+ */
 export const getProductoById = async (id: number): Promise<Producto> => {
     // Primero intentamos la ruta con-relations que algunos backends exponen.
     // Si falla (por ejemplo, el backend no la tiene), intentamos la ruta simple /productos/:id

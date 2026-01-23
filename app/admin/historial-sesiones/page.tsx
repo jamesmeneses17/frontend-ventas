@@ -57,6 +57,26 @@ export default function HistorialSesionesPage() {
         }
     };
 
+    const timeAgo = (dateString: string) => {
+        const now = new Date();
+        const past = new Date(dateString);
+        const diffInSeconds = Math.floor((now.getTime() - past.getTime()) / 1000);
+
+        if (diffInSeconds < 60) return `Hace unos segundos`;
+
+        const diffInMinutes = Math.floor(diffInSeconds / 60);
+        if (diffInMinutes < 60) return `Hace ${diffInMinutes} min`;
+
+        const diffInHours = Math.floor(diffInMinutes / 60);
+        if (diffInHours < 24) return `Hace ${diffInHours} ${diffInHours === 1 ? 'hora' : 'horas'}`;
+
+        const diffInDays = Math.floor(diffInHours / 24);
+        if (diffInDays < 30) return `Hace ${diffInDays} ${diffInDays === 1 ? 'día' : 'días'}`;
+
+        const diffInMonths = Math.floor(diffInDays / 30);
+        return `Hace ${diffInMonths} ${diffInMonths === 1 ? 'mes' : 'meses'}`;
+    };
+
     const columns = [
         { key: "nombre" as keyof Usuario, label: "Usuario" },
         { key: "correo" as keyof Usuario, label: "Correo" },
@@ -65,12 +85,19 @@ export default function HistorialSesionesPage() {
             key: "ultimo_login" as keyof Usuario,
             label: "Último Inicio de Sesión",
             render: (value: string | undefined) => (
-                value
-                    ? new Date(value).toLocaleString('es-CO', {
-                        day: '2-digit', month: '2-digit', year: 'numeric',
-                        hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true
-                    })
-                    : <span className="text-gray-400 italic">Nunca</span>
+                value ? (
+                    <div className="flex flex-col">
+                        <span className="font-bold text-emerald-600">
+                            {timeAgo(value)}
+                        </span>
+                        <span className="text-xs text-gray-500">
+                            {new Date(value).toLocaleString('es-CO', {
+                                day: '2-digit', month: 'long',
+                                hour: '2-digit', minute: '2-digit', hour12: true
+                            })}
+                        </span>
+                    </div>
+                ) : <span className="text-gray-400 italic">Nunca</span>
             ),
         },
         {
@@ -79,8 +106,8 @@ export default function HistorialSesionesPage() {
             render: (value: number) => (
                 <span
                     className={`px-3 py-1 rounded-full text-xs font-semibold border ${value === 1
-                            ? "bg-green-100 text-green-800 border-green-200"
-                            : "bg-gray-100 text-gray-800 border-gray-200"
+                        ? "bg-green-100 text-green-800 border-green-200"
+                        : "bg-gray-100 text-gray-800 border-gray-200"
                         }`}
                 >
                     {value === 1 ? "En Línea" : "Desconectado"}

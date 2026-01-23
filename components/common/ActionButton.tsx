@@ -10,6 +10,7 @@ interface ActionButtonProps {
   color?: "primary" | "danger";
   className?: string;
   title?: string;
+  disabled?: boolean;
 }
 
 const ActionButton: React.FC<ActionButtonProps> = ({
@@ -19,6 +20,7 @@ const ActionButton: React.FC<ActionButtonProps> = ({
   color = "primary",
   className = "",
   title,
+  disabled
 }) => {
   const renderIcon = (ic?: React.ReactNode | string) => {
     if (!ic) return null;
@@ -48,14 +50,14 @@ const ActionButton: React.FC<ActionButtonProps> = ({
   };
 
   const base =
-    "inline-flex items-center px-2 py-1 text-sm font-medium rounded-md focus:outline-none transition-colors duration-200";
+    "inline-flex items-center px-2 py-1 text-sm font-medium rounded-md focus:outline-none transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed";
   const styles =
     color === "danger"
       ? "text-red-600 hover:text-red-900"
       : "text-indigo-600 hover:text-indigo-900";
 
   return (
-    <button onClick={onClick} className={`${base} ${styles} ${className}`} title={title || label}>
+    <button onClick={onClick} className={`${base} ${styles} ${className}`} title={title || label} disabled={disabled}>
       {renderIcon(icon)}
       {label && <span className="ml-1">{label}</span>}
     </button>
