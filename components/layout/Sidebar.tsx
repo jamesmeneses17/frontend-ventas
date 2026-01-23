@@ -55,6 +55,7 @@ const navigation = [
     items: [
       { name: "BD LISTA PRODUCTOS", href: "/admin/bd-lista", icon: Package },
       { name: "Control de Inventario", href: "/admin/lista-productos", icon: Box },
+      { name: "Auditoría de Inventario", href: "/admin/auditoria-inventario", icon: Box },
     ],
   },
   {

@@ -42,7 +42,10 @@ export default function ClientesPage() {
   } = useCrudCatalog<Cliente, CreateClienteData, UpdateClienteData>(
     {
       // Usamos las funciones CRUD del nuevo servicio de clientes
-      loadItems: getClientes as any, // Asegúrate de que getClientes cumpla con la firma de useCrudCatalog
+      // Usamos las funciones CRUD del nuevo servicio de clientes
+      loadItems: async (all, page, size, searchTerm) => {
+        return await getClientes(searchTerm, page, size);
+      },
       createItem: createCliente,
       updateItem: updateCliente,
       deleteItem: deleteCliente,

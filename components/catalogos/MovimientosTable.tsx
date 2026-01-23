@@ -39,6 +39,8 @@ export default function MovimientosTable({
         return "bg-amber-100 text-amber-700 border border-amber-200 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider";
       case "EGRESO POR COMPRA":
         return "bg-indigo-100 text-indigo-700 border border-indigo-200 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider";
+      case "INGRESOS POR ABONOS":
+        return "bg-cyan-100 text-cyan-700 border border-cyan-200 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider";
       default:
         return "bg-slate-100 text-slate-600 border border-slate-200 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider";
     }
@@ -199,7 +201,7 @@ export default function MovimientosTable({
       label: "Monto",
       render: (row: MovimientoCaja) => {
         const nombreTipo = row.tipoMovimiento?.nombre?.toUpperCase() || "";
-        const isPositive = nombreTipo === 'INGRESO' || nombreTipo === 'VENTA' || nombreTipo === 'INGRESO POR VENTA';
+        const isPositive = nombreTipo === 'INGRESO' || nombreTipo === 'VENTA' || nombreTipo === 'INGRESO POR VENTA' || nombreTipo === 'INGRESOS POR ABONOS';
 
         return (
           <div className={`flex items-center gap-1 font-mono font-bold ${isPositive ? 'text-emerald-600' : 'text-rose-600'}`}>

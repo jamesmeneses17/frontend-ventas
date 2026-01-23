@@ -27,6 +27,7 @@ const TIPO_MOVIMIENTO_FILTRO = [
   { label: "Egresos", value: "EGRESO" },
   { label: "Gastos", value: "GASTO" },
   { label: "Ingresos por Ventas", value: "Ingreso por Venta" },
+  { label: "Ingresos por Abonos", value: "Ingresos por Abonos" },
   { label: "Egresos por Compras", value: "Egreso por Compra" },
 ];
 
