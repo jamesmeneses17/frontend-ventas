@@ -242,6 +242,12 @@ export default function VentasPage() {
     }
   };
 
+  const handleDeleteWithUpdate = async (id: number) => {
+    await handleDelete(id);
+    // Forzar actualización de estadísticas tras eliminar
+    await recalculateTotalsAll();
+  };
+
   // ================== CARGA DE MESES/AÑOS ==================
   useEffect(() => {
     const reload = async () => {
@@ -453,7 +459,7 @@ export default function VentasPage() {
             allData={allContextData}
             loading={loading}
             onEdit={handleEdit}
-            onDelete={handleDelete}
+            onDelete={handleDeleteWithUpdate}
             onView={handleView}
           />
 
