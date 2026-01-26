@@ -199,12 +199,14 @@ export default function ComprasForm({
             return merged;
           });
 
-          // Autoseleccionar si no hay nada seleccionado
-          if (!formValues.productoId) {
-            const exact = list.find((p) => p.codigo?.toLowerCase() === normalized);
-            const partial = list.find((p) => p.codigo?.toLowerCase().startsWith(normalized));
-            const target = exact || partial;
-            if (target) {
+          // Autoseleccionar siempre el mejor match (exacto o parcial por código)
+          const exact = list.find((p) => p.codigo?.toLowerCase() === normalized);
+          const partial = list.find((p) => p.codigo?.toLowerCase().startsWith(normalized));
+          const target = exact || partial;
+
+          if (target) {
+            // Solo actualizar si es diferente para evitar loops innecesarios (aunque rhf lo maneja)
+            if (formValues.productoId !== String(target.id)) {
               setValue("productoId", String(target.id), { shouldValidate: true });
             }
           }
