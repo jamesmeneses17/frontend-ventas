@@ -328,34 +328,33 @@ export default function VentasPage() {
         });
       }
 
-      // 2. Map data
-      const dataToExport = items.map(it => {
-        const cantidad = Number(it.cantidad);
-        const precioVenta = Number(it.precio_venta);
+      // 2. Map data (Flatenning: 1 Row per Product sold)
+      const dataToExport = items.flatMap((venta: any) => {
+        const detalles = venta.detalles || [];
 
-        // FIX: Costo histórico para reporte
-        // FIX: Costo histórico SOLAMENTE
-        const costoUnit = Number(it.costo_unitario ?? 0);
+        return detalles.map((det: any) => {
+          const cantidad = Number(det.cantidad || 0);
+          const precioVenta = Number(det.precio_venta || 0);
+          // Costo histórico (o fallback si es venta antigua no migrada)
+          const costoUnit = Number(det.costo_unitario ?? 0);
 
-        const totalVenta = Number(it.total_venta ?? (cantidad * precioVenta));
+          const subtotal = Number(det.subtotal || (cantidad * precioVenta));
+          const utilidad = subtotal - (costoUnit * cantidad);
 
-        let utilidad = Number(it.utilidad);
-        if (isNaN(utilidad)) {
-          utilidad = (precioVenta - costoUnit) * cantidad;
-        }
-
-        return {
-          ID: it.id,
-          FECHA: it.fecha,
-          CODIGO: it.producto?.codigo || 'SN',
-          PRODUCTO: it.producto?.nombre || 'Producto Desconocido',
-          CATEGORIA: it.producto?.categoria?.nombre || 'General',
-          CANTIDAD: cantidad,
-          COSTO_UNITARIO: costoUnit,
-          PRECIO_VENTA: precioVenta,
-          TOTAL_VENTA: totalVenta,
-          UTILIDAD: utilidad
-        };
+          return {
+            ID_VENTA: venta.id,
+            FECHA: venta.fecha ? new Date(`${venta.fecha}T00:00:00`).toLocaleDateString() : "-",
+            CLIENTE: venta.cliente?.nombre || 'Cliente General',
+            CODIGO: det.producto?.codigo || 'SN',
+            PRODUCTO: det.producto?.nombre || 'Producto Desconocido',
+            CATEGORIA: det.producto?.categoria?.nombre || 'General',
+            CANTIDAD: cantidad,
+            COSTO_UNITARIO: costoUnit,
+            PRECIO_VENTA: precioVenta,
+            SUBTOTAL: subtotal,
+            UTILIDAD: utilidad
+          };
+        });
       });
 
       // 3. Export
