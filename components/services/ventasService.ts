@@ -10,7 +10,7 @@ export interface VentaDetalle {
     id?: number;
     productoId: number;
     cantidad: number;
-    // costo_unitario removed
+    costo_unitario?: number; // Added back
     precio_venta: number;
     subtotal?: number;
     producto?: any; // Para mostrar nombre en tabla
@@ -33,7 +33,10 @@ export interface CreateVentaDTO {
     items: {
         productoId: number;
         cantidad: number;
-        // costo_unitario removed
+        // costo_unitario will be handled by backend, but we can keep it here if needed for optimistic UI. 
+        // For CreateDTO usually we don't send it, backend fetches it.
+        // Pero el user pidio revisar "frontend-ventas". El DTO de creacion NO manda costo.
+        // Solo la interfaz de lectura VentaDetalle lo necesita.
         precio_venta: number;
     }[];
 }

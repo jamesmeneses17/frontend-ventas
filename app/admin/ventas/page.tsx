@@ -203,7 +203,11 @@ export default function VentasPage() {
         const detalles = it.detalles || [];
         const utilidadVenta = detalles.reduce((u: number, d: any) => {
           const precioVenta = Number(d.precio_venta ?? 0);
-          const costoUnit = Number(d.producto?.precio_costo ?? 0);
+
+          // FIX: Usar costo histórico si existe
+          // FIX: Usar costo histórico SOLAMENTE.
+          const costoUnit = Number(d.costo_unitario ?? 0);
+
           const cantidad = Number(d.cantidad ?? 0);
           return u + (precioVenta - costoUnit) * cantidad;
         }, 0);
@@ -328,7 +332,10 @@ export default function VentasPage() {
       const dataToExport = items.map(it => {
         const cantidad = Number(it.cantidad);
         const precioVenta = Number(it.precio_venta);
-        const costoUnit = Number(it.costo_unitario);
+
+        // FIX: Costo histórico para reporte
+        // FIX: Costo histórico SOLAMENTE
+        const costoUnit = Number(it.costo_unitario ?? 0);
 
         const totalVenta = Number(it.total_venta ?? (cantidad * precioVenta));
 
@@ -507,7 +514,11 @@ export default function VentasPage() {
                     </thead>
                     <tbody className="divide-y">
                       {viewingItem.detalles?.map((det: any, idx: number) => {
-                        const costoUnit = Number(det.producto?.precio_costo || 0);
+                        // FIX: Preferimos costo_unitario guardado en detalle (histórico).
+                        // Si es 0 o null (ventas viejas), usamos el costo actual del producto.
+                        // FIX: Solo costo histórico (leído de BD)
+                        const costoUnit = Number(det.costo_unitario ?? 0);
+
                         const cantidad = Number(det.cantidad || 0);
                         const subtotal = Number(det.subtotal || 0);
                         const utilidad = subtotal - (costoUnit * cantidad);

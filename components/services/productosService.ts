@@ -370,7 +370,10 @@ export const getProductoById = async (id: number): Promise<Producto> => {
             }
         }
         data.precio = precioVentaNum > 0 ? precioVentaNum : (precioCostoNum > 0 ? precioCostoNum : precioNum);
-        data.stock = Number(data.stock) || 0;
+        // FIX: Usar stock del backend o fallback a inventario.stock
+        const stockFromInv = data.inventario && Array.isArray(data.inventario) ? data.inventario[0]?.stock : (data.inventario?.stock);
+        const finalStock = Number(data.stock ?? stockFromInv ?? 0);
+        data.stock = finalStock;
         data.stockMinimo = Number(data.stockMinimo) || 5;
         data.imagenes = data.imagenes || [];
         data.activo = activoBool;
@@ -385,7 +388,10 @@ export const getProductoById = async (id: number): Promise<Producto> => {
             const precioCostoNum = Number(data.precio_costo ?? 0);
             const precioNum = Number(data.precio ?? 0);
             data.precio = precioVentaNum > 0 ? precioVentaNum : (precioCostoNum > 0 ? precioCostoNum : precioNum);
-            data.stock = Number(data.stock) || 0;
+            // FIX: Usar stock del backend o fallback a inventario.stock
+            const stockFromInv = data.inventario && Array.isArray(data.inventario) ? data.inventario[0]?.stock : (data.inventario?.stock);
+            const finalStock = Number(data.stock ?? stockFromInv ?? 0);
+            data.stock = finalStock;
             data.stockMinimo = Number(data.stockMinimo) || 5;
             data.imagenes = data.imagenes || [];
             return data as Producto;
