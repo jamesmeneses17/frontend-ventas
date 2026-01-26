@@ -483,7 +483,7 @@ export default function VentasPage() {
                 <div className="grid grid-cols-2 gap-4 bg-gray-50 p-3 rounded">
                   <div>
                     <span className="font-bold block text-gray-500">Fecha:</span>
-                    {viewingItem.fecha ? new Date(viewingItem.fecha).toLocaleDateString() : "-"}
+                    {viewingItem.fecha ? new Date(`${viewingItem.fecha}T00:00:00`).toLocaleDateString() : "-"}
                   </div>
                   <div>
                     <span className="font-bold block text-gray-500">Cliente:</span>
