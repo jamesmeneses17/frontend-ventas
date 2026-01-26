@@ -301,12 +301,12 @@ export default function ListaProductosPage() {
                 color="primary"
                 className="bg-orange-600 hover:bg-orange-700 text-white border-orange-600"
                 onClick={async () => {
-                  if (!confirm("⚠️ ¿Estás seguro de recalcular el stock de TODOS los productos?\n\nEsto puede tardar unos segundos.")) return;
+                  if (!confirm(" ¿Estás seguro de recalcular el stock de TODOS los productos?\n\nEsto puede tardar unos segundos.")) return;
                   try {
                     const axios = (await import("axios")).default;
                     const { API_URL } = await import("../../../components/services/apiConfig");
                     await axios.post(`${API_URL}/inventario/sincronizar-todo`);
-                    alert("✅ Inventario sincronizado correctamente.");
+                    alert(" Inventario sincronizado correctamente.");
                     handlePageChange(1);
                     updateStats();
                   } catch (e) {
