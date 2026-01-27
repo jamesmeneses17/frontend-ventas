@@ -307,7 +307,7 @@ export default function AuditoriaInventarioPage() {
                                         onClick={resetFlow}
                                         className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 text-sm font-medium"
                                     >
-                                        Cancelar / Siguiente
+                                        Cancelar / Siguientee
                                     </button>
                                     <ActionButton
                                         label={saving ? "Guardando..." : "Confirmar Ajuste y Siguiente"}
