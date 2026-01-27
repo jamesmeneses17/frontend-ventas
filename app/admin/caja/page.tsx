@@ -15,8 +15,8 @@ import CardStat from "../../../components/ui/CardStat";
 
 import { DollarSign, ArrowUpRight, ArrowDownLeft, AlertTriangle } from "lucide-react";
 // Imports at top
-import { getCompraById, Compra } from "../../../components/services/comprasService";
-import { getVentaById, Venta } from "../../../components/services/ventasService";
+import { getCompraById, Compra, syncCajaCompras } from "../../../components/services/comprasService";
+import { getVentaById, Venta, syncCajaVentas } from "../../../components/services/ventasService";
 import { createMovimiento, CreateMovimientoData, deleteMovimiento, getMovimientosCaja, MovimientoCaja, updateMovimiento, UpdateMovimientoData, getCajaStats, CajaStats } from "../../../components/services/cajaService";
 import MovimientosTable from "../../../components/catalogos/MovimientosTable";
 import MovimientosForm from "../../../components/catalogos/MovimientosForm";
@@ -252,6 +252,34 @@ export default function CajaPage() {
     }
   };
 
+  const [isSyncing, setIsSyncing] = React.useState(false);
+
+  const handleSync = async () => {
+    if (!window.confirm("¿Deseas sincronizar historial de Compras y Ventas con Caja? Esto creará movimientos faltantes.")) return;
+
+    setIsSyncing(true);
+    try {
+
+      const resCompras = await syncCajaCompras();
+      const resVentas = await syncCajaVentas();
+
+      const createdTotal = (resCompras.created_movements || 0) + (resVentas.created_movements || 0);
+
+      setNotification({
+        type: 'success',
+        message: `Sincronización completada. Se crearon ${createdTotal} movimientos faltantes.`
+      });
+
+      fetchStats();
+      loadAllMovements();
+    } catch (error) {
+      console.error("Sync error:", error);
+      setNotification({ type: 'error', message: 'Error al sincronizar datos.' });
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
   return (
     <AuthenticatedLayout>
       <div className="space-y-6">
@@ -300,6 +328,13 @@ export default function CajaPage() {
             </div>
 
             <div className="flex gap-2">
+              <ActionButton
+                icon={isSyncing ? <div className="animate-spin h-4 w-4 border-2 border-white rounded-full border-t-transparent"></div> : <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-refresh-cw"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" /><path d="M21 3v5h-5" /><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" /><path d="M8 16H3v5" /></svg>}
+                label={isSyncing ? "Sincronizando..." : "Sincronizar"}
+                onClick={handleSync}
+                className="bg-blue-600 hover:bg-blue-700 text-white"
+                disabled={isSyncing}
+              />
               <ActionButton
                 icon={<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-file-spreadsheet"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" /><path d="M14 2v4a2 2 0 0 0 2 2h4" /><path d="M8 13h2" /><path d="M8 17h2" /><path d="M14 13h2" /><path d="M14 17h2" /></svg>}
                 label="Exportar Excel"

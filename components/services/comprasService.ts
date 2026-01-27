@@ -155,3 +155,16 @@ export const deleteCompra = async (id: number): Promise<void> => {
         throw err;
     }
 };
+
+/**
+ * Sincronizar Movimientos de Caja para Compras faltantes
+ */
+export const syncCajaCompras = async (): Promise<any> => {
+    try {
+        const res = await axios.post(`${ENDPOINT_BASE}/sync-caja`);
+        return res.data;
+    } catch (err: any) {
+        console.error("[syncCajaCompras] Error:", err);
+        throw err;
+    }
+};

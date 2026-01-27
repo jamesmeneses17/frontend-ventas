@@ -149,3 +149,16 @@ export const deleteVenta = async (id: number): Promise<void> => {
         throw err;
     }
 };
+
+/**
+ * Sincronizar Movimientos de Caja para Ventas faltantes
+ */
+export const syncCajaVentas = async (): Promise<any> => {
+    try {
+        const res = await axios.post(`${ENDPOINT_BASE}/sync-caja`);
+        return res.data;
+    } catch (err: any) {
+        console.error("[syncCajaVentas] Error:", err);
+        throw err;
+    }
+};
