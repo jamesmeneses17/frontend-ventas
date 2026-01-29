@@ -5,14 +5,14 @@ import Providers from '../components/Providers';
 import WhatsAppFloatingButton from '../components/ui/WhatsAppFloatingButton';
 
 export const metadata = {
-  title: 'DISEM S.A.S. - Sistema de Gestión',
+  title: 'DISEM S.A.S.',
   description: 'Sistema de gestión de ventas',
   icons: {
     icon: '/images/disem.png',
     apple: '/images/disem.png',
   },
   openGraph: {
-    title: 'DISEM S.A.S. - Sistema de Gestión',
+    title: 'DISEM S.A.S.',
     description: 'Sistema de gestión de ventas',
     url: '/',
     siteName: 'DISEM S.A.S.',
