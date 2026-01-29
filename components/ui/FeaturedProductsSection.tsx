@@ -39,7 +39,7 @@ const mapCategoryToImage = (nombre: string, id: number): string => {
         case "energia-solar":
         case "energia-solar-sostenible":
             return "/images/panel.webp";
-        
+
         default:
             const index = id % fallbackImages.length;
             return fallbackImages[index];
@@ -54,11 +54,17 @@ const CategoryCard: React.FC<CategoryCardDisplayProps> = ({
     href,
 }) => (
     // La tarjeta es un enlace completo, usamos el componente base ImageLinkCard
-    <ImageLinkCard href={href} imageSrc={imageSrc} altText={nombre}>
+    // Aumentamos la altura en móvil para ver mejor la imagen (h-80 o aspect ratio vertical)
+    <ImageLinkCard
+        href={href}
+        imageSrc={imageSrc}
+        altText={nombre}
+        className="h-80 sm:h-auto sm:aspect-[3/4]"
+    >
         <div className="flex flex-col justify-end h-full p-4">
             {/* Sin overlay oscuro - solo fondos en los textos individuales */}
             <div className="flex flex-col gap-2">
-                
+
                 {/* Título de Categoría con fondo propio */}
                 <h3 className="text-xl font-bold text-white tracking-wide w-fit px-3 py-1 bg-black/70 rounded">
                     {nombre}
@@ -94,8 +100,8 @@ const FeaturedProductsSection: React.FC = () => {
             try {
                 setLoading(true);
                 // Llamamos al servicio de categorías principales
-                const response = await getCategoriasPrincipales(1, 1000, ""); 
-                
+                const response = await getCategoriasPrincipales(1, 1000, "");
+
                 let categoriasArray: CategoriaPrincipal[] = [];
                 if (Array.isArray(response)) {
                     categoriasArray = response;
@@ -163,9 +169,11 @@ const FeaturedProductsSection: React.FC = () => {
                   1. Se añade un contenedor `div` con `flex justify-center w-full`. 
                   2. Este contenedor centra su contenido (la cuadrícula de tarjetas) en la página.
                 */}
+                {/* *** CAMBIO CLAVE PARA EL CENTRADO Y RESPONSIVIDAD MÓVIL *** */}
                 {displayedCategories.length > 0 ? (
-                    <div className="flex justify-center w-full"> 
-<div className="block sm:grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mx-auto w-fit sm:w-full">                            {displayedCategories.map((category) => (
+                    <div className="flex justify-center w-full">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mx-auto w-full max-w-md sm:max-w-none">
+                            {displayedCategories.map((category) => (
                                 <CategoryCard
                                     key={category.id}
                                     {...category}
@@ -186,7 +194,7 @@ const FeaturedProductsSection: React.FC = () => {
                             href="/users/categorias" // Enlace a la página de todas las categorías
                             // --- CLASES MODIFICADAS AQUÍ ---
                             className="inline-flex items-center px-8 py-3 border border-transparent text-base font-medium rounded-lg shadow-md text-white bg-blue-600 hover:bg-blue-700 transition duration-150"
-                            // -----------------------------
+                        // -----------------------------
                         >
                             Ver todas las categorías →
                         </a>

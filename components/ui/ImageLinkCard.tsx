@@ -12,17 +12,19 @@ interface ImageLinkCardProps {
     altText: string;
     /** El contenido específico (título, precio, etc.) que se renderizará sobre el overlay. */
     children: React.ReactNode;
+    /** Clases adicionales para personalizar el contenedor principal. */
+    className?: string;
 }
 
 /**
  * Componente base reutilizable para tarjetas visuales con imagen de fondo y efecto hover.
  * Maneja todos los estilos de layout y animación (sombra, gradiente, transformación).
  */
-const ImageLinkCard: React.FC<ImageLinkCardProps> = ({ href, imageSrc, altText, children }) => (
+const ImageLinkCard: React.FC<ImageLinkCardProps> = ({ href, imageSrc, altText, children, className = "" }) => (
     <a
         href={href}
         // Estilos visuales compartidos por ProductCard y CategoryCard
-        className="group relative block rounded-xl overflow-hidden shadow-lg hover:shadow-2xl transition duration-300 transform hover:-translate-y-1"
+        className={`group relative block rounded-xl overflow-hidden shadow-lg hover:shadow-2xl transition duration-300 transform hover:-translate-y-1 ${className}`}
     >
         {/* Imagen de Fondo */}
         <div className="absolute inset-0">
