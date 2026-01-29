@@ -18,9 +18,7 @@ export default function HomePage() {
       <FeaturedProductsSection />
       {/* 3. SECCIÓN DE PRODUCTOS CON PROMOCIONES */}
       {/* 4. SECCIÓN DE VALOR/PROPUESTA DE VENTA */}
-     <WhyChooseUsSection /> 
-       {/* 5. SECCIÓN DE CONTACTO (NUEVO) */}
-        {/*    <ContactSection />  */}   
+      <WhyChooseUsSection />
     </PublicLayout>
   );
 }

@@ -14,7 +14,7 @@ interface PublicLayoutProps {
 
 const PublicLayout: React.FC<PublicLayoutProps> = ({ children }) => {
     return (
-        <div className="min-h-screen bg-white pt-32 -mb-24">            {/* 1. Navbar público (fixed top-0) */}
+        <div className="min-h-screen bg-white pt-32">            {/* 1. Navbar público (fixed top-0) */}
             <HeaderPublic />
 
             {/* 2. Barra de movimiento en flujo normal (no fija) */}
