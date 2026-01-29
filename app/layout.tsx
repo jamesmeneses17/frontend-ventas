@@ -7,6 +7,9 @@ import WhatsAppFloatingButton from '../components/ui/WhatsAppFloatingButton';
 export const metadata = {
   title: 'DISEM S.A.S. – Ventas',
   description: 'Sistema de gestión de ventas',
+  icons: {
+    icon: '/images/disem.png',
+  },
 }
 
 export default function RootLayout({
