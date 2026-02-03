@@ -2,11 +2,11 @@
 import React, { useEffect, useState } from 'react';
 // Eliminamos el componente 'Image' ya que no usaremos logo
 // Iconos: Teléfono, Email, Ubicación
-import { Phone, Mail, MapPin, Facebook, Instagram, Twitter, Linkedin } from 'lucide-react'; 
+import { Phone, Mail, MapPin, Facebook, Instagram, Twitter, Linkedin } from 'lucide-react';
 
 const ACCENT_COLOR_TAILWIND = "text-[#2e9fdb]"; // Azul DISEM para íconos
-const HOVER_COLOR_TAILWIND = "hover:text-[#2e9fdb]"; 
-const BG_COLOR = "bg-gray-900"; 
+const HOVER_COLOR_TAILWIND = "hover:text-[#2e9fdb]";
+const BG_COLOR = "bg-gray-900";
 
 import { getInformacionEmpresa } from "../services/configuracionWebService";
 import { InformacionEmpresa } from "../../types/configuracion";
@@ -50,7 +50,7 @@ const FooterPublic: React.FC = () => {
                     {/* Columna 2: Contáctanos */}
                     <div>
                         <h3 className="text-xl font-bold text-white mb-4">Contáctanos</h3>
-                       
+
                         {/* Teléfonos juntos */}
                         {(info?.telefonoFijo || info?.whatsapp) && (
                             <div className="mb-4">
@@ -95,7 +95,7 @@ const FooterPublic: React.FC = () => {
                 </div>
                 {/* Derechos de Autor */}
                 <div className="mt-4 text-center text-gray-500 text-xs">
-                    © {new Date().getFullYear()} { "DISEM SAS"}. Todos los derechos reservados.
+                    © {2025} {"DISEM SAS"}. Todos los derechos reservados.
                 </div>
             </div>
         </footer>

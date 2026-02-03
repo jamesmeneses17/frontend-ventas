@@ -26,7 +26,6 @@ import { useCart } from "../../../../components/hooks/CartContext";
 // COMPONENTES AUXILIARES
 // ----------------------------------------------------------------------
 
-// 🧭 1. Breadcrumb
 const Breadcrumb = ({
   productName,
   categoryName,
@@ -174,12 +173,12 @@ function ProductDetailPageContent({ productId }: { productId: string }) {
 
   useEffect(() => {
     if (!product) return;
-    
+
     console.log('[EspecificacionesPage] Producto cargado:', product);
-    
+
     // Construir array de imágenes del producto
     const imagenes: string[] = [];
-    
+
     // Si tiene array de imagenes (nuevo backend)
     if ((product as any).imagenes && Array.isArray((product as any).imagenes)) {
       console.log('[EspecificacionesPage] Imágenes del array:', (product as any).imagenes);
@@ -190,21 +189,21 @@ function ProductDetailPageContent({ productId }: { productId: string }) {
         }
       });
     }
-    
+
     // Fallback a imagen_url antigua si no hay imagenes
     const candidate = (product as any).imagen_url || (product as any).image || (product as any).imagen;
     if (candidate && !imagenes.includes(candidate)) {
       console.log('[EspecificacionesPage] Usando imagen_url fallback:', candidate);
       imagenes.push(candidate);
     }
-    
+
     // Si no hay ninguna imagen, usar placeholder
     if (imagenes.length === 0) {
       const fallbackImage = mapProductToImage(product.nombre, product.id) || "/images/imagen.webp";
       console.log('[EspecificacionesPage] Usando placeholder:', fallbackImage);
       imagenes.push(fallbackImage);
     }
-    
+
     console.log('[EspecificacionesPage] Array de imágenes final:', imagenes);
     setImagenesProducto(imagenes);
     setSelectedImage(imagenes[0]);
@@ -293,9 +292,8 @@ function ProductDetailPageContent({ productId }: { productId: string }) {
       <button
         onClick={handle}
         disabled={disabled}
-        className={`w-full flex items-center justify-center space-x-2 px-6 py-3 rounded-lg text-white font-semibold transition-colors duration-300 ${
-          disabled ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#2e9fdb] hover:bg-[#2388c5]'
-        }`}
+        className={`w-full flex items-center justify-center space-x-2 px-6 py-3 rounded-lg text-white font-semibold transition-colors duration-300 ${disabled ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#2e9fdb] hover:bg-[#2388c5]'
+          }`}
       >
         <ShoppingCart className="w-5 h-5" />
         <span>Agregar al Carrito</span>
@@ -435,11 +433,10 @@ function ProductDetailPageContent({ productId }: { productId: string }) {
                         <button
                           key={index}
                           onClick={() => setSelectedImage(img)}
-                          className={`relative w-16 h-16 rounded-lg border-2 overflow-hidden transition-all duration-200 hover:border-[#2e9fdb] flex-shrink-0 ${
-                            selectedImage === img 
-                              ? 'border-[#2e9fdb] ring-2 ring-[#2e9fdb]/30' 
+                          className={`relative w-16 h-16 rounded-lg border-2 overflow-hidden transition-all duration-200 hover:border-[#2e9fdb] flex-shrink-0 ${selectedImage === img
+                              ? 'border-[#2e9fdb] ring-2 ring-[#2e9fdb]/30'
                               : 'border-gray-200'
-                          }`}
+                            }`}
                         >
                           <Image
                             src={img}
@@ -530,7 +527,7 @@ function ProductDetailPageContent({ productId }: { productId: string }) {
                   <h1 className="text-3xl lg:text-4xl font-bold tracking-tight text-gray-900 mb-4">
                     {nombre}
                   </h1>
-                  
+
                   {/* Precio */}
                   <div className="mb-6">
                     {precio ? (
@@ -564,7 +561,7 @@ function ProductDetailPageContent({ productId }: { productId: string }) {
                   />
                 </div>
 
-             
+
 
                 {/* Selector de Cantidad */}
                 <div className="mb-6">
