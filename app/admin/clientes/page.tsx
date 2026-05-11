@@ -112,7 +112,7 @@ export default function ClientesPage() {
           <div className="flex justify-between items-center mt-4">
             {/* Muestra el contador de ítems */}
             <p className="text-sm text-gray-600">
-              Mostrando {currentItems.length} de {totalItems} tipos.
+              Mostrando {currentItems.length} de {totalItems} contactos.
             </p>
             {/* Muestra el paginador si no está cargando y hay ítems */}
             {!loading && totalItems > 0 && (

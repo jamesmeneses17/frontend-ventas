@@ -164,7 +164,8 @@ const ClientesForm: React.FC<Props> = ({ initialData, onSuccess, onCancel, onSub
     try {
       // VALIDACIÓN FRONTAL: evitar crear o actualizar clientes con documento duplicado
       try {
-        const matches = await getClientes(String(values.numero_documento).trim(), 1, 50);
+        const cliRes = await getClientes(String(values.numero_documento).trim(), 1, 50);
+        const matches = Array.isArray(cliRes) ? cliRes : (cliRes?.data ?? []);
         const exists = matches.some((c: any) => {
           const sameDoc = String(c.numero_documento).trim() === String(values.numero_documento).trim();
           const sameTipo = Number(c.tipo_documento_id) === Number(values.tipo_documento_id);

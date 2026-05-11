@@ -80,7 +80,7 @@ export default function ComprasForm({
         const loadedProducts = prodRes?.data ?? prodRes ?? [];
         setProductos(loadedProducts);
 
-        const clientesList = cliRes ?? [];
+        const clientesList = Array.isArray(cliRes) ? cliRes : (cliRes?.data ?? []);
         setProveedores(clientesList);
         setFilteredProveedores(clientesList);
       } catch (err) {

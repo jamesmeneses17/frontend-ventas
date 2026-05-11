@@ -56,13 +56,16 @@ export type UpdateClienteData = Partial<CreateClienteData>;
 
 // --- FUNCIONES CRUD ---
 
+export interface PaginacionResponse<T> {
+  data: T[];
+  total: number;
+}
+
 /**
  * Obtiene la lista de clientes.
- * NOTA: Esta versión asume que tu backend maneja el filtrado/paginación
- * a través de query params si se usan. Aquí solo devolvemos la lista completa.
- * @param all - Si es true, podría intentar obtener todos (incluyendo inactivos, si aplica).
+ * Soporta paginación y búsqueda.
  */
-export const getClientes = async (searchTerm: string = "", page: number = 1, pageSize: number = 10): Promise<Cliente[]> => {
+export const getClientes = async (searchTerm: string = "", page: number = 1, pageSize: number = 10): Promise<PaginacionResponse<Cliente> | Cliente[]> => {
   // Aquí podemos añadir los query params para la paginación y búsqueda
   const params = new URLSearchParams({
     page: page.toString(),
@@ -74,13 +77,10 @@ export const getClientes = async (searchTerm: string = "", page: number = 1, pag
 
   try {
     const res = await axios.get(url);
-    // IMPORTANTE: Si tu API de NestJS devuelve un objeto de paginación
-    // (ej: { items: [], total: 10 }), deberás ajustar la función de carga en useCrudCatalog
-    // para manejar la respuesta. Pero si devuelve directamente el array (res.data), esta línea es correcta:
+    // Si la API devuelve { data: [], total: 0 }, useCrudCatalog lo manejará correctamente.
     return res.data;
   } catch (err: any) {
     console.error(`[getClientes] Error fetching clients from ${url}:`, err?.response?.data ?? err?.toString());
-    // En caso de error, devolvemos un array vacío para no romper la UI
     return [];
   }
 };

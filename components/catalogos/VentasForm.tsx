@@ -81,8 +81,7 @@ export default function VentasForm({
                 const loadedProducts = Array.isArray(prodRes) ? prodRes : prodRes?.data ?? [];
                 setProductos(loadedProducts);
 
-                // Fix: cliRes is Cliente[], so just check array
-                const loadedClientes = Array.isArray(cliRes) ? cliRes : [];
+                const loadedClientes = Array.isArray(cliRes) ? cliRes : (cliRes?.data ?? []);
                 setClientes(loadedClientes);
                 setFilteredClientes(loadedClientes);
             } catch (err) {
