@@ -436,7 +436,16 @@ export default function CajaPage() {
               <div className="grid grid-cols-2 gap-4 bg-gray-50 p-3 rounded">
                 <div>
                   <span className="font-bold block text-gray-500">Fecha:</span>
-                  {viewingItem.fecha ? new Date(viewingItem.fecha).toLocaleDateString() : "-"}
+                  {viewingItem.fecha
+                    ? (() => {
+                        // Parsear manualmente para evitar el desfase de zona horaria UTC-5
+                        const parts = String(viewingItem.fecha).split('T')[0].split('-');
+                        if (parts.length === 3) {
+                          return `${parts[2]}/${parts[1]}/${parts[0]}`;
+                        }
+                        return String(viewingItem.fecha);
+                      })()
+                    : "-"}
                 </div>
                 <div>
                   <span className="font-bold block text-gray-500">Tipo:</span>
