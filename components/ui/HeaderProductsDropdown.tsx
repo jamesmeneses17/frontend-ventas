@@ -161,14 +161,17 @@ const HeaderProductsDropdown: React.FC = () => {
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
-      <Link
-        href="/users/productos"
+      <button
+        onClick={(e) => {
+          e.preventDefault();
+          setIsMenuOpen(!isMenuOpen);
+        }}
         className={`inline-flex items-center h-full px-1 border-b-2 transition text-[13px] font-medium
         ${isProductsActive
             ? "border-[#a5cd37] text-gray-900"
             : "border-transparent text-gray-700"
           }
-        hover:text-blue-600 hover:border-[#a5cd37]`}
+        hover:text-blue-600 hover:border-[#a5cd37] focus:outline-none cursor-pointer`}
       >
         Productos
         <svg
@@ -182,7 +185,7 @@ const HeaderProductsDropdown: React.FC = () => {
             d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.25 4.25a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.06z"
           />
         </svg>
-      </Link>
+      </button>
 
       {isMenuOpen && (categories.length > 0 || mainCategories.length > 0) && (
         <div
